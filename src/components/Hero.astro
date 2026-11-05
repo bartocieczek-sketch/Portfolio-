@@ -14,14 +14,17 @@ const center = (name.length - 1) / 2;
 
 <script is:inline>
   // Decide before first paint whether to play the intro, so nothing flashes.
-  // It plays once per visit: coming back to the home page from another page skips it.
+  // It plays on a fresh visit or a reload, but not when you come back to the
+  // home page from another page of the site (link click or browser back).
   (function () {
-    var seen = false;
+    var skip = false;
     try {
-      seen = sessionStorage.getItem('intro-played') === '1';
-      sessionStorage.setItem('intro-played', '1');
+      var nav = performance.getEntriesByType('navigation')[0];
+      var type = nav ? nav.type : 'navigate';
+      var internal = !!document.referrer && new URL(document.referrer).origin === location.origin;
+      skip = type === 'back_forward' || (type === 'navigate' && internal);
     } catch (e) {}
-    if (!seen && window.scrollY < 50 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (!skip && window.scrollY < 50 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.documentElement.classList.add('is-intro', 'is-scroll-locked');
     }
   })();
