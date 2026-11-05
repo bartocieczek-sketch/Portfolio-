@@ -20,7 +20,10 @@
   --font-mono: 'Chivo Mono', ui-monospace, monospace;
 
   --gutter: 24px;
-  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Motion tokens */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entrances, hovers */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* things travelling across the screen */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);      /* long, cinematic reveals */
 }
 
 *,
@@ -183,7 +186,7 @@ html.lenis body {
   background: var(--text-highlight);
   transform: scaleX(0);
   transform-origin: right;
-  transition: transform 0.5s var(--ease-expo);
+  transition: transform 0.3s var(--ease-out);
 }
 .u-link:hover::after,
 .u-link:focus-visible::after {
@@ -218,19 +221,19 @@ html.lenis body {
   inset: 0;
   background: var(--button-fill);
   transform: translateY(-101%);
-  transition: transform 0.5s var(--ease-expo);
+  transition: transform 0.35s var(--ease-out);
   z-index: -1;
 }
 .line-button span {
-  transition: transform 0.5s var(--ease-expo), color 0.3s;
+  transition: transform 0.35s var(--ease-out), color 0.2s ease;
 }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .line-button:hover::before {
     transform: translateY(0);
   }
   .line-button:hover span {
     color: var(--surface-dark);
-    transform: translateX(12px);
+    transform: translateX(8px);
   }
 }
 .line-button[aria-disabled='true'] {
@@ -240,8 +243,9 @@ html.lenis body {
 /* ---------- Reveal on scroll ---------- */
 [data-reveal] {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 1s var(--ease-expo), transform 1s var(--ease-expo);
+  transform: translateY(16px);
+  transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
 }
 [data-reveal].is-in {
   opacity: 1;
@@ -249,10 +253,10 @@ html.lenis body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Keep the fade, drop the movement */
   [data-reveal] {
-    opacity: 1;
     transform: none;
-    transition: none;
+    transition: opacity 0.4s ease;
   }
 }
 

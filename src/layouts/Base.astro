@@ -64,11 +64,14 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       // Fade-up elements as they enter the viewport
       const revealIo = new IntersectionObserver(
         (entries) => {
+          // Elements that enter in the same frame get a short stagger
+          let n = 0;
           for (const e of entries) {
-            if (e.isIntersecting) {
-              e.target.classList.add('is-in');
-              revealIo.unobserve(e.target);
-            }
+            if (!e.isIntersecting) continue;
+            const el = e.target as HTMLElement;
+            el.style.setProperty('--reveal-delay', `${Math.min(n++, 5) * 60}ms`);
+            el.classList.add('is-in');
+            revealIo.unobserve(el);
           }
         },
         { rootMargin: '0px 0px -10% 0px' },
