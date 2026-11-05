@@ -1,6 +1,8 @@
 import { defineConfig } from 'sanity';
 import { structureTool } from 'sanity/structure';
 import { visionTool } from '@sanity/vision';
+import { presentationTool } from 'sanity/presentation';
+import { resolve } from './src/sanity/presentation';
 import { schemaTypes } from './src/sanity/schemaTypes';
 import { structure, singletonTypes } from './src/sanity/structure';
 
@@ -12,7 +14,22 @@ export default defineConfig({
   title: 'Bart Ocieczek – Portfolio',
   projectId,
   dataset,
-  plugins: [structureTool({ structure }), visionTool()],
+  plugins: [
+    structureTool({ structure }),
+    // Visual editing: click anything on the page preview to edit it
+    presentationTool({
+      title: 'Visual editing',
+      resolve,
+      previewUrl: {
+        initial: '/',
+        previewMode: {
+          enable: '/api/draft-mode/enable',
+          disable: '/api/draft-mode/disable',
+        },
+      },
+    }),
+    visionTool(),
+  ],
   schema: {
     types: schemaTypes,
     // Singletons can't be created from the "new document" menu.

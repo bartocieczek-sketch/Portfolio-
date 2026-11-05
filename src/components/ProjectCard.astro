@@ -1,5 +1,6 @@
 ---
 import { srcset, urlFor } from '../lib/sanity';
+import { href } from '../lib/preview';
 
 interface Props {
   project: {
@@ -18,7 +19,7 @@ const name = (project.cardTitle || project.title).trim();
 const lqip = project.cover?.asset?.metadata?.lqip;
 ---
 
-<a href={`/${project.slug}`} class="card" data-reveal>
+<a href={href(Astro.locals, `/${project.slug}`)} class="card" data-reveal>
   {project.cover?.asset && (
     <img
       class="card__img"

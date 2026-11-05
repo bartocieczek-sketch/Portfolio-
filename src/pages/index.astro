@@ -1,13 +1,13 @@
 ---
-import { sanityClient } from 'sanity:client';
 import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import Testimonial from '../components/Testimonial.astro';
 import Footer from '../components/Footer.astro';
 import { HOME_QUERY, SETTINGS_QUERY } from '../lib/sanity';
+import { load } from '../lib/load';
 
-const [home, settings] = await Promise.all([sanityClient.fetch(HOME_QUERY), sanityClient.fetch(SETTINGS_QUERY)]);
+const [home, settings] = await Promise.all([load(Astro.locals, HOME_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
 if (!home || !settings) return new Response('Content not found', { status: 500 });
 
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection

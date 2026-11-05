@@ -17,7 +17,7 @@ export default defineConfig({
     // so changes published in Sanity show up within a minute.
     isr: {
       expiration: 60,
-      exclude: [/^\/studio/],
+      exclude: [/^\/studio/, /^\/preview/, /^\/api\//],
     },
   }),
   integrations: [

@@ -1,16 +1,18 @@
 ---
-import { sanityClient } from 'sanity:client';
 import { PortableText } from 'astro-portabletext';
 import Base from '../layouts/Base.astro';
 import Media from '../components/Media.astro';
 import Footer from '../components/Footer.astro';
 import { PROJECT_QUERY, SETTINGS_QUERY } from '../lib/sanity';
+import { load } from '../lib/load';
+import { href } from '../lib/preview';
+import { stegaClean } from '@sanity/client/stega';
 
 const { slug } = Astro.params;
 const [project, settings, about] = await Promise.all([
-  sanityClient.fetch(PROJECT_QUERY, { slug }),
-  sanityClient.fetch(SETTINGS_QUERY),
-  sanityClient.fetch(`*[_id == "aboutPage"][0]{ctaText}`),
+  load(Astro.locals, PROJECT_QUERY, { slug }),
+  load(Astro.locals, SETTINGS_QUERY),
+  load(Astro.locals, `*[_id == "aboutPage"][0]{ctaText}`),
 ]);
 if (!project) return Astro.rewrite('/404');
 
@@ -24,10 +26,10 @@ const meta = [
   ['Credits', project.credits],
   ['Year', project.yearLabel],
 ].filter(([, v]) => v);
-const description = intro[0]?.children?.map((c: { text: string }) => c.text).join('') ?? settings?.seoDescription;
+const description = stegaClean(intro[0]?.children?.map((c: { text: string }) => c.text).join('') ?? settings?.seoDescription);
 ---
 
-<Base title={`${project.title} – ${settings?.name ?? 'Bart Ocieczek'}`} description={description} image={project.cover}>
+<Base title={`${stegaClean(project.title)} – ${settings?.name ?? 'Bart Ocieczek'}`} description={description} image={project.cover}>
   <main class="case">
     <section class="case__row">
       <div class="case__gallery">
@@ -37,7 +39,7 @@ const description = intro[0]?.children?.map((c: { text: string }) => c.text).joi
       <aside class="case__side">
         <div class="case__head">
           <h1 class="case__title">{project.title}</h1>
-          <a href="/" class="u-link t-label-small case__back">Back to home</a>
+          <a href={href(Astro.locals, "/")} class="u-link t-label-small case__back">Back to home</a>
         </div>
 
         {intro.length > 0 && (

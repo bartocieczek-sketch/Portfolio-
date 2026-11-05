@@ -1,11 +1,12 @@
 ---
-import { sanityClient } from 'sanity:client';
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import { ABOUT_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+import { load } from '../lib/load';
+import { stegaClean } from '@sanity/client/stega';
 
-const [about, settings] = await Promise.all([sanityClient.fetch(ABOUT_QUERY), sanityClient.fetch(SETTINGS_QUERY)]);
+const [about, settings] = await Promise.all([load(Astro.locals, ABOUT_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
 if (!about || !settings) return new Response('Content not found', { status: 500 });
 
 const titleWords: string[] = (about.title ?? 'About me').toUpperCase().split(/\s+/);
@@ -13,11 +14,11 @@ const titleWords: string[] = (about.title ?? 'About me').toUpperCase().split(/\s
 const experience: any[] = about.experience ?? [];
 ---
 
-<Base title={`About me – ${settings.name}`} description={about.introLead} image={about.portrait}>
+<Base title={`About me – ${settings.name}`} description={stegaClean(about.introLead)} image={about.portrait}>
   <main class="about">
     <header class="about__top">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
-      <h1 class="t-display about__title" aria-label={about.title}>
+      <h1 class="t-display about__title" aria-label={stegaClean(about.title)}>
         {titleWords.map((w, i) => <span style={`--i:${i}`} aria-hidden="true">{w}</span>)}
       </h1>
       {about.quote && <p class="t-label-small about__quote" data-reveal>{about.quote}</p>}

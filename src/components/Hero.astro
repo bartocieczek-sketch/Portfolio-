@@ -1,5 +1,6 @@
 ---
 import Nav from './Nav.astro';
+import { stegaClean } from '@sanity/client/stega';
 
 interface Props {
   // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
@@ -8,7 +9,7 @@ interface Props {
   settings: any;
 }
 const { home, settings } = Astro.props;
-const name: string = (settings.name ?? 'Bart Ocieczek').toUpperCase();
+const name: string = stegaClean(settings.name ?? 'Bart Ocieczek').toUpperCase();
 const center = (name.length - 1) / 2;
 ---
 

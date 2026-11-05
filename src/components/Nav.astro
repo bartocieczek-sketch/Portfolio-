@@ -4,14 +4,16 @@ interface Props {
   socials?: { _key: string; label: string; url: string }[];
   role?: string;
 }
+import { href } from '../lib/preview';
 const { callUrl, socials = [], role } = Astro.props;
 const path = Astro.url.pathname;
+const to = (p: string) => href(Astro.locals, p);
 ---
 
 <nav class="nav" aria-label="Main">
-  <a href="/" class="u-link t-label" aria-current={path === '/' ? 'page' : undefined}>Home</a>
+  <a href={to("/")} class="u-link t-label" aria-current={path === '/' ? 'page' : undefined}>Home</a>
   <div class="nav__links">
-    <a href="/about-me" class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
+    <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
     {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's cooperate</a>}
   </div>
   <button class="nav__toggle t-label" type="button" aria-expanded="false" aria-controls="mobile-menu">
@@ -22,8 +24,8 @@ const path = Astro.url.pathname;
 
 <div class="mobile-menu" id="mobile-menu" hidden>
   <div class="mobile-menu__links">
-    <a href="/" class="t-display">Home</a>
-    <a href="/about-me" class="t-display">About me</a>
+    <a href={to("/")} class="t-display">Home</a>
+    <a href={to("/about-me")} class="t-display">About me</a>
     {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display">Let's cooperate</a>}
   </div>
   <div class="mobile-menu__bottom">

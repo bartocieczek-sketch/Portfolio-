@@ -2,13 +2,18 @@
 import '../styles/fonts.css';
 import '../styles/global.css';
 import { urlFor } from '../lib/sanity';
+import { stegaClean } from '@sanity/client/stega';
+import { VisualEditing } from '@sanity/astro/visual-editing';
 
 interface Props {
   title?: string;
   description?: string;
   image?: unknown;
 }
-const { title, description, image } = Astro.props;
+const { image } = Astro.props;
+const title = stegaClean(Astro.props.title);
+const description = stegaClean(Astro.props.description);
+const preview = Astro.locals.preview;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() : undefined;
 ---
@@ -28,6 +33,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
     {ogImage && <meta property="og:image" content={ogImage} />}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#181818" />
+    {preview && <meta name="robots" content="noindex" />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script is:inline>
       // Page transitions: tell the CSS whether we're going back or forward
@@ -49,6 +55,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
   </head>
   <body>
     <slot />
+    {preview && <VisualEditing enabled zIndex={1000} />}
 
     <script>
       import Lenis from 'lenis';
