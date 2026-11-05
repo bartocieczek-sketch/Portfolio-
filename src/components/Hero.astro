@@ -24,7 +24,10 @@ const center = (name.length - 1) / 2;
       var internal = !!document.referrer && new URL(document.referrer).origin === location.origin;
       skip = type === 'back_forward' || (type === 'navigate' && internal);
     } catch (e) {}
-    if (!skip && window.scrollY < 50 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (!skip && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // Start from the top instead of the restored scroll position
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      window.scrollTo(0, 0);
       document.documentElement.classList.add('is-intro', 'is-scroll-locked');
     }
   })();
