@@ -184,8 +184,7 @@ html.lenis body {
   transition: transform 0.5s var(--ease-expo);
 }
 .u-link:hover::after,
-.u-link:focus-visible::after,
-.u-link[aria-current='page']::after {
+.u-link:focus-visible::after {
   transform: scaleX(1);
   transform-origin: left;
 }
