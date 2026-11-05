@@ -30,6 +30,8 @@
 }
 
 html {
+  /* Keep layout width constant when scrolling is locked during the intro */
+  scrollbar-gutter: stable;
   background: var(--surface-black);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;

@@ -189,9 +189,9 @@ const center = (name.length - 1) / 2;
     transition-delay: calc(0.15s + var(--d));
   }
   /* Safety net: if the intro script never runs, show everything anyway */
-  :global(html.is-intro) .intro-fade,
-  :global(html.is-intro) .hero__char,
-  :global(html.is-intro) .hero__video video {
+  :global(html.is-intro) .hero:not(.is-ready) .intro-fade,
+  :global(html.is-intro) .hero:not(.is-ready) .hero__char,
+  :global(html.is-intro) .hero:not(.is-ready) .hero__video video {
     animation: intro-fallback 0.6s 4s forwards;
   }
   @keyframes intro-fallback {
