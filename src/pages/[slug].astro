@@ -286,10 +286,13 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     transition: color 0.3s ease;
   }
   .next__media {
+    position: relative;
     aspect-ratio: 2 / 1;
     background: #111;
   }
   .next__media img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
