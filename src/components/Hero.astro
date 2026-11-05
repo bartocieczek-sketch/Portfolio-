@@ -14,9 +14,17 @@ const center = (name.length - 1) / 2;
 
 <script is:inline>
   // Decide before first paint whether to play the intro, so nothing flashes.
-  if (window.scrollY < 50 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    document.documentElement.classList.add('is-intro', 'is-scroll-locked');
-  }
+  // It plays once per visit: coming back to the home page from another page skips it.
+  (function () {
+    var seen = false;
+    try {
+      seen = sessionStorage.getItem('intro-played') === '1';
+      sessionStorage.setItem('intro-played', '1');
+    } catch (e) {}
+    if (!seen && window.scrollY < 50 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('is-intro', 'is-scroll-locked');
+    }
+  })();
 </script>
 
 <section class="hero" data-hero>
