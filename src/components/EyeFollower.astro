@@ -1,0 +1,80 @@
+---
+// Recreation of the Framer "EyeFollower" component: two eyes whose pupils
+// follow the cursor and blink every 3.5 s.
+---
+
+<div class="eyes" aria-hidden="true" data-eyes>
+  <span class="eye"><span class="pupil"></span></span>
+  <span class="eye"><span class="pupil"></span></span>
+</div>
+
+<style>
+  .eyes {
+    display: flex;
+    gap: 8px;
+    width: 58px;
+    height: 37px;
+  }
+  .eye {
+    position: relative;
+    flex: 1;
+    border-radius: 50%;
+    background: var(--text-primary);
+    overflow: hidden;
+    transform-origin: 50% 50%;
+    transition: transform 0.12s ease-in-out;
+  }
+  .eyes.is-blinking .eye {
+    transform: scaleY(0.08);
+  }
+  .pupil {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border-radius: 50%;
+    background: var(--surface-dark);
+    will-change: transform;
+  }
+</style>
+
+<script>
+  const groups = document.querySelectorAll<HTMLElement>('[data-eyes]');
+  if (groups.length) {
+    let mx = window.innerWidth / 2;
+    let my = window.innerHeight / 2;
+    window.addEventListener('pointermove', (e) => {
+      mx = e.clientX;
+      my = e.clientY;
+    }, { passive: true });
+
+    const pupils = [...groups].flatMap((g) => [...g.querySelectorAll<HTMLElement>('.pupil')]).map((el) => ({ el, x: 0, y: 0 }));
+
+    const tick = () => {
+      for (const p of pupils) {
+        const eye = p.el.parentElement!.getBoundingClientRect();
+        if (eye.bottom < -200 || eye.top > window.innerHeight + 200) continue;
+        const cx = eye.left + eye.width / 2;
+        const cy = eye.top + eye.height / 2;
+        const angle = Math.atan2(my - cy, mx - cx);
+        const dist = Math.min(1, Math.hypot(mx - cx, my - cy) / 300);
+        const rx = (eye.width / 2 - 7) * dist;
+        const ry = (eye.height / 2 - 7) * dist;
+        const tx = Math.cos(angle) * rx;
+        const ty = Math.sin(angle) * ry;
+        p.x += (tx - p.x) * 0.5;
+        p.y += (ty - p.y) * 0.5;
+        p.el.style.transform = `translate(${p.x.toFixed(2)}px, ${p.y.toFixed(2)}px)`;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+
+    setInterval(() => {
+      groups.forEach((g) => g.classList.add('is-blinking'));
+      setTimeout(() => groups.forEach((g) => g.classList.remove('is-blinking')), 140);
+    }, 3500);
+  }
+</script>

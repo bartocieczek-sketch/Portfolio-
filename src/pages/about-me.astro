@@ -1,0 +1,267 @@
+---
+import { sanityClient } from 'sanity:client';
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { ABOUT_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+
+const [about, settings] = await Promise.all([sanityClient.fetch(ABOUT_QUERY), sanityClient.fetch(SETTINGS_QUERY)]);
+if (!about || !settings) return new Response('Content not found', { status: 500 });
+
+const titleWords: string[] = (about.title ?? 'About me').toUpperCase().split(/\s+/);
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const experience: any[] = about.experience ?? [];
+---
+
+<Base title={`About me – ${settings.name}`} description={about.introLead} image={about.portrait}>
+  <main class="about">
+    <header class="about__top">
+      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
+      <h1 class="t-display about__title" aria-label={about.title}>
+        {titleWords.map((w, i) => <span style={`--i:${i}`} aria-hidden="true">{w}</span>)}
+      </h1>
+      {about.quote && <p class="t-label-small about__quote" data-reveal>{about.quote}</p>}
+    </header>
+
+    <section class="about__intro">
+      {about.portrait?.asset && (
+        <img
+          class="about__portrait"
+          src={urlFor(about.portrait).width(320).url()}
+          alt={settings.name}
+          width="152"
+          height="146"
+          data-reveal
+        />
+      )}
+      <div class="about__col" data-reveal>
+        <p class="t-compact">
+          {about.introLead} <span class="muted">{about.introBody}</span>
+        </p>
+        {about.currentRole && <p class="t-compact muted">{about.currentRole}</p>}
+      </div>
+    </section>
+
+    {about.focus?.length > 0 && (
+      <section class="about__row">
+        <h2 class="about__label">Focus</h2>
+        <ul class="about__focus about__col">
+          {about.focus.map((f: string) => <li class="t-section" data-reveal>{f}</li>)}
+        </ul>
+      </section>
+    )}
+
+    <section class="about__row about__row--line">
+      <h2 class="about__label">Experience</h2>
+      <p class="t-compact about__col" data-reveal>
+        {about.experienceLead} <span class="muted">{about.experienceBody}</span>
+      </p>
+    </section>
+
+    {experience.length > 0 && (
+      <ul class="jobs">
+        {experience.map((job) => (
+          <li class="job" data-reveal>
+            <div class="job__who">
+              {job.logo?.asset ? (
+                <img src={urlFor(job.logo).width(112).height(112).url()} alt="" width="56" height="56" loading="lazy" />
+              ) : (
+                <span class="job__logo-empty" />
+              )}
+              <div>
+                <p class="job__company">{job.company}</p>
+                <p class="t-label-small">{job.role}</p>
+              </div>
+            </div>
+            <div class="job__when">{job.period && <span class="job__period t-label-small">{job.period}</span>}</div>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <Footer settings={settings} ctaText={about.ctaText} />
+  </main>
+</Base>
+
+<style>
+  .about {
+    background: var(--surface-dark);
+  }
+  .about__top {
+    padding: var(--gutter);
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+  .about__title {
+    font-size: 120px;
+    display: flex;
+    gap: 0.22em;
+    flex-wrap: wrap;
+  }
+  .about__title span {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(40px);
+    animation: word-in 1.4s var(--ease-expo) forwards;
+    animation-delay: calc(0.2s + var(--i) * 0.12s);
+  }
+  @keyframes word-in {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .about__quote {
+    max-width: 330px;
+    margin: 40px auto 80px;
+    text-align: center;
+    text-transform: none;
+  }
+  .about__intro,
+  .about__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 0 var(--gutter);
+  }
+  .about__intro {
+    align-items: flex-start;
+    padding-bottom: 160px;
+  }
+  .about__portrait {
+    width: 152px;
+    height: auto;
+    filter: grayscale(1);
+  }
+  .about__col {
+    width: 30%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .about__row {
+    padding-bottom: 140px;
+  }
+  .about__row--line {
+    border-top: 1px solid var(--line);
+    margin: 0 var(--gutter);
+    padding: 40px 0 120px;
+  }
+  .about__label {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+  .about__focus {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+  }
+  .about__focus li {
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .jobs {
+    list-style: none;
+    margin: 0;
+    padding: 0 var(--gutter) 120px;
+  }
+  .job {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 32px 0;
+    position: relative;
+  }
+  .job + .job::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 260px;
+    max-width: 50%;
+    height: 1px;
+    background: var(--line);
+  }
+  .job__who {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .job__who img,
+  .job__logo-empty {
+    width: 56px;
+    height: 56px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: #222;
+  }
+  .job__company {
+    font-family: var(--font-body2);
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+  .job__when {
+    width: 30%;
+  }
+  .job__period {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  @media (max-width: 1199px) {
+    .about__title {
+      font-size: 96px;
+    }
+    .about__col,
+    .job__when {
+      width: 45%;
+    }
+  }
+  @media (max-width: 809px) {
+    .about__title {
+      font-size: 64px;
+    }
+    .about__quote {
+      margin: 0 auto 40px;
+    }
+    .about__intro,
+    .about__row {
+      flex-direction: column;
+    }
+    .about__intro {
+      padding-bottom: 80px;
+    }
+    .about__row {
+      padding-bottom: 80px;
+    }
+    .about__row--line {
+      padding: 32px 0 64px;
+    }
+    .about__col,
+    .job__when {
+      width: 100%;
+    }
+    .about__focus li {
+      white-space: normal;
+    }
+    .job {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+  }
+</style>

@@ -1,0 +1,36 @@
+/*
+ * Licensed fonts used on the Framer site.
+ *
+ * The site currently falls back to free look-alikes from Google Fonts
+ * (Anton, Inter Tight, Inter). To get the exact original look:
+ *   1. Put your .woff2 files in /public/fonts/ with the names below.
+ *   2. Uncomment the matching @font-face blocks.
+ * Check that your licence covers self-hosting on bartocieczek.com.
+ */
+
+/*
+@font-face {
+  font-family: 'PP Neue Corp Tight Ultrabold';
+  src: url('/fonts/PPNeueCorp-TightUltrabold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PP Neue Corp Compact Ultrabold';
+  src: url('/fonts/PPNeueCorp-CompactUltrabold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PP Neue Montreal Medium';
+  src: url('/fonts/PPNeueMontreal-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Helvetica Now Display Bold';
+  src: url('/fonts/HelveticaNowDisplay-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+*/

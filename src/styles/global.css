@@ -1,0 +1,281 @@
+/*
+ * Design tokens taken 1:1 from the Framer project
+ * (color styles /Colors/*, text styles /Text Styles/*).
+ */
+:root {
+  --surface-dark: rgb(24, 24, 24);
+  --surface-black: rgb(0, 0, 0);
+  --text-primary: rgb(223, 223, 223);
+  --text-secondary: rgb(135, 135, 135);
+  --text-highlight: rgb(255, 255, 255);
+  --line: rgb(58, 58, 58);
+  --button-fill: rgb(242, 242, 242);
+
+  /* Licensed fonts first; free look-alikes as fallbacks (see src/styles/fonts.css). */
+  --font-display: 'PP Neue Corp Tight Ultrabold', 'Anton', 'Impact', sans-serif;
+  --font-compact: 'PP Neue Corp Compact Ultrabold', 'Anton', 'Impact', sans-serif;
+  --font-head: 'Helvetica Now Display Bold', 'Inter Tight', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-body2: 'PP Neue Montreal Medium', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Chivo Mono', ui-monospace, monospace;
+
+  --gutter: 24px;
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--surface-black);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-dark);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: -0.02em;
+  overflow-x: clip;
+}
+
+img,
+video,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+  font-weight: inherit;
+}
+
+::selection {
+  background: var(--text-primary);
+  color: var(--surface-dark);
+}
+
+/* Lenis smooth scroll */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ---------- Text styles ---------- */
+.t-display {
+  font-family: var(--font-display);
+  font-size: 88px;
+  line-height: 0.82;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+.t-section {
+  font-family: var(--font-compact);
+  font-size: 48px;
+  line-height: 1.33;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.t-subheading {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 1.6rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.t-heading-large {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.t-compact {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.t-body2 {
+  font-family: var(--font-body2);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.t-label {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.t-label-small {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.muted {
+  color: var(--text-secondary);
+}
+
+/* ---------- Animated underline link (Framer "Link" component) ---------- */
+.u-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  overflow: hidden;
+}
+.u-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  background: var(--text-highlight);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.5s var(--ease-expo);
+}
+.u-link:hover::after,
+.u-link:focus-visible::after,
+.u-link[aria-current='page']::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* ---------- Line button (Framer "Button" component) ---------- */
+.line-button {
+  position: relative;
+  display: flex;
+  width: 100%;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  isolation: isolate;
+}
+.line-button:last-child,
+.line-button.is-closed {
+  border-bottom: 1px solid var(--line);
+}
+.line-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--button-fill);
+  transform: translateY(-101%);
+  transition: transform 0.5s var(--ease-expo);
+  z-index: -1;
+}
+.line-button span {
+  transition: transform 0.5s var(--ease-expo), color 0.3s;
+}
+@media (hover: hover) {
+  .line-button:hover::before {
+    transform: translateY(0);
+  }
+  .line-button:hover span {
+    color: var(--surface-dark);
+    transform: translateX(12px);
+  }
+}
+.line-button[aria-disabled='true'] {
+  cursor: default;
+}
+
+/* ---------- Reveal on scroll ---------- */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 1s var(--ease-expo), transform 1s var(--ease-expo);
+}
+[data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 809px) {
+  :root {
+    --gutter: 16px;
+  }
+  .t-display {
+    font-size: 56px;
+  }
+  .t-section {
+    font-size: 40px;
+    line-height: 1.15;
+  }
+  .t-heading-large {
+    font-size: 32px;
+  }
+}

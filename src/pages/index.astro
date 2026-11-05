@@ -1,0 +1,194 @@
+---
+import { sanityClient } from 'sanity:client';
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import Testimonial from '../components/Testimonial.astro';
+import Footer from '../components/Footer.astro';
+import { HOME_QUERY, SETTINGS_QUERY } from '../lib/sanity';
+
+const [home, settings] = await Promise.all([sanityClient.fetch(HOME_QUERY), sanityClient.fetch(SETTINGS_QUERY)]);
+if (!home || !settings) return new Response('Content not found', { status: 500 });
+
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const projects: any[] = (home.projects ?? []).filter(Boolean);
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const brands: any[] = home.brands ?? [];
+---
+
+<Base title={settings.seoTitle} description={settings.seoDescription} image={projects[0]?.cover}>
+  <main class="home">
+    <Hero home={home} settings={settings} />
+
+    <div class="home__wrapper">
+      <section class="work" aria-labelledby="work-title">
+        <div class="work__grid">
+          {projects.map((p, i) => <ProjectCard project={p} eager={i < 2} />)}
+        </div>
+
+        <aside class="work__side">
+          <div class="work__head">
+            <div class="work__title">
+              <h2 id="work-title" class="t-heading-large">{home.workHeadline}</h2>
+              <span class="work__count">({projects.length})</span>
+            </div>
+            {home.viewAllLabel && (
+              <span class="line-button is-closed" aria-disabled="true"><span>{home.viewAllLabel}</span></span>
+            )}
+          </div>
+
+          {brands.length > 0 && (
+            <div class="brands">
+              <p class="t-label-small">{home.brandsLabel}</p>
+              <div class="brands__ticker">
+                <div class="brands__track">
+                  {[0, 1].map((copy) => (
+                    <div class="brands__set" aria-hidden={copy === 1 ? 'true' : undefined}>
+                      {brands.map((b) => (
+                        <>
+                          <span class="brands__item">
+                            {b.logo?.asset ? <img src={b.logo.asset.url} alt={copy === 0 ? b.name : ''} loading="lazy" /> : <span class="t-label">{b.name}</span>}
+                          </span>
+                          <span class="brands__divider" />
+                        </>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </aside>
+      </section>
+
+      <Testimonial heading={home.testimonialsHeading} testimonial={home.testimonial} />
+
+      <Footer settings={settings} ctaText={home.ctaText} />
+    </div>
+  </main>
+</Base>
+
+<style>
+  .home__wrapper {
+    position: relative;
+    z-index: 2;
+    background: var(--surface-dark);
+    display: flex;
+    flex-direction: column;
+    gap: 120px;
+  }
+  .work {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 48px;
+    padding: 48px var(--gutter) var(--gutter);
+  }
+  .work__grid {
+    width: 65%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .work__side {
+    position: sticky;
+    top: 0;
+    width: 30%;
+    height: 100vh;
+    padding: 40px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .work__head {
+    display: flex;
+    flex-direction: column;
+    gap: 56px;
+  }
+  .work__title {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .work__count {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--text-secondary);
+  }
+  .brands {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .brands__ticker {
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 15%, #000 85%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 15%, #000 85%, transparent);
+  }
+  .brands__track {
+    display: flex;
+    width: max-content;
+    animation: ticker 30s linear infinite;
+  }
+  .brands__set {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding-right: 32px;
+    height: 45px;
+  }
+  .brands__item {
+    display: flex;
+    align-items: center;
+    height: 100%;
+  }
+  .brands__item img {
+    height: 30px;
+    width: auto;
+    max-width: 120px;
+    object-fit: contain;
+    opacity: 0.7;
+  }
+  .brands__divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--line);
+  }
+  @keyframes ticker {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brands__track {
+      animation: none;
+    }
+  }
+  @media (max-width: 809px) {
+    .home__wrapper {
+      gap: 64px;
+    }
+    .work {
+      flex-direction: column-reverse;
+      gap: 32px;
+      padding-top: 40px;
+    }
+    .work__grid {
+      width: 100%;
+      grid-template-columns: 1fr;
+    }
+    .work__side {
+      position: static;
+      width: 100%;
+      height: auto;
+      padding: 0;
+      gap: 40px;
+    }
+    .work__head {
+      gap: 32px;
+    }
+  }
+</style>

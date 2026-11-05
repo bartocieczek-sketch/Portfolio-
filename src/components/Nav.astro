@@ -1,0 +1,118 @@
+---
+interface Props {
+  callUrl?: string;
+  socials?: { _key: string; label: string; url: string }[];
+  role?: string;
+}
+const { callUrl, socials = [], role } = Astro.props;
+const path = Astro.url.pathname;
+---
+
+<nav class="nav" aria-label="Main">
+  <a href="/" class="u-link t-label" aria-current={path === '/' ? 'page' : undefined}>Home</a>
+  <div class="nav__links">
+    <a href="/about-me" class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's cooperate</a>}
+  </div>
+  <button class="nav__toggle t-label" type="button" aria-expanded="false" aria-controls="mobile-menu">
+    <span class="nav__toggle-open">Menu</span>
+    <span class="nav__toggle-close">Close</span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobile-menu" hidden>
+  <div class="mobile-menu__links">
+    <a href="/" class="t-display">Home</a>
+    <a href="/about-me" class="t-display">About me</a>
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display">Let's cooperate</a>}
+  </div>
+  <div class="mobile-menu__bottom">
+    {role && <p class="t-body2 muted">{role}</p>}
+    <div>
+      {socials.map((s) => (
+        <a class="line-button" href={s.url} target="_blank" rel="noopener"><span>{s.label}</span></a>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    position: relative;
+    z-index: 20;
+  }
+  .nav__links {
+    width: 30%;
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+  }
+  .nav__toggle {
+    display: none;
+    height: 18px;
+  }
+  .nav__toggle-close {
+    display: none;
+  }
+  .mobile-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    background: var(--surface-dark);
+    padding: 80px var(--gutter) 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 80px;
+  }
+  .mobile-menu[hidden] {
+    display: none;
+  }
+  .mobile-menu__links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .mobile-menu__bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  @media (max-width: 809px) {
+    .nav__links {
+      display: none;
+    }
+    .nav__toggle {
+      display: block;
+    }
+    :global(html.menu-open) .nav__toggle-open {
+      display: none;
+    }
+    :global(html.menu-open) .nav__toggle-close {
+      display: inline;
+    }
+    :global(html.menu-open) .nav {
+      position: fixed;
+      top: 24px;
+      left: var(--gutter);
+      right: var(--gutter);
+      width: auto;
+    }
+  }
+</style>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('.nav__toggle');
+  const menu = document.getElementById('mobile-menu');
+  toggle?.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') !== 'true';
+    toggle.setAttribute('aria-expanded', String(open));
+    document.documentElement.classList.toggle('menu-open', open);
+    if (menu) menu.hidden = !open;
+  });
+</script>

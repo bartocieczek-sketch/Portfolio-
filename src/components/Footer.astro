@@ -1,0 +1,111 @@
+---
+import EyeFollower from './EyeFollower.astro';
+
+interface Props {
+  settings: {
+    role?: string;
+    callUrl?: string;
+    email?: string;
+    socials?: { _key: string; label: string; url: string }[];
+    footerHeadline?: string;
+    copyright?: string;
+  };
+  ctaText?: string;
+}
+const { settings, ctaText } = Astro.props;
+const links = [
+  settings.callUrl && { label: '30 min intro call', url: settings.callUrl, external: true },
+  settings.email && { label: settings.email, url: `mailto:${settings.email}`, external: false },
+  ...(settings.socials ?? []).map((s) => ({ label: s.label, url: s.url, external: true })),
+].filter(Boolean) as { label: string; url: string; external: boolean }[];
+---
+
+<footer class="footer">
+  <div class="footer__main">
+    <div class="footer__claim">
+      <EyeFollower />
+      {settings.footerHeadline && <h2 class="t-display footer__headline" data-reveal>{settings.footerHeadline}</h2>}
+    </div>
+    <div class="footer__buttons">
+      {ctaText && <p class="t-compact muted footer__cta">{ctaText}</p>}
+      <div class="footer__list">
+        {links.map((l) => (
+          <a class="line-button" href={l.url} target={l.external ? '_blank' : undefined} rel={l.external ? 'noopener' : undefined}>
+            <span>{l.label}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+  <div class="footer__bar t-body2">
+    <p class="muted">{settings.role}</p>
+    <p class="muted">{settings.copyright}</p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    position: relative;
+    z-index: 1;
+    background: var(--surface-dark);
+    padding: 80px var(--gutter) var(--gutter);
+    border-top: 1px solid var(--line);
+  }
+  .footer__main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 64px;
+    padding-bottom: 80px;
+  }
+  .footer__claim {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    width: 59%;
+  }
+  .footer__headline {
+    max-width: 550px;
+    text-align: center;
+  }
+  .footer__buttons {
+    width: 32%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+  .footer__cta {
+    max-width: 305px;
+    width: 100%;
+  }
+  .footer__list {
+    width: 100%;
+  }
+  .footer__bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 10px;
+    font-size: 14px;
+  }
+  @media (max-width: 1199px) {
+    .footer__buttons {
+      width: 50%;
+    }
+  }
+  @media (max-width: 809px) {
+    .footer__claim,
+    .footer__buttons {
+      width: 100%;
+    }
+    .footer__headline {
+      max-width: 360px;
+    }
+    .footer__bar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

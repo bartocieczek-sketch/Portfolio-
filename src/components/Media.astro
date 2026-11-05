@@ -1,0 +1,96 @@
+---
+import { srcset, urlFor } from '../lib/sanity';
+
+interface Props {
+  item: {
+    _key: string;
+    kind: 'image' | 'video' | 'lottie';
+    size: 'full' | 'half';
+    // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+    image?: any;
+    // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+    poster?: any;
+    videoUrl?: string;
+    videoMime?: string;
+    lottieUrl?: string;
+  };
+  eager?: boolean;
+}
+const { item, eager = false } = Astro.props;
+const dims = item.image?.asset?.metadata?.dimensions;
+const lqip = item.image?.asset?.metadata?.lqip;
+const sizes = item.size === 'full' ? '(max-width: 809px) 100vw, 65vw' : '(max-width: 809px) 100vw, 32vw';
+const isSvg = item.image?.asset?.mimeType === 'image/svg+xml';
+---
+
+<figure class={`media media--${item.size} media--${item.kind}`} data-reveal>
+  {item.kind === 'image' && item.image?.asset && (
+    <img
+      src={isSvg ? item.image.asset.url : urlFor(item.image).width(1600).quality(82).url()}
+      srcset={isSvg ? undefined : srcset(item.image)}
+      sizes={sizes}
+      width={dims?.width}
+      height={dims?.height}
+      alt={item.image.alt ?? ''}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      style={lqip ? `background-image:url(${lqip})` : undefined}
+    />
+  )}
+  {item.kind === 'video' && item.videoUrl && (
+    <video
+      data-src={item.videoUrl}
+      data-autoplay
+      muted
+      loop
+      playsinline
+      preload="none"
+      poster={item.poster?.asset ? urlFor(item.poster).width(1600).url() : undefined}
+    />
+  )}
+  {item.kind === 'lottie' && item.lottieUrl && <div class="media__lottie" data-lottie={item.lottieUrl} />}
+</figure>
+
+<style>
+  .media {
+    margin: 0;
+    position: relative;
+    overflow: hidden;
+    background: #111;
+  }
+  .media img,
+  .media video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background-size: cover;
+  }
+  /* Half-width tiles use the same 0.82 portrait ratio as on the Framer site */
+  .media--half {
+    aspect-ratio: 0.82;
+  }
+  .media--full.media--image img {
+    height: auto;
+  }
+  .media--full.media--video {
+    aspect-ratio: 16 / 9;
+  }
+  .media--full.media--video:has(video[src]) {
+    aspect-ratio: auto;
+  }
+  .media--full.media--video video {
+    height: auto;
+    min-height: 100%;
+  }
+  .media--lottie.media--full {
+    aspect-ratio: 1.66;
+  }
+  .media__lottie {
+    position: absolute;
+    inset: 0;
+  }
+  .media__lottie :global(svg) {
+    width: 100% !important;
+    height: 100% !important;
+  }
+</style>

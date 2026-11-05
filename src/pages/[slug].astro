@@ -1,0 +1,167 @@
+---
+import { sanityClient } from 'sanity:client';
+import { PortableText } from 'astro-portabletext';
+import Base from '../layouts/Base.astro';
+import Media from '../components/Media.astro';
+import Footer from '../components/Footer.astro';
+import { PROJECT_QUERY, SETTINGS_QUERY } from '../lib/sanity';
+
+const { slug } = Astro.params;
+const [project, settings, about] = await Promise.all([
+  sanityClient.fetch(PROJECT_QUERY, { slug }),
+  sanityClient.fetch(SETTINGS_QUERY),
+  sanityClient.fetch(`*[_id == "aboutPage"][0]{ctaText}`),
+]);
+if (!project) return Astro.rewrite('/404');
+
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const gallery: any[] = project.gallery ?? [];
+// biome-ignore lint/suspicious/noExplicitAny: Portable Text blocks
+const intro: any[] = project.intro ?? [];
+const meta = [
+  ['Client', project.client],
+  ['Services', project.services],
+  ['Credits', project.credits],
+  ['Year', project.yearLabel],
+].filter(([, v]) => v);
+const description = intro[0]?.children?.map((c: { text: string }) => c.text).join('') ?? settings?.seoDescription;
+---
+
+<Base title={`${project.title} – ${settings?.name ?? 'Bart Ocieczek'}`} description={description} image={project.cover}>
+  <main class="case">
+    <section class="case__row">
+      <div class="case__gallery">
+        {gallery.map((item, i) => <Media item={item} eager={i < 3} />)}
+      </div>
+
+      <aside class="case__side">
+        <div class="case__head">
+          <h1 class="case__title">{project.title}</h1>
+          <a href="/" class="u-link t-label-small case__back">Back to home</a>
+        </div>
+
+        {intro.length > 0 && (
+          <div class="case__intro t-compact">
+            <PortableText value={intro} />
+          </div>
+        )}
+
+        {project.liveUrl && (
+          <a class="line-button is-closed" href={project.liveUrl} target="_blank" rel="noopener"><span>Visit live</span></a>
+        )}
+
+        {meta.length > 0 && (
+          <dl class="case__meta t-label-small">
+            {meta.map(([k, v]) => (
+              <div>
+                <dt>{k}:</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </aside>
+    </section>
+
+    {settings && <Footer settings={settings} ctaText={about?.ctaText} />}
+  </main>
+</Base>
+
+<style>
+  .case {
+    background: var(--surface-dark);
+    display: flex;
+    flex-direction: column;
+    gap: 120px;
+  }
+  .case__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    padding: var(--gutter);
+  }
+  .case__gallery {
+    width: 65%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .case__gallery :global(.media--full) {
+    grid-column: 1 / -1;
+  }
+  .case__side {
+    position: sticky;
+    top: var(--gutter);
+    width: 30%;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  .case__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .case__title {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 32px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+  .case__back {
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+  .case__back:hover {
+    color: var(--text-primary);
+  }
+  .case__intro {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    font-weight: 700;
+  }
+  .case__intro :global(p) {
+    color: var(--text-secondary);
+  }
+  .case__intro :global(p:first-child) {
+    color: var(--text-highlight);
+  }
+  .case__meta {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .case__meta div {
+    display: flex;
+    gap: 0.6em;
+  }
+  .case__meta dt,
+  .case__meta dd {
+    margin: 0;
+  }
+  @media (max-width: 809px) {
+    .case {
+      gap: 64px;
+    }
+    .case__row {
+      flex-direction: column-reverse;
+      gap: 40px;
+    }
+    .case__gallery,
+    .case__side {
+      width: 100%;
+    }
+    .case__gallery {
+      grid-template-columns: 1fr;
+    }
+    .case__side {
+      position: static;
+    }
+  }
+</style>
