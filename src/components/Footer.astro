@@ -11,8 +11,9 @@ interface Props {
     copyright?: string;
   };
   ctaText?: string;
+  availability?: string;
 }
-const { settings, ctaText } = Astro.props;
+const { settings, ctaText, availability } = Astro.props;
 const links = [
   settings.callUrl && { label: '30 min intro call', url: settings.callUrl, external: true },
   settings.email && { label: settings.email, url: `mailto:${settings.email}`, external: false },
@@ -27,6 +28,12 @@ const links = [
       {settings.footerHeadline && <h2 class="t-display footer__headline" data-split>{settings.footerHeadline}</h2>}
     </div>
     <div class="footer__buttons">
+      {availability && (
+        <p class="footer__availability t-label-small" data-reveal>
+          <span class="footer__dot" aria-hidden="true"></span>
+          {availability}
+        </p>
+      )}
       {ctaText && <p class="t-compact muted footer__cta" data-split style="--split-delay:200ms">{ctaText}</p>}
       <div class="footer__list">
         {links.map((l) => (
@@ -75,6 +82,41 @@ const links = [
     flex-direction: column;
     align-items: center;
     gap: 32px;
+  }
+  .footer__availability {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text-primary);
+  }
+  .footer__dot {
+    position: relative;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3ddc84;
+  }
+  .footer__dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: availability-pulse 2s ease-out infinite;
+  }
+  @keyframes availability-pulse {
+    to {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .footer__dot::after {
+      animation: none;
+    }
   }
   .footer__cta {
     max-width: 305px;
