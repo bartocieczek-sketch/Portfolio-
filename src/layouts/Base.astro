@@ -29,6 +29,16 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#181818" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      // Page transitions: tell the CSS whether we're going back or forward
+      // so the slide runs in the matching direction.
+      window.addEventListener('pagereveal', function (e) {
+        if (!e.viewTransition) return;
+        var a = window.navigation && navigation.activation;
+        var back = a && a.navigationType === 'traverse' && a.from && a.entry && a.entry.index < a.from.index;
+        e.viewTransition.types.add(back ? 'back' : 'forward');
+      });
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.sanity.io" crossorigin />
