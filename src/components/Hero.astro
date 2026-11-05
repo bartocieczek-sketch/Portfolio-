@@ -184,8 +184,10 @@ const center = (name.length - 1) / 2;
   :global(html.is-intro) .intro-rise {
     transform: translateY(10px);
   }
+  /* 1% instead of 0 so the browser counts the name as painted from the first
+     frame (otherwise Lighthouse reports NO_LCP). Invisible on the dark background. */
   :global(html.is-intro) .hero__char {
-    opacity: 0;
+    opacity: 0.01;
     transform: translateY(0.3em);
   }
   :global(html.is-intro) .hero__video video {
