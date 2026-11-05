@@ -1,69 +1,141 @@
 ---
 import { PortableText } from 'astro-portabletext';
+import { stegaClean } from '@sanity/client/stega';
 import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
 import Media from '../components/Media.astro';
 import Footer from '../components/Footer.astro';
-import { PROJECT_QUERY, SETTINGS_QUERY } from '../lib/sanity';
+import { PROJECT_ORDER_QUERY, PROJECT_QUERY, SETTINGS_QUERY, srcset, urlFor } from '../lib/sanity';
 import { load } from '../lib/load';
 import { href } from '../lib/preview';
-import { stegaClean } from '@sanity/client/stega';
 
 const { slug } = Astro.params;
-const [project, settings, about] = await Promise.all([
+const [project, settings, about, order] = await Promise.all([
   load(Astro.locals, PROJECT_QUERY, { slug }),
   load(Astro.locals, SETTINGS_QUERY),
   load(Astro.locals, `*[_id == "aboutPage"][0]{ctaText}`),
+  load(Astro.locals, PROJECT_ORDER_QUERY),
 ]);
 if (!project) return Astro.rewrite('/404');
 
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const list: any[] = (order ?? []).filter(Boolean);
+const index = list.findIndex((p) => p.slug === project.slug);
+const next = list.length > 1 ? list[(index + 1) % list.length] : undefined;
+const number = (n: number) => String(n).padStart(2, '0');
+
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const gallery: any[] = project.gallery ?? [];
+// The first gallery item becomes the full-bleed cover; fall back to the card image
+const [first, ...rest] = gallery;
+const coverItem = first ?? (project.cover ? { _key: 'cover', kind: 'image', size: 'full', image: project.cover } : undefined);
+const galleryItems = first ? rest : gallery;
+
 // biome-ignore lint/suspicious/noExplicitAny: Portable Text blocks
 const intro: any[] = project.intro ?? [];
+const [lead, ...body] = intro;
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const results: any[] = project.results ?? [];
 const meta = [
   ['Client', project.client],
   ['Services', project.services],
-  ['Credits', project.credits],
   ['Year', project.yearLabel],
+  ['Credits', project.credits],
 ].filter(([, v]) => v);
-const description = stegaClean(intro[0]?.children?.map((c: { text: string }) => c.text).join('') ?? settings?.seoDescription);
+const description = stegaClean(lead?.children?.map((c: { text: string }) => c.text).join('') ?? settings?.seoDescription);
 ---
 
 <Base title={`${stegaClean(project.title)} – ${settings?.name ?? 'Bart Ocieczek'}`} description={description} image={project.cover}>
   <main class="case">
-    <section class="case__row">
-      <div class="case__gallery">
-        {gallery.map((item, i) => <Media item={item} eager={i < 3} />)}
+    <header class="case__hero">
+      <Nav callUrl={settings?.callUrl} socials={settings?.socials} role={settings?.role} />
+
+      <div class="case__title-row">
+        <p class="t-label-small case__index" data-split>
+          Case study {index >= 0 && `— ${number(index + 1)}/${number(list.length)}`}
+        </p>
+        <h1 class="case__title" data-split>{project.title}</h1>
       </div>
 
-      <aside class="case__side">
-        <div class="case__head">
-          <h1 class="case__title">{project.title}</h1>
-          <a href={href(Astro.locals, "/")} class="u-link t-label-small case__back">Back to home</a>
-        </div>
-
-        {intro.length > 0 && (
-          <div class="case__intro t-compact">
-            <PortableText value={intro} />
+      <div class="case__intro-row">
+        {lead && (
+          <div class="case__lead t-subheading" data-split style="--split-delay:150ms">
+            <PortableText value={[lead]} />
           </div>
         )}
+        <div class="case__side">
+          {meta.length > 0 && (
+            <dl class="case__meta" data-reveal>
+              {meta.map(([k, v]) => (
+                <div>
+                  <dt class="t-label-small">{k}</dt>
+                  <dd class="t-label">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {project.liveUrl && (
+            <a class="line-button is-closed" href={project.liveUrl} target="_blank" rel="noopener" data-reveal>
+              <span>Visit live ↗</span>
+            </a>
+          )}
+        </div>
+      </div>
+    </header>
 
-        {project.liveUrl && (
-          <a class="line-button is-closed" href={project.liveUrl} target="_blank" rel="noopener"><span>Visit live</span></a>
-        )}
+    {coverItem && (
+      <section class="case__cover">
+        <Media item={{ ...coverItem, size: 'full' }} eager />
+      </section>
+    )}
 
-        {meta.length > 0 && (
-          <dl class="case__meta t-label-small">
-            {meta.map(([k, v]) => (
-              <div>
-                <dt>{k}:</dt>
-                <dd>{v}</dd>
-              </div>
-            ))}
-          </dl>
+    {results.length > 0 && (
+      <section class="case__results" aria-label="Results">
+        {results.map((r) => (
+          <div class="result" data-reveal>
+            <p class="result__value">{r.value}</p>
+            <p class="t-compact muted">{r.label}</p>
+          </div>
+        ))}
+      </section>
+    )}
+
+    {body.length > 0 && (
+      <section class="case__overview">
+        <h2 class="t-label-small" data-split>Overview</h2>
+        <div class="case__body t-subheading" data-split>
+          <PortableText value={body} />
+        </div>
+      </section>
+    )}
+
+    {galleryItems.length > 0 && (
+      <section class="case__gallery">
+        {galleryItems.map((item) => <Media item={item} />)}
+      </section>
+    )}
+
+    {next && (
+      <a class="next" href={href(Astro.locals, `/${next.slug}`)}>
+        <div class="next__head">
+          <span class="t-label-small" data-split>Next project</span>
+          <span class="t-label-small" aria-hidden="true">→</span>
+        </div>
+        <p class="next__title" data-split>{next.cardTitle || next.title}</p>
+        {next.cover?.asset && (
+          <div class="next__media" data-parallax>
+            <img
+              src={urlFor(next.cover).width(1800).height(900).fit('crop').quality(80).url()}
+              srcset={srcset(next.cover, [800, 1400, 2000])}
+              sizes="100vw"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
         )}
-      </aside>
-    </section>
+      </a>
+    )}
 
     {settings && <Footer settings={settings} ctaText={about?.ctaText} />}
   </main>
@@ -72,98 +144,194 @@ const description = stegaClean(intro[0]?.children?.map((c: { text: string }) => 
 <style>
   .case {
     background: var(--surface-dark);
+  }
+
+  /* ---------- Hero ---------- */
+  .case__hero {
+    padding: var(--gutter);
     display: flex;
     flex-direction: column;
-    gap: 120px;
+    gap: 96px;
   }
-  .case__row {
+  .case__title-row {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 6vh;
+  }
+  .case__title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(64px, 11vw, 200px);
+    line-height: 0.86;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+  .case__intro-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 24px;
-    padding: var(--gutter);
+    gap: 48px;
   }
-  .case__gallery {
+  .case__lead {
+    max-width: 640px;
+    color: var(--text-highlight);
+  }
+  .case__side {
+    width: 30%;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .case__meta {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 16px;
+  }
+  .case__meta dt {
+    margin-bottom: 6px;
+  }
+  .case__meta dd {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  /* ---------- Cover ---------- */
+  .case__cover {
+    padding: 0 var(--gutter);
+  }
+  .case__cover :global(.media) {
+    aspect-ratio: 16 / 9 !important;
+  }
+  .case__cover :global(.media img),
+  .case__cover :global(.media video) {
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  /* ---------- Results ---------- */
+  .case__results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+    padding: 96px var(--gutter) 0;
+  }
+  .result {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .result__value {
+    font-family: var(--font-display);
+    font-size: clamp(56px, 7vw, 112px);
+    line-height: 0.9;
+    color: var(--text-primary);
+  }
+
+  /* ---------- Overview ---------- */
+  .case__overview {
+    display: flex;
+    justify-content: space-between;
+    gap: 48px;
+    padding: 140px var(--gutter);
+  }
+  .case__body {
     width: 65%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    color: var(--text-secondary);
+  }
+
+  /* ---------- Gallery ---------- */
+  .case__gallery {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    padding: 12px var(--gutter) 0;
   }
   .case__gallery :global(.media--full) {
     grid-column: 1 / -1;
   }
-  .case__side {
-    position: sticky;
-    top: var(--gutter);
-    width: 30%;
+  .case__overview + .case__gallery,
+  .case__results + .case__gallery {
+    padding-top: 12px;
+  }
+  .case__cover + .case__gallery {
+    padding-top: 12px;
+  }
+
+  /* ---------- Next project ---------- */
+  .next {
     display: flex;
     flex-direction: column;
-    gap: 40px;
+    gap: 24px;
+    padding: 160px var(--gutter) 120px;
   }
-  .case__head {
+  .next__head {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 24px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
   }
-  .case__title {
-    font-family: var(--font-head);
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 1;
-    letter-spacing: -0.02em;
+  .next__title {
+    font-family: var(--font-display);
+    font-size: clamp(64px, 11vw, 200px);
+    line-height: 0.86;
+    text-transform: uppercase;
     color: var(--text-primary);
+    transition: color 0.3s ease;
   }
-  .case__back {
-    margin-top: 6px;
-    flex-shrink: 0;
+  .next__media {
+    aspect-ratio: 2 / 1;
+    background: #111;
   }
-  .case__back:hover {
-    color: var(--text-primary);
+  .next__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
-  .case__intro {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    font-weight: 700;
+  @media (hover: hover) and (pointer: fine) {
+    .next:hover .next__title {
+      color: var(--text-highlight);
+    }
   }
-  .case__intro :global(p) {
-    color: var(--text-secondary);
-  }
-  .case__intro :global(p:first-child) {
-    color: var(--text-highlight);
-  }
-  .case__meta {
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .case__meta div {
-    display: flex;
-    gap: 0.6em;
-  }
-  .case__meta dt,
-  .case__meta dd {
-    margin: 0;
+
+  @media (max-width: 1199px) {
+    .case__side {
+      width: 40%;
+    }
   }
   @media (max-width: 809px) {
-    .case {
-      gap: 64px;
+    .case__hero {
+      gap: 48px;
     }
-    .case__row {
-      flex-direction: column-reverse;
-      gap: 40px;
+    .case__intro-row,
+    .case__overview {
+      flex-direction: column;
+      gap: 32px;
     }
-    .case__gallery,
-    .case__side {
+    .case__side,
+    .case__body {
       width: 100%;
+    }
+    .case__overview {
+      padding: 80px var(--gutter);
     }
     .case__gallery {
       grid-template-columns: 1fr;
     }
-    .case__side {
-      position: static;
+    .case__results {
+      padding-top: 56px;
+    }
+    .next {
+      padding: 96px var(--gutter) 80px;
+    }
+    .next__media {
+      aspect-ratio: 4 / 3;
     }
   }
 </style>

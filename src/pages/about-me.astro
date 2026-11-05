@@ -9,7 +9,6 @@ import { stegaClean } from '@sanity/client/stega';
 const [about, settings] = await Promise.all([load(Astro.locals, ABOUT_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
 if (!about || !settings) return new Response('Content not found', { status: 500 });
 
-const titleWords: string[] = (about.title ?? 'About me').toUpperCase().split(/\s+/);
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const experience: any[] = about.experience ?? [];
 ---
@@ -18,10 +17,8 @@ const experience: any[] = about.experience ?? [];
   <main class="about">
     <header class="about__top">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
-      <h1 class="t-display about__title" aria-label={stegaClean(about.title)}>
-        {titleWords.map((w, i) => <span style={`--i:${i}`} aria-hidden="true">{w}</span>)}
-      </h1>
-      {about.quote && <p class="t-label-small about__quote" data-reveal>{about.quote}</p>}
+      <h1 class="t-display about__title" data-split>{about.title}</h1>
+      {about.quote && <p class="t-label-small about__quote" data-split style="--split-delay:250ms">{about.quote}</p>}
     </header>
 
     <section class="about__intro">
@@ -45,16 +42,16 @@ const experience: any[] = about.experience ?? [];
 
     {about.focus?.length > 0 && (
       <section class="about__row">
-        <h2 class="about__label">Focus</h2>
-        <ul class="about__focus about__col">
-          {about.focus.map((f: string) => <li class="t-section" data-reveal>{f}</li>)}
+        <h2 class="about__label" data-split>Focus</h2>
+        <ul class="about__focus about__col" data-split>
+          {about.focus.map((f: string) => <li class="t-section">{f}</li>)}
         </ul>
       </section>
     )}
 
     <section class="about__row about__row--line">
-      <h2 class="about__label">Experience</h2>
-      <p class="t-compact about__col" data-reveal>
+      <h2 class="about__label" data-split>Experience</h2>
+      <p class="t-compact about__col" data-split>
         {about.experienceLead} <span class="muted">{about.experienceBody}</span>
       </p>
     </section>
@@ -96,22 +93,6 @@ const experience: any[] = about.experience ?? [];
   }
   .about__title {
     font-size: 120px;
-    display: flex;
-    gap: 0.22em;
-    flex-wrap: wrap;
-  }
-  .about__title span {
-    display: inline-block;
-    opacity: 0;
-    transform: translateY(40px);
-    animation: word-in 1s var(--ease-expo) forwards;
-    animation-delay: calc(0.15s + var(--i) * 0.08s);
-  }
-  @keyframes word-in {
-    to {
-      opacity: 1;
-      transform: none;
-    }
   }
   .about__quote {
     max-width: 330px;

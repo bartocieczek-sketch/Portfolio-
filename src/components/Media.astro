@@ -23,7 +23,7 @@ const sizes = item.size === 'full' ? '(max-width: 809px) 100vw, 65vw' : '(max-wi
 const isSvg = item.image?.asset?.mimeType === 'image/svg+xml';
 ---
 
-<figure class={`media media--${item.size} media--${item.kind}`} data-reveal>
+<figure class={`media media--${item.size} media--${item.kind}`} data-reveal data-parallax={item.kind === 'lottie' ? undefined : ''}>
   {item.kind === 'image' && item.image?.asset && (
     <img
       src={isSvg ? item.image.asset.url : urlFor(item.image).width(1600).quality(82).url()}

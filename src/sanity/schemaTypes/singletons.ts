@@ -31,6 +31,7 @@ export const homePage = defineType({
     { name: 'hero', title: 'Hero', default: true },
     { name: 'work', title: 'Work' },
     { name: 'testimonial', title: 'Testimonial' },
+    { name: 'sales', title: 'Sales sections' },
   ],
   fields: [
     defineField({ name: 'heroText', type: 'text', rows: 3, group: 'hero' }),
@@ -54,6 +55,21 @@ export const homePage = defineType({
     defineField({ name: 'testimonialsHeading', type: 'string', group: 'testimonial' }),
     defineField({ name: 'testimonial', type: 'testimonial', group: 'testimonial' }),
     defineField({ name: 'ctaText', title: 'Footer text', type: 'string', group: 'testimonial' }),
+
+    defineField({
+      name: 'availability',
+      description: 'Short line next to the call button, e.g. "Booking projects for January 2027". Leave empty to hide.',
+      type: 'string',
+      group: 'sales',
+    }),
+    defineField({ name: 'statsHeading', type: 'string', group: 'sales' }),
+    defineField({ name: 'stats', description: 'Proof in numbers. Shown under the work grid.', type: 'array', of: [defineArrayMember({ type: 'stat' })], validation: (rule) => rule.max(4), group: 'sales' }),
+    defineField({ name: 'servicesHeading', type: 'string', group: 'sales' }),
+    defineField({ name: 'services', type: 'array', of: [defineArrayMember({ type: 'service' })], group: 'sales' }),
+    defineField({ name: 'processHeading', type: 'string', group: 'sales' }),
+    defineField({ name: 'process', title: 'Process steps', type: 'array', of: [defineArrayMember({ type: 'service' })], validation: (rule) => rule.max(5), group: 'sales' }),
+    defineField({ name: 'faqHeading', title: 'FAQ heading', type: 'string', group: 'sales' }),
+    defineField({ name: 'faq', title: 'FAQ', type: 'array', of: [defineArrayMember({ type: 'faqItem' })], group: 'sales' }),
   ],
   preview: { prepare: () => ({ title: 'Home page' }) },
 });

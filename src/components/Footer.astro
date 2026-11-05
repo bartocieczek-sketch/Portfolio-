@@ -24,10 +24,10 @@ const links = [
   <div class="footer__main">
     <div class="footer__claim">
       <EyeFollower />
-      {settings.footerHeadline && <h2 class="t-display footer__headline" data-reveal>{settings.footerHeadline}</h2>}
+      {settings.footerHeadline && <h2 class="t-display footer__headline" data-split>{settings.footerHeadline}</h2>}
     </div>
     <div class="footer__buttons">
-      {ctaText && <p class="t-compact muted footer__cta">{ctaText}</p>}
+      {ctaText && <p class="t-compact muted footer__cta" data-split style="--split-delay:200ms">{ctaText}</p>}
       <div class="footer__list">
         {links.map((l) => (
           <a class="line-button" href={l.url} target={l.external ? '_blank' : undefined} rel={l.external ? 'noopener' : undefined}>

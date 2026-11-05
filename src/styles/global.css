@@ -390,3 +390,38 @@ html:active-view-transition-type(back)::view-transition-new(root) {
     opacity: 0;
   }
 }
+
+/* ---------- Split text (line-by-line masked rise, see src/scripts/motion.ts) ---------- */
+.sw {
+  display: inline-block;
+  overflow: clip;
+  vertical-align: top;
+  /* room for descenders inside the mask */
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+.swi {
+  display: inline-block;
+}
+.is-split .swi {
+  transform: translateY(115%);
+}
+.is-split.is-split-in .swi {
+  transform: none;
+  transition: transform 1.1s var(--ease-expo);
+  transition-delay: calc(var(--l, 0) * 80ms + var(--split-delay, 0ms));
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-split .swi {
+    transform: none;
+  }
+}
+
+/* ---------- Parallax frames ---------- */
+[data-parallax] {
+  overflow: clip;
+}
+[data-parallax].has-parallax > * {
+  transform: scale(1.15);
+  will-change: transform;
+}

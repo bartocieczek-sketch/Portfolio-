@@ -33,6 +33,8 @@ export const ABOUT_QUERY = `*[_id == "aboutPage"][0]{
 export const PROJECT_QUERY = `*[_type == "project" && slug.current == $slug][0]{
   ...,
   "slug": slug.current,
+  cover{${imageFields}},
+  results[]{_key, value, label},
   gallery[]{
     _key, kind, size,
     image{${imageFields}},
@@ -41,6 +43,11 @@ export const PROJECT_QUERY = `*[_type == "project" && slug.current == $slug][0]{
     "videoMime": video.asset->mimeType,
     "lottieUrl": lottie.asset->url
   }
+}`;
+
+/** Case studies in the order they appear on the home page (for "Next project") */
+export const PROJECT_ORDER_QUERY = `*[_id == "homePage"][0].projects[]->{
+  title, cardTitle, "slug": slug.current, cover{${imageFields}}
 }`;
 
 export async function fetchSettings() {
