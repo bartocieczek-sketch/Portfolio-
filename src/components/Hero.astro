@@ -262,7 +262,7 @@ const center = (name.length - 1) / 2;
 
   if (hero && root.classList.contains('is-intro') && video) {
     // Timeline (ms) — entrance and flight match the Framer original:
-    //   0–900     tile wipes up into the centre
+    //   0–900     tile rises and fades into the centre
     //   900–1700  holds while the reel plays
     //   1700–2700 travels to its slot; hero content starts at ~35% of the trip
     const easeOut = 'cubic-bezier(0.23, 1, 0.32, 1)';
@@ -283,12 +283,12 @@ const center = (name.length - 1) / 2;
     const lift = r.height * s * 0.25;
 
     video.style.opacity = '1';
-    // 1. Entrance: rises a quarter of its height while a bottom-up wipe reveals it
+    // 1. Entrance: rises into the centre while fading in
     video.animate(
       [
-        { transform: `translate(${dx}px, ${dy + lift}px) scale(${s * 0.96})`, clipPath: 'inset(100% 0 0 0)', opacity: 0 },
-        { opacity: 1, offset: 0.45 },
-        { transform: centred, clipPath: 'inset(0% 0 0 0)', opacity: 1 },
+        { transform: `translate(${dx}px, ${dy + lift}px) scale(${s})`, opacity: 0 },
+        { opacity: 1, offset: 0.6 },
+        { transform: centred, opacity: 1 },
       ],
       { duration: ENTER, easing: easeOut, fill: 'both' },
     );
