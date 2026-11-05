@@ -49,6 +49,11 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       if (!reduceMotion) {
         const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 1 });
         (window as unknown as { lenis: Lenis }).lenis = lenis;
+        // Home page intro locks scrolling until it finishes
+        if (document.documentElement.classList.contains('is-scroll-locked')) {
+          lenis.stop();
+          document.addEventListener('intro:done', () => lenis.start(), { once: true });
+        }
         const raf = (t: number) => {
           lenis.raf(t);
           requestAnimationFrame(raf);
