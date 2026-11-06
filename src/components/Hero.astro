@@ -270,14 +270,14 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
 
   /* While a cover flies to its case study, everything else steps back */
   .hero.is-flying :is(.hero__text, .hero__foot, .hcard__info) {
-    opacity: 0;
-    transition: opacity 0.35s ease;
+    opacity: 0 !important;
+    transition: opacity 0.35s ease !important;
   }
   .hero.is-flying .hero__cursor {
     display: none;
   }
   :global(html.is-returning) .hero :is(.hero__text, .hero__foot, .hcard__info) {
-    opacity: 0;
+    opacity: 0 !important;
   }
   :global(html.is-returning) .hero .hcard__media img {
     opacity: 0;
@@ -689,13 +689,15 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     };
 
     window.addEventListener('pageshow', (e) => {
+      // only a page restored from the back/forward cache needs resetting
+      if (!(e as PageTransitionEvent).persisted) return;
       flight = null;
       hero.classList.remove('is-flying');
       lenisRef()?.start();
       track.querySelectorAll<HTMLElement>('[data-media]').forEach((m) => (m.style.viewTransitionName = ''));
       track.querySelectorAll('.is-opening').forEach((c) => c.classList.remove('is-opening'));
-      // restored from the back/forward cache: the scroll is already where it was
-      if ((e as PageTransitionEvent).persisted) startReturn(true);
+      // the scroll is already where it was
+      startReturn(true);
     });
 
     measure();

@@ -41,7 +41,8 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
         try {
-          if (sessionStorage.getItem('vt-return') && document.querySelector('[data-hero]') && window.innerWidth >= 810) {
+          // set by the home hero before first paint when a cover is flying back
+          if (document.documentElement.classList.contains('is-returning')) {
             e.viewTransition.types.add('card-back');
             return;
           }
