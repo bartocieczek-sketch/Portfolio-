@@ -415,6 +415,26 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     let visible = true;
     new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(hero);
     const hover = cards.map(() => 0);
+    // Covers stay a muted negative while the agents build the page, then take
+    // on their colour once the building is done (each one only once).
+    // (read on the first frame: the build script marks the covers after this runs)
+    const colourDone = medias.map(() => true);
+    const neg = medias.map(() => 0);
+    let negReady = false;
+    const updateNeg = () => {
+      if (!negReady) {
+        negReady = true;
+        medias.forEach((m, i) => {
+          colourDone[i] = !m.classList.contains('bp-box');
+          neg[i] = colourDone[i] ? 0 : 1;
+        });
+      }
+      const building = root.classList.contains('is-building');
+      for (let i = 0; i < medias.length; i++) {
+        if (!colourDone[i] && !medias[i].classList.contains('bp-box') && !building) colourDone[i] = true;
+        neg[i] += ((colourDone[i] ? 0 : 1) - neg[i]) * 0.045;
+      }
+    };
 
     // ---------- Opening a project: the cover flies to its spot on the case page ----------
     // Drawn by the same WebGL planes, so it bends and splits with its own speed
@@ -499,7 +519,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       const bend = clamp(vel / 45, -1, 1);
 
       for (let i = 0; i < cards.length; i++) hover[i] += ((hovered === i ? 1 : 0) - hover[i]) * 0.12;
-      if (gl) gl.draw(medias, bend, hover);
+      updateNeg();
+      if (gl) gl.draw(medias, bend, hover, null, neg);
 
       if (cursor && finePointer) {
         const pinned = hr.bottom >= vh - 1;
@@ -708,6 +729,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       uniform float uAlpha;
       uniform float uTime;
       uniform vec4 uClip; // top, right, bottom, left as fractions, from the build reveal
+      uniform float uNeg; // 1 = muted negative while the page is being built, 0 = full colour
       varying vec2 vUv;
       vec2 cover(vec2 uv) {
         float rs = uRect.z / uRect.w;
@@ -726,7 +748,12 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         float r = texture2D(uTex, uv + vec2(split, 0.0)).r;
         vec4 g = texture2D(uTex, uv);
         float b = texture2D(uTex, uv - vec2(split, 0.0)).b;
-        gl_FragColor = vec4(r, g.g, b, 1.0) * uAlpha;
+        vec3 col = vec3(r, g.g, b);
+        // muted grey negative, kept within the page's own tones
+        float lum = dot(col, vec3(0.299, 0.587, 0.114));
+        vec3 neg = vec3(mix(0.09, 0.6, 1.0 - lum));
+        col = mix(col, neg, uNeg);
+        gl_FragColor = vec4(col, 1.0) * uAlpha;
       }`;
     const compile = (type: number, src: string) => {
       const sh = gl.createShader(type)!;
@@ -769,6 +796,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     const uImg = u('uImg');
     const uTime = u('uTime');
     const uClip = u('uClip');
+    const uNeg = u('uNeg');
     // clip-path: inset(t r b l) → fractions of the box (the build agents draw covers in)
     const clipOf = (el: HTMLElement, w: number, h: number): [number, number, number, number] => {
       const cp = getComputedStyle(el).clipPath;
@@ -803,7 +831,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     let dpr = 1;
     const t0 = performance.now();
     return {
-      draw(els: HTMLElement[], bend: number, hover: number[], fly?: Fly | null) {
+      draw(els: HTMLElement[], bend: number, hover: number[], fly?: Fly | null, neg?: number[]) {
         const cr = canvas.getBoundingClientRect();
         dpr = Math.min(window.devicePixelRatio || 1, 2);
         const W = Math.round(cr.width * dpr);
@@ -844,6 +872,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           const [ct, cr2, cb, cl] = fly && i === fly.i ? [0, 0, 0, 0] : clipOf(el, r.width, r.height);
           if (ct + cb >= 1 || cl + cr2 >= 1) return;
           gl.uniform4f(uClip, ct, cr2, cb, cl);
+          gl.uniform1f(uNeg, neg ? neg[i] : 0);
           gl.uniform1f(uBend, bx);
           gl.uniform1f(uBendY, by);
           gl.uniform1f(uAlpha, alpha);
