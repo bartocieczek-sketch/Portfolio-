@@ -268,9 +268,9 @@ async function run(sec: Section, w: Cursor, item: Item) {
 /* ---------------- Cursors ---------------- */
 
 const ARROW =
-  '<svg class="bcur__arrow" width="18" height="20" viewBox="0 0 18 20"><path d="M1 1v14.5l3.8-3.6 2.8 6.3 2.6-1.1-2.7-6.2h5.3z" fill="var(--c)" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+  '<svg class="bcur__arrow" width="18" height="20" viewBox="0 0 18 20"><path d="M1 1v14.5l3.8-3.6 2.8 6.3 2.6-1.1-2.7-6.2h5.3z" style="fill: var(--c)" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>';
 const IBEAM =
-  '<svg class="bcur__ibeam" width="10" height="18" viewBox="0 0 10 18"><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  '<svg class="bcur__ibeam" width="10" height="18" viewBox="0 0 10 18"><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" style="stroke: var(--c)" stroke-width="1.5" stroke-linecap="round"/></svg>';
 
 function makeCursor(sec: Section, x: number, y: number): Cursor {
   const el = document.createElement('div');
