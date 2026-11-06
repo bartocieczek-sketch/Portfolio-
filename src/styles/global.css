@@ -378,6 +378,53 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   height: 100%;
   object-fit: cover;
 }
+/* While it travels, the cover flutters like a sheet of paper caught in the
+   air: it tips back and forth in 3D, shears with the motion and catches the
+   light, then lands flat. The group handles the move; this rides on top. */
+::view-transition-image-pair(project-cover) {
+  animation: vt-paper 0.9s var(--ease-in-out) both;
+  transform-origin: 50% 30%;
+}
+::view-transition-old(project-cover),
+::view-transition-new(project-cover) {
+  animation-name: vt-fade-out, vt-paper-light;
+}
+::view-transition-new(project-cover) {
+  animation-name: vt-fade-in, vt-paper-light;
+}
+@keyframes vt-paper {
+  0% {
+    transform: perspective(1400px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg);
+  }
+  22% {
+    transform: perspective(1400px) rotateX(22deg) rotateY(-14deg) rotateZ(-3deg) skew(-4deg, 2deg);
+  }
+  48% {
+    transform: perspective(1400px) rotateX(-14deg) rotateY(10deg) rotateZ(2deg) skew(5deg, -2deg);
+  }
+  72% {
+    transform: perspective(1400px) rotateX(7deg) rotateY(-4deg) rotateZ(-1deg) skew(-2deg, 1deg);
+  }
+  100% {
+    transform: perspective(1400px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg);
+  }
+}
+@keyframes vt-paper-light {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  22% {
+    filter: brightness(0.82);
+  }
+  48% {
+    filter: brightness(1.12);
+  }
+  72% {
+    filter: brightness(0.95);
+  }
+}
+
 html:active-view-transition-type(card)::view-transition-old(root) {
   animation: vt-fade-out 0.45s ease both;
 }
@@ -387,6 +434,9 @@ html:active-view-transition-type(card)::view-transition-new(root) {
 
 @media (prefers-reduced-motion: reduce) {
   /* Keep a short crossfade, drop the movement */
+  ::view-transition-image-pair(project-cover) {
+    animation: none;
+  }
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 0.25s;
