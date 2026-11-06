@@ -26,14 +26,13 @@ const number = (n: number) => String(n).padStart(2, '0');
 
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const gallery: any[] = project.gallery ?? [];
-// The first gallery item becomes the full-bleed cover; fall back to the card image
-const [first, ...rest] = gallery;
-const coverItem = first ?? (project.cover ? { _key: 'cover', kind: 'image', size: 'full', image: project.cover } : undefined);
-const galleryItems = first ? rest : gallery;
+// First graphic: the card cover in the same 4:5 crop as the home carousel,
+// so the thumbnail can morph straight into it
+const coverSrc = project.cover?.asset ? urlFor(project.cover).width(1000).height(1250).fit('crop').quality(82).url() : undefined;
 
 // biome-ignore lint/suspicious/noExplicitAny: Portable Text blocks
 const intro: any[] = project.intro ?? [];
-const [lead, ...body] = intro;
+const [lead] = intro;
 const meta = [
   ['Client', project.client],
   ['Services', project.services],
@@ -45,62 +44,54 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
 <Base title={`${stegaClean(project.title)} – ${settings?.name ?? 'Bart Ocieczek'}`} description={description} image={project.cover}>
   <main class="case">
-    <header class="case__hero">
+    <div class="case__nav">
       <Nav callUrl={settings?.callUrl} socials={settings?.socials} role={settings?.role} />
+    </div>
 
-      <div class="case__title-row">
-        <p class="t-label-small case__index" data-split>
-          Case study {index >= 0 && `— ${number(index + 1)}/${number(list.length)}`}
-        </p>
-        <h1 class="case__title" data-split>{project.title}</h1>
-      </div>
-
-      <div class="case__intro-row">
-        {lead && (
-          <div class="case__lead t-subheading" data-split style="--split-delay:150ms">
-            <PortableText value={[lead]} />
+    <section class="case__row">
+      <div class="case__gallery">
+        {coverSrc && (
+          <div class="case__cover" data-vt-cover>
+            <img src={coverSrc} alt="" width="1000" height="1250" fetchpriority="high" decoding="async" />
           </div>
         )}
-        <div class="case__side">
-          {meta.length > 0 && (
-            <dl class="case__meta" data-reveal>
-              {meta.map(([k, v]) => (
-                <div>
-                  <dt class="t-label-small">{k}</dt>
-                  <dd class="t-label">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          {project.liveUrl && (
-            <a class="line-button is-closed" href={project.liveUrl} target="_blank" rel="noopener" data-reveal>
-              <span>Visit live ↗</span>
-            </a>
-          )}
-        </div>
+        {gallery.map((item, i) => <Media item={item} eager={i < 2} />)}
       </div>
-    </header>
 
-    {coverItem && (
-      <section class="case__cover">
-        <Media item={{ ...coverItem, size: 'full' }} eager />
-      </section>
-    )}
-
-    {body.length > 0 && (
-      <section class="case__overview" data-build>
-        <h2 class="t-label-small" data-split>Overview</h2>
-        <div class="case__body t-subheading" data-split>
-          <PortableText value={body} />
+      <aside class="case__side">
+        <div class="case__head">
+          <p class="t-label-small muted" data-split>
+            Case study {index >= 0 && `— ${number(index + 1)}/${number(list.length)}`}
+          </p>
+          <h1 class="case__title" data-split>{project.title}</h1>
         </div>
-      </section>
-    )}
 
-    {galleryItems.length > 0 && (
-      <section class="case__gallery" data-build>
-        {galleryItems.map((item) => <Media item={item} />)}
-      </section>
-    )}
+        {intro.length > 0 && (
+          <div class="case__intro t-compact" data-split style="--split-delay:120ms">
+            <PortableText value={intro} />
+          </div>
+        )}
+
+        {project.liveUrl && (
+          <a class="line-button is-closed" href={project.liveUrl} target="_blank" rel="noopener" data-reveal>
+            <span>Visit live ↗</span>
+          </a>
+        )}
+
+        {meta.length > 0 && (
+          <dl class="case__meta" data-reveal>
+            {meta.map(([k, v]) => (
+              <div>
+                <dt class="t-label-small">{k}</dt>
+                <dd class="t-label">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        <a href={href(Astro.locals, '/')} class="u-link t-label-small case__back">← Back to work</a>
+      </aside>
+    </section>
 
     {next && (
       <a class="next" href={href(Astro.locals, `/${next.slug}`)} data-build>
@@ -133,100 +124,93 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     background: var(--surface-dark);
   }
 
-  /* ---------- Hero ---------- */
-  .case__hero {
-    padding: var(--gutter);
-    display: flex;
-    flex-direction: column;
-    gap: 96px;
+  /* ---------- Gallery left, story right ---------- */
+  .case__nav {
+    padding: var(--gutter) var(--gutter) 0;
   }
-  .case__title-row {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-top: 6vh;
-  }
-  .case__title {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: clamp(64px, 11vw, 200px);
-    line-height: 0.86;
-    text-transform: uppercase;
-    color: var(--text-primary);
-  }
-  .case__intro-row {
+  .case__row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 48px;
+    gap: 40px;
+    padding: 32px var(--gutter) 0;
   }
-  .case__lead {
-    max-width: 640px;
-    color: var(--text-highlight);
+  .case__gallery {
+    width: 65%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-flow: row dense;
+    gap: 12px;
+  }
+  .case__gallery :global(.media--full) {
+    grid-column: 1 / -1;
+  }
+  .case__cover {
+    aspect-ratio: 0.8;
+    overflow: hidden;
+    background: #222;
+  }
+  .case__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .case__side {
+    position: sticky;
+    top: var(--gutter);
     width: 30%;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 36px;
+  }
+  .case__head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .case__title {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: clamp(30px, 2.6vw, 42px);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+  }
+  .case__intro {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .case__intro :global(p) {
+    color: var(--text-secondary);
+  }
+  .case__intro :global(p:first-child) {
+    color: var(--text-highlight);
   }
   .case__meta {
     margin: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 24px 16px;
+    gap: 20px 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
   }
   .case__meta dt {
     margin-bottom: 6px;
+    color: var(--text-secondary);
   }
   .case__meta dd {
     margin: 0;
     font-size: 13px;
   }
-
-  /* ---------- Cover ---------- */
-  .case__cover {
-    padding: 0 var(--gutter);
-  }
-  .case__cover :global(.media) {
-    aspect-ratio: 16 / 9 !important;
-  }
-  .case__cover :global(.media img),
-  .case__cover :global(.media video) {
-    height: 100% !important;
-    object-fit: cover;
-  }
-
-  /* ---------- Overview ---------- */
-  .case__overview {
-    display: flex;
-    justify-content: space-between;
-    gap: 48px;
-    padding: 140px var(--gutter);
-  }
-  .case__body {
-    width: 65%;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+  .case__back {
+    align-self: flex-start;
     color: var(--text-secondary);
   }
-
-  /* ---------- Gallery ---------- */
-  .case__gallery {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    padding: 12px var(--gutter) 0;
-  }
-  .case__gallery :global(.media--full) {
-    grid-column: 1 / -1;
-  }
-  .case__overview + .case__gallery {
-    padding-top: 12px;
-  }
-  .case__cover + .case__gallery {
-    padding-top: 12px;
+  @media (hover: hover) and (pointer: fine) {
+    .case__back:hover {
+      color: var(--text-primary);
+    }
   }
 
   /* ---------- Next project ---------- */
@@ -270,24 +254,23 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
   @media (max-width: 1199px) {
     .case__side {
-      width: 40%;
+      width: 36%;
+    }
+    .case__gallery {
+      width: 60%;
     }
   }
   @media (max-width: 809px) {
-    .case__hero {
-      gap: 48px;
+    .case__row {
+      flex-direction: column-reverse;
+      gap: 40px;
     }
-    .case__intro-row,
-    .case__overview {
-      flex-direction: column;
-      gap: 32px;
-    }
-    .case__side,
-    .case__body {
+    .case__gallery,
+    .case__side {
       width: 100%;
     }
-    .case__overview {
-      padding: 80px var(--gutter);
+    .case__side {
+      position: static;
     }
     .case__gallery {
       grid-template-columns: 1fr;

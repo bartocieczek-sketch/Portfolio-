@@ -364,6 +364,27 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 
+/* Card → case study: the cover moves and scales from the thumbnail's spot to
+   its place on the new page while the pages crossfade underneath. */
+::view-transition-group(project-cover) {
+  animation-duration: 0.9s;
+  animation-timing-function: var(--ease-in-out);
+  z-index: 10;
+}
+::view-transition-old(project-cover),
+::view-transition-new(project-cover) {
+  animation-duration: 0.9s;
+  animation-timing-function: var(--ease-in-out);
+  height: 100%;
+  object-fit: cover;
+}
+html:active-view-transition-type(card)::view-transition-old(root) {
+  animation: vt-fade-out 0.45s ease both;
+}
+html:active-view-transition-type(card)::view-transition-new(root) {
+  animation: vt-fade-in 0.6s 0.3s ease both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* Keep a short crossfade, drop the movement */
   ::view-transition-old(root),

@@ -43,6 +43,24 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
         var a = window.navigation && navigation.activation;
         var back = a && a.navigationType === 'traverse' && a.from && a.entry && a.entry.index < a.from.index;
         e.viewTransition.types.add(back ? 'back' : 'forward');
+
+        // Coming from a click on a home carousel card: the thumbnail morphs
+        // into this page's cover instead of the page sliding up.
+        var fromCard = null;
+        try {
+          fromCard = sessionStorage.getItem('vt-card');
+          sessionStorage.removeItem('vt-card');
+        } catch (err) {}
+        if (fromCard && !back) {
+          var cover = document.querySelector('[data-vt-cover]');
+          if (cover) {
+            e.viewTransition.types.add('card');
+            cover.style.viewTransitionName = 'project-cover';
+            e.viewTransition.finished.finally(function () {
+              cover.style.viewTransitionName = '';
+            });
+          }
+        }
       });
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -84,7 +84,6 @@ const LAPS = 3;
           <span class="hero__hint-icon" aria-hidden="true">↔</span>
           Scroll or drag
         </p>
-        <p class="t-label-small muted">{home.established} · {home.location}</p>
       </div>
     </div>
 
@@ -95,19 +94,23 @@ const LAPS = 3;
             {projects.map((p: any, i: number) => (
               <li class="hcard" data-card aria-hidden={lap ? 'true' : undefined}>
                 <a class="hcard__link" href={p.href} tabindex={lap ? -1 : undefined} draggable="false">
-                  <span class="hcard__media" data-media data-src={p.src}>
-                    <img src={p.src} alt="" loading={lap === 0 && i < 4 ? 'eager' : 'lazy'} decoding="async" draggable="false" />
-                  </span>
                   <span class="hcard__info">
                     <span class="hcard__num t-label-small">{pad(i + 1)}</span>
                     <span class="hcard__title">{p.title}</span>
                     <span class="hcard__meta t-label-small">{p.meta}</span>
+                  </span>
+                  <span class="hcard__media" data-media data-src={p.src}>
+                    <img src={p.src} alt="" loading={lap === 0 && i < 4 ? 'eager' : 'lazy'} decoding="async" draggable="false" />
                   </span>
                 </a>
               </li>
             ))}
             {quote && (
               <li class="hcard hcard--quote" data-card data-quote aria-hidden={lap ? 'true' : undefined}>
+                <span class="hcard__info" aria-hidden="true">
+                  <span class="hcard__num t-label-small">“”</span>
+                  <span class="hcard__title">Client words</span>
+                </span>
                 <figure class="hquote">
                   <svg class="hquote__mark" width="34" height="31" viewBox="0 0 56 51" aria-hidden="true">
                     <path d="M55.675 0V2.83333C52.1806 6.42222 49.5833 10.1056 47.8833 13.8833C46.1833 17.6611 45.3333 21.6278 45.3333 25.7833H55.675V50.8583H32.725V29.6083C32.725 23.8472 33.6222 18.5111 35.4167 13.6C37.3056 8.59444 40.0917 4.06111 43.775 0H55.675ZM22.95 0V2.83333C19.4556 6.42222 16.8583 10.1056 15.1583 13.8833C13.4583 17.6611 12.6083 21.6278 12.6083 25.7833H22.95V50.8583H0V29.6083C0 23.8472 0.897222 18.5111 2.69167 13.6C4.58055 8.59444 7.36667 4.06111 11.05 0H22.95Z" fill="currentColor" />
@@ -126,10 +129,6 @@ const LAPS = 3;
                     </span>
                   </figcaption>
                 </figure>
-                <span class="hcard__info" aria-hidden="true">
-                  <span class="hcard__num t-label-small">“”</span>
-                  <span class="hcard__title">Client words</span>
-                </span>
               </li>
             )}
           </>
@@ -156,7 +155,7 @@ const LAPS = 3;
     min-height: 640px;
     background: var(--surface-dark);
     overflow: clip;
-    padding: var(--gutter) 0 var(--gutter) var(--gutter);
+    padding: var(--gutter) 0 0 var(--gutter);
     display: flex;
     flex-direction: column;
     gap: 32px;
@@ -214,6 +213,7 @@ const LAPS = 3;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding-bottom: var(--gutter);
   }
   .hero__hint {
     display: inline-flex;
@@ -307,6 +307,9 @@ const LAPS = 3;
   }
   .hero.has-gl .hcard__media img {
     opacity: 0;
+  }
+  .hero.has-gl .hcard.is-opening .hcard__media img {
+    opacity: 1;
   }
   .hcard__info {
     width: 0;
@@ -694,6 +697,29 @@ const LAPS = 3;
       true,
     );
 
+    // Opening a project: the clicked cover is handed to the view transition
+    // so it can morph into the case study's first image
+    let frozen = false;
+    track.addEventListener('click', (e) => {
+      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('.hcard__link');
+      if (!link || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      const card = link.closest<HTMLElement>('[data-card]');
+      const media = link.querySelector<HTMLElement>('[data-media]');
+      if (!card || !media || !('startViewTransition' in document)) return;
+      card.classList.add('is-opening');
+      media.style.viewTransitionName = 'project-cover';
+      frozen = true;
+      try {
+        sessionStorage.setItem('vt-card', '1');
+      } catch (err) {}
+    });
+    // Coming back (bfcache): release the name and let the loop run again
+    window.addEventListener('pageshow', () => {
+      frozen = false;
+      track.querySelectorAll<HTMLElement>('[data-media]').forEach((m) => (m.style.viewTransitionName = ''));
+      track.querySelectorAll('.is-opening').forEach((c) => c.classList.remove('is-opening'));
+    });
+
     // Hover: the loop eases almost to a stop so a card can be read and clicked
     const cursor = hero.querySelector<HTMLElement>('[data-hero-cursor]');
     const ptr = { x: -200, y: -200, cx: -200, cy: -200 };
@@ -750,7 +776,7 @@ const LAPS = 3;
       if (!visible) return;
 
       slow += ((hovering && !dragging ? 0.08 : 1) - slow) * 0.06;
-      if (!dragging) {
+      if (!dragging && !frozen) {
         offset += (AUTO * dir * slow + push * 0.12) * dt;
         push *= Math.pow(0.9, dt);
       }
@@ -976,6 +1002,8 @@ const LAPS = 3;
         els.forEach((el, i) => {
           const r = el.getBoundingClientRect();
           if (r.right < cr.left - 200 || r.left > cr.right + 200) return;
+          // the card being opened is shown by its DOM image for the morph
+          if (el.closest('.is-opening')) return;
           load(el);
           const t = textures.get(el.dataset.src!);
           if (!t) return;
