@@ -765,16 +765,10 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         return (uv - 0.5) * s + 0.5;
       }
       void main() {
-        // Build reveal: the clip edge is feathered (about 48px) so the image
-        // sweeps in softly, and it settles from a slight zoom as it opens up
-        float fx = 48.0 / uRect.z;
-        float fy = 48.0 / uRect.w;
+        // Build reveal: a clean edge that follows the agent's selection; the
+        // image settles from a slight zoom as it opens up
+        if (vUv.y < uClip.x || vUv.x > 1.0 - uClip.y || vUv.y > 1.0 - uClip.z || vUv.x < uClip.w) discard;
         float m = 1.0;
-        if (uClip.y > 0.0) m *= 1.0 - smoothstep(1.0 - uClip.y - fx, 1.0 - uClip.y, vUv.x);
-        if (uClip.z > 0.0) m *= 1.0 - smoothstep(1.0 - uClip.z - fy, 1.0 - uClip.z, vUv.y);
-        if (uClip.x > 0.0) m *= smoothstep(uClip.x, uClip.x + fy, vUv.y);
-        if (uClip.w > 0.0) m *= smoothstep(uClip.w, uClip.w + fx, vUv.x);
-        if (m <= 0.001) discard;
         float rem = max(max(uClip.y, uClip.z), max(uClip.x, uClip.w));
         vec2 uv = cover(vUv);
         uv = (uv - 0.5) * (1.0 - 0.06 * uHover) / (1.0 + 0.16 * rem) + 0.5;
