@@ -219,8 +219,15 @@ const waiting = new Set<Item>();
 let sweepQueued = false;
 function sweep() {
   sweepQueued = false;
+  // At the end of the page the last blocks can't scroll up to the trigger line
+  const atEnd = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4;
   for (const item of waiting) {
-    if (item.el.getBoundingClientRect().bottom >= 0) continue;
+    const r = item.el.getBoundingClientRect();
+    if (atEnd && item.state === 'pending' && r.top < window.innerHeight) {
+      enqueue(item);
+      continue;
+    }
+    if (r.bottom >= 0) continue;
     const q = item.section.queue;
     const i = q.indexOf(item);
     if (i >= 0) q.splice(i, 1);
