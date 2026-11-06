@@ -51,7 +51,10 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
           fromCard = sessionStorage.getItem('vt-card');
           sessionStorage.removeItem('vt-card');
         } catch (err) {}
-        if (fromCard && !back) {
+        if (fromCard === 'gl' && !back) {
+          // the cover already flew into place on the previous page: swap at once
+          e.viewTransition.types.add('card-gl');
+        } else if (fromCard && !back) {
           var cover = document.querySelector('[data-vt-cover]');
           if (cover) {
             e.viewTransition.types.add('card');
