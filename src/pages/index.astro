@@ -22,7 +22,7 @@ const brands: any[] = home.brands ?? [];
     <Hero home={home} settings={settings} />
 
     <div class="home__wrapper">
-      <section class="work" aria-labelledby="work-title">
+      <section class="work" aria-labelledby="work-title" data-build>
         <div class="work__grid">
           {projects.map((p, i) => <ProjectCard project={p} eager={i < 2} />)}
         </div>
@@ -34,12 +34,12 @@ const brands: any[] = home.brands ?? [];
               <span class="work__count">({projects.length})</span>
             </div>
             {home.viewAllLabel && (
-              <span class="line-button is-closed" aria-disabled="true"><span>{home.viewAllLabel}</span></span>
+              <span class="line-button is-closed" aria-disabled="true" data-build-item><span>{home.viewAllLabel}</span></span>
             )}
           </div>
 
           {brands.length > 0 && (
-            <div class="brands">
+            <div class="brands" data-build-item>
               <p class="t-label-small">{home.brandsLabel}</p>
               <div class="brands__ticker">
                 <div class="brands__track">

@@ -90,7 +90,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     )}
 
     {results.length > 0 && (
-      <section class="case__results" aria-label="Results">
+      <section class="case__results" aria-label="Results" data-build>
         {results.map((r) => (
           <div class="result" data-reveal>
             <p class="result__value">{r.value}</p>
@@ -101,7 +101,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     )}
 
     {body.length > 0 && (
-      <section class="case__overview">
+      <section class="case__overview" data-build>
         <h2 class="t-label-small" data-split>Overview</h2>
         <div class="case__body t-subheading" data-split>
           <PortableText value={body} />
@@ -110,20 +110,20 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     )}
 
     {galleryItems.length > 0 && (
-      <section class="case__gallery">
+      <section class="case__gallery" data-build>
         {galleryItems.map((item) => <Media item={item} />)}
       </section>
     )}
 
     {next && (
-      <a class="next" href={href(Astro.locals, `/${next.slug}`)}>
+      <a class="next" href={href(Astro.locals, `/${next.slug}`)} data-build>
         <div class="next__head">
           <span class="t-label-small" data-split>Next project</span>
           <span class="t-label-small" aria-hidden="true">→</span>
         </div>
         <p class="next__title" data-split>{next.cardTitle || next.title}</p>
         {next.cover?.asset && (
-          <div class="next__media" data-parallax>
+          <div class="next__media" data-parallax data-build-item>
             <img
               src={urlFor(next.cover).width(1800).height(900).fit('crop').quality(80).url()}
               srcset={srcset(next.cover, [800, 1400, 2000])}

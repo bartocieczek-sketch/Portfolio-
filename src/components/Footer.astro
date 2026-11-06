@@ -21,7 +21,7 @@ const links = [
 ].filter(Boolean) as { label: string; url: string; external: boolean }[];
 ---
 
-<footer class="footer">
+<footer class="footer" data-build>
   <div class="footer__main">
     <div class="footer__claim">
       <EyeFollower />
@@ -35,7 +35,7 @@ const links = [
         </p>
       )}
       {ctaText && <p class="t-compact muted footer__cta" data-split style="--split-delay:200ms">{ctaText}</p>}
-      <div class="footer__list">
+      <div class="footer__list" data-build-item>
         {links.map((l) => (
           <a class="line-button" href={l.url} target={l.external ? '_blank' : undefined} rel={l.external ? 'noopener' : undefined}>
             <span>{l.label}</span>
@@ -44,7 +44,7 @@ const links = [
       </div>
     </div>
   </div>
-  <div class="footer__bar t-body2">
+  <div class="footer__bar t-body2" data-build-item>
     <p class="muted">{settings.role}</p>
     <p class="muted">{settings.copyright}</p>
   </div>

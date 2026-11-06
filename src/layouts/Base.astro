@@ -19,7 +19,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-preview={preview ? '' : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -59,6 +59,8 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
 
     <script>
       import Lenis from 'lenis';
+      // build must run before motion: it claims blocks in [data-build] sections first
+      import '../scripts/build';
       import '../scripts/motion';
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

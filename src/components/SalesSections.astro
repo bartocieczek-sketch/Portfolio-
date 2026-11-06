@@ -25,7 +25,7 @@ const num = (i: number) => String(i + 1).padStart(2, '0');
 ---
 
 {stats.length > 0 && (
-  <section class="sales stats" aria-label={statsHeading ?? 'Results'}>
+  <section class="sales stats" aria-label={statsHeading ?? 'Results'} data-build>
     {statsHeading && <h2 class="sales__label t-label-small" data-split>{statsHeading}</h2>}
     <div class="stats__grid">
       {stats.map((s) => (
@@ -39,7 +39,7 @@ const num = (i: number) => String(i + 1).padStart(2, '0');
 )}
 
 {services.length > 0 && (
-  <section class="sales services">
+  <section class="sales services" data-build>
     <div class="sales__head">
       <h2 class="t-heading-large" data-split>{servicesHeading}</h2>
       <span class="sales__count t-label-small">({services.length})</span>
@@ -57,7 +57,7 @@ const num = (i: number) => String(i + 1).padStart(2, '0');
 )}
 
 {process.length > 0 && (
-  <section class="sales process">
+  <section class="sales process" data-build>
     <div class="sales__head">
       <h2 class="t-heading-large" data-split>{processHeading}</h2>
     </div>
@@ -74,13 +74,13 @@ const num = (i: number) => String(i + 1).padStart(2, '0');
 )}
 
 {faq.length > 0 && (
-  <section class="sales faq">
+  <section class="sales faq" data-build>
     <div class="faq__side">
       <h2 class="t-heading-large" data-split>{faqHeading}</h2>
     </div>
     <div class="faq__list" data-faq>
       {faq.map((q, i) => (
-        <div class="faq__item">
+        <div class="faq__item" data-build-item>
           <h3>
             <button class="faq__q t-compact" type="button" aria-expanded="false" aria-controls={`faq-${q._key}`} id={`faq-q-${q._key}`}>
               <span>{q.question}</span>

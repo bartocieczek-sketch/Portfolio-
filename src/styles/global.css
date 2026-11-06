@@ -425,3 +425,140 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   transform: scale(1.15);
   will-change: transform;
 }
+
+/* ---------- Swarm build reveal (see src/scripts/build.ts) ---------- */
+[data-build] {
+  position: relative;
+}
+.bp-text {
+  opacity: 0;
+}
+.bp-box {
+  clip-path: inset(0 100% 100% 0);
+}
+.is-typing .bw {
+  opacity: 0;
+}
+.is-typing .bw.on {
+  opacity: 1;
+}
+.blayer {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+.bcur {
+  position: absolute;
+  left: 0;
+  top: 0;
+  --c: #3d8bff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  will-change: transform;
+}
+.bcur__arrow {
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  display: block;
+}
+.bcur__ibeam {
+  position: absolute;
+  left: -5px;
+  top: -9px;
+  display: none;
+}
+.bcur.is-ibeam .bcur__arrow {
+  display: none;
+}
+.bcur.is-ibeam .bcur__ibeam {
+  display: block;
+}
+.bcur__tag {
+  position: absolute;
+  left: 13px;
+  top: 15px;
+  padding: 3px 5px;
+  border-radius: 3px;
+  background: var(--c);
+  color: #0b0b0b;
+  font: 600 10px/1 var(--font-body);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.bsel {
+  position: absolute;
+}
+.bsel__box {
+  position: absolute;
+  inset: 0;
+  border: 1px solid #3d8bff;
+  clip-path: inset(0 100% 100% 0);
+}
+.bh {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: #fff;
+  border: 1px solid #3d8bff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.bh.tl { left: -3px; top: -3px; }
+.bh.tr { right: -3px; top: -3px; }
+.bh.bl { left: -3px; bottom: -3px; }
+.bh.br { right: -3px; bottom: -3px; }
+.bsel.has-handles .bh {
+  opacity: 1;
+}
+.bbadge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 3px 5px;
+  border-radius: 3px;
+  background: #3d8bff;
+  color: #fff;
+  font: 600 10px/1 var(--font-body);
+  letter-spacing: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.bguide {
+  position: absolute;
+  background: #ff5a4f;
+  box-shadow: 0 0 6px rgba(255, 90, 79, 0.7);
+  opacity: 0;
+}
+.bguide.h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.bguide.v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.bruler {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.bruler--top {
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 20px;
+}
+.bruler--left {
+  top: 20px;
+  left: 0;
+  width: 20px;
+  height: calc(100vh - 20px);
+}
+html.is-building .bruler {
+  opacity: 1;
+}

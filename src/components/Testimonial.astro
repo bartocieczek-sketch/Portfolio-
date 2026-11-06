@@ -17,7 +17,7 @@ const thumb = testimonial?.thumbnail?.asset
 ---
 
 {testimonial?.quote && (
-  <section class="testimonial">
+  <section class="testimonial" data-build>
     <div class="testimonial__side">
       {heading && <h2 class="t-compact testimonial__heading" data-split>{heading}</h2>}
     </div>
@@ -31,7 +31,7 @@ const thumb = testimonial?.thumbnail?.asset
         </blockquote>
       </div>
 
-      <div class="testimonial__author">
+      <div class="testimonial__author" data-build-item>
         {thumb && (
           <button class="testimonial__thumb" type="button" data-video-open={testimonial.videoUrl} aria-label={`Play video from ${testimonial.name}`} disabled={!testimonial.videoUrl}>
             <img src={thumb} alt="" width="140" height="171" loading="lazy" />
