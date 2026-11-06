@@ -15,29 +15,10 @@ const pad = (n: number) => String(n).padStart(2, '0');
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((p: any) => ({
   title: (p.cardTitle || p.title || '').trim(),
-  meta: [p.year, ...(p.cardTags ?? []).slice(0, 1)].filter(Boolean).join(' · ').replace(/,\s*$/, ''),
+  meta: [p.year, ...(p.cardTags ?? []).slice(0, 1)].filter(Boolean).join(' · '),
   href: href(Astro.locals, `/${p.slug}`),
   src: urlFor(p.cover).width(1000).height(1250).fit('crop').quality(82).url(),
 }));
-
-// The client quote closes each lap of the loop
-const t = home.testimonial;
-const quote = t?.quote
-  ? {
-      text: t.quote as string,
-      name: t.name as string,
-      role: t.role as string,
-      video: t.videoUrl as string | undefined,
-      thumb: t.thumbnail?.asset
-        ? t.thumbnail.asset.mimeType === 'image/gif'
-          ? (t.thumbnail.asset.url as string)
-          : urlFor(t.thumbnail).width(160).url()
-        : undefined,
-    }
-  : null;
-
-// Three laps rendered; the script wraps the offset so it never runs out
-const LAPS = 3;
 ---
 
 <script is:inline>
@@ -61,104 +42,72 @@ const LAPS = 3;
 </script>
 
 <section class="hero" data-hero>
-  <canvas class="hero__dither" aria-hidden="true" data-dither></canvas>
+  <div class="hero__sticky" data-hero-sticky>
+    <canvas class="hero__dither" aria-hidden="true" data-dither></canvas>
 
-  <div class="hero__nav intro-item" style="--delay:0ms">
-    <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
-  </div>
+    <div class="hero__nav intro-item" style="--delay:0ms">
+      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
+    </div>
 
-  <div class="hero__body">
-    <div class="hero__intro">
-      <div class="hero__head">
-        {home.badgeLabel && (
-          <a class="badge intro-item" href={home.badgeUrl} target="_blank" rel="noopener" style="--delay:80ms">
-            <svg viewBox="0 0 10 15" width="8" height="12" aria-hidden="true"><path d="M0 0h10v5H5L0 0Zm0 5h5l5 5H5v5L0 10V5Z" fill="currentColor" /></svg>
-            {home.badgeLabel}
-          </a>
-        )}
-        {home.heroText && <h1 class="hero__statement intro-item" style="--delay:140ms">{home.heroText}</h1>}
-        {settings.role && <p class="hero__role t-label muted intro-item" style="--delay:220ms">{settings.role}</p>}
-      </div>
-      <div class="hero__foot intro-item" style="--delay:320ms">
-        <p class="hero__hint t-label-small">
-          <span class="hero__hint-icon" aria-hidden="true">↔</span>
-          Scroll or drag
-        </p>
-      </div>
+    <div class="hero__text">
+      {home.badgeLabel && (
+        <a class="badge intro-item" href={home.badgeUrl} target="_blank" rel="noopener" style="--delay:80ms">
+          <svg viewBox="0 0 10 15" width="8" height="12" aria-hidden="true"><path d="M0 0h10v5H5L0 0Zm0 5h5l5 5H5v5L0 10V5Z" fill="currentColor" /></svg>
+          {home.badgeLabel}
+        </a>
+      )}
+      {home.heroText && <h1 class="hero__statement intro-item" style="--delay:140ms">{home.heroText}</h1>}
     </div>
 
     <div class="hero__carousel" data-carousel>
       <ol class="hero__track" data-track>
-        {Array.from({ length: LAPS }, (_, lap) => (
-          <>
-            {projects.map((p: any, i: number) => (
-              <li class="hcard" data-card aria-hidden={lap ? 'true' : undefined}>
-                <a class="hcard__link" href={p.href} tabindex={lap ? -1 : undefined} draggable="false">
-                  <span class="hcard__info">
-                    <span class="hcard__num t-label-small">{pad(i + 1)}</span>
-                    <span class="hcard__title">{p.title}</span>
-                    <span class="hcard__meta t-label-small">{p.meta}</span>
-                  </span>
-                  <span class="hcard__media" data-media data-src={p.src}>
-                    <img src={p.src} alt="" loading={lap === 0 && i < 4 ? 'eager' : 'lazy'} decoding="async" draggable="false" />
-                  </span>
-                </a>
-              </li>
-            ))}
-            {quote && (
-              <li class="hcard hcard--quote" data-card data-quote aria-hidden={lap ? 'true' : undefined}>
-                <span class="hcard__info" aria-hidden="true">
-                  <span class="hcard__num t-label-small">“”</span>
-                  <span class="hcard__title">Client words</span>
-                </span>
-                <figure class="hquote">
-                  <svg class="hquote__mark" width="34" height="31" viewBox="0 0 56 51" aria-hidden="true">
-                    <path d="M55.675 0V2.83333C52.1806 6.42222 49.5833 10.1056 47.8833 13.8833C46.1833 17.6611 45.3333 21.6278 45.3333 25.7833H55.675V50.8583H32.725V29.6083C32.725 23.8472 33.6222 18.5111 35.4167 13.6C37.3056 8.59444 40.0917 4.06111 43.775 0H55.675ZM22.95 0V2.83333C19.4556 6.42222 16.8583 10.1056 15.1583 13.8833C13.4583 17.6611 12.6083 21.6278 12.6083 25.7833H22.95V50.8583H0V29.6083C0 23.8472 0.897222 18.5111 2.69167 13.6C4.58055 8.59444 7.36667 4.06111 11.05 0H22.95Z" fill="currentColor" />
-                  </svg>
-                  <blockquote class="hquote__text">{quote.text}</blockquote>
-                  <figcaption class="hquote__author">
-                    {quote.thumb && (
-                      <button class="hquote__thumb" type="button" data-video-open={quote.video} disabled={!quote.video} tabindex={lap ? -1 : undefined} aria-label={quote.video ? `Play video from ${quote.name}` : undefined}>
-                        <img src={quote.thumb} alt="" loading="lazy" draggable="false" />
-                        {quote.video && <span class="hquote__play" aria-hidden="true">▶</span>}
-                      </button>
-                    )}
-                    <span>
-                      <span class="hquote__name">{quote.name}</span>
-                      <span class="hquote__role t-label-small">{quote.role}</span>
-                    </span>
-                  </figcaption>
-                </figure>
-              </li>
-            )}
-          </>
+        {projects.map((p: any, i: number) => (
+          <li class="hcard" data-card>
+            <a class="hcard__link" href={p.href}>
+              <span class="hcard__media" data-media data-src={p.src}>
+                <img src={p.src} alt="" loading={i < 4 ? 'eager' : 'lazy'} decoding="async" />
+              </span>
+              <span class="hcard__info">
+                <span class="hcard__num t-label-small">{pad(i + 1)}</span>
+                <span class="hcard__title">{p.title}</span>
+                <span class="hcard__meta t-label-small">{p.meta}</span>
+              </span>
+            </a>
+          </li>
         ))}
       </ol>
       <canvas class="hero__gl" aria-hidden="true" data-gl></canvas>
     </div>
-  </div>
 
-  <span class="hero__cursor t-label-small" data-hero-cursor aria-hidden="true">View case</span>
-  {quote?.video && (
-    <dialog class="hero__video" data-hero-video>
-      <button class="hero__video-close t-label" type="button" data-video-close aria-label="Close video">✕</button>
-      <video controls playsinline></video>
-    </dialog>
-  )}
+    <div class="hero__foot intro-item" style="--delay:500ms">
+      <span class="t-label-small muted">{home.established}</span>
+      <span class="hero__progress" aria-hidden="true"><span data-progress></span></span>
+      <span class="t-label-small muted">{home.location}</span>
+    </div>
+
+    <span class="hero__cursor t-label-small" data-hero-cursor aria-hidden="true">View case</span>
+  </div>
 </section>
 
 <style>
+  /* Pinned while the vertical scroll drives the carousel sideways. The height
+     is set from the track width in the script; this is the fallback. */
   .hero {
     position: relative;
+    height: 320vh;
+    background: var(--surface-dark);
+  }
+  .hero__sticky {
+    position: sticky;
+    top: 0;
     height: 100vh;
     height: 100svh;
-    min-height: 640px;
-    background: var(--surface-dark);
+    min-height: 600px;
     overflow: clip;
-    padding: var(--gutter) 0 0 var(--gutter);
+    padding: var(--gutter) 0;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 28px;
   }
   .hero__dither {
     position: absolute;
@@ -170,69 +119,28 @@ const LAPS = 3;
   .hero__nav {
     position: relative;
     z-index: 4;
-    padding-right: var(--gutter);
+    padding: 0 var(--gutter);
   }
-  .hero__body {
+  .hero__text {
     position: relative;
     z-index: 2;
-    flex: 1;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(300px, 30%) 1fr;
-    gap: 40px;
-  }
-
-  /* ---------- Left column ---------- */
-  .hero__intro {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 32px;
-    min-width: 0;
-  }
-  .hero__head {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 24px;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    padding: 0 var(--gutter);
   }
   .hero__statement {
     margin: 0;
+    max-width: 560px;
     font-family: var(--font-head);
     font-weight: 700;
-    font-size: clamp(30px, 2.9vw, 46px);
-    line-height: 1.02;
-    letter-spacing: -0.035em;
+    font-size: clamp(22px, 1.9vw, 30px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
     color: var(--text-primary);
     text-wrap: balance;
-  }
-  .hero__role {
-    max-width: 260px;
-  }
-  .hero__foot {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-bottom: var(--gutter);
-  }
-  .hero__hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-primary);
-  }
-  .hero__hint-icon {
-    display: inline-block;
-    animation: hero-hint 2.4s var(--ease-in-out) infinite;
-  }
-  @keyframes hero-hint {
-    0%,
-    100% {
-      transform: translateX(-2px);
-    }
-    50% {
-      transform: translateX(3px);
-    }
   }
   .badge {
     display: inline-flex;
@@ -252,23 +160,20 @@ const LAPS = 3;
   /* ---------- Carousel ---------- */
   .hero__carousel {
     position: relative;
-    min-width: 0;
-    overflow: hidden;
-    cursor: grab;
-    touch-action: pan-y;
-    user-select: none;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 56px);
-    mask-image: linear-gradient(90deg, transparent 0, #000 56px);
-  }
-  .hero__carousel.is-dragging {
-    cursor: grabbing;
+    z-index: 2;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
   }
   .hero__track {
+    --card-h: min(100%, 56vh);
     list-style: none;
     margin: 0;
     padding: 0;
     height: 100%;
     display: flex;
+    align-items: center;
     gap: 20px;
     will-change: transform;
   }
@@ -276,22 +181,17 @@ const LAPS = 3;
     flex: none;
     height: 100%;
     display: flex;
-    flex-direction: column;
-    gap: 14px;
+    align-items: center;
   }
   .hcard__link {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    height: 100%;
-    -webkit-user-drag: none;
   }
-  .hcard__media,
-  .hquote {
+  .hcard__media {
     position: relative;
     display: block;
-    flex: 1;
-    min-height: 0;
+    height: calc(var(--track-h, 56vh) - 40px);
     aspect-ratio: 0.8;
     overflow: hidden;
     background: #222;
@@ -302,6 +202,7 @@ const LAPS = 3;
     object-fit: cover;
     transition: transform 0.6s var(--ease-out);
   }
+  /* With WebGL running, the canvas draws the images; the DOM ones keep layout */
   .hero.has-gl .hcard__media {
     background: none;
   }
@@ -312,6 +213,7 @@ const LAPS = 3;
     opacity: 1;
   }
   .hcard__info {
+    /* as wide as the image, never wider */
     width: 0;
     min-width: 100%;
     display: grid;
@@ -345,6 +247,10 @@ const LAPS = 3;
       transform: scale(1.04);
     }
   }
+  .hcard__link:active .hcard__media {
+    transform: scale(0.98);
+    transition: transform 0.16s var(--ease-out);
+  }
   .hero__gl {
     position: absolute;
     left: 0;
@@ -354,112 +260,29 @@ const LAPS = 3;
     pointer-events: none;
   }
 
-  /* ---------- Quote card ---------- */
-  .hquote {
-    margin: 0;
-    padding: 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    background: var(--text-primary);
-    color: var(--surface-dark);
-  }
-  .hquote__mark {
-    flex: none;
-    opacity: 0.35;
-  }
-  .hquote__text {
-    /* don't let the quote's one-line width stretch the card */
-    width: 0;
-    min-width: 100%;
-    color: inherit;
-    margin: 0;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    font-family: var(--font-head);
-    font-weight: 700;
-    font-size: clamp(18px, 1.45vw, 24px);
-    line-height: 1.18;
-    letter-spacing: -0.02em;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 11;
-  }
-  .hquote__author {
-    width: 0;
-    min-width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .hquote__author > span {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .hquote__name {
-    font-family: var(--font-head);
-    font-weight: 700;
-    font-size: 15px;
-  }
-  .hquote__role {
-    opacity: 0.6;
-  }
-  .hquote__thumb {
+  /* ---------- Foot ---------- */
+  .hero__foot {
     position: relative;
-    flex: none;
-    width: 52px;
-    aspect-ratio: 0.82;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding: 0 var(--gutter);
+  }
+  .hero__progress {
+    position: relative;
+    width: 160px;
+    height: 1px;
+    background: var(--line);
     overflow: hidden;
   }
-  .hquote__thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .hquote__play {
+  .hero__progress span {
     position: absolute;
     inset: 0;
-    display: grid;
-    place-items: center;
-    font-size: 11px;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.3);
-    transition: background 0.2s ease;
-  }
-  .hquote__thumb:active {
-    transform: scale(0.96);
-    transition: transform 0.16s var(--ease-out);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .hquote__thumb:hover .hquote__play {
-      background: rgba(0, 0, 0, 0.5);
-    }
-  }
-  .hero__video {
-    border: 0;
-    padding: 0;
-    background: transparent;
-    max-width: min(92vw, 420px);
-    max-height: 90vh;
-    overflow: visible;
-  }
-  .hero__video::backdrop {
-    background: rgba(0, 0, 0, 0.85);
-  }
-  .hero__video video {
-    width: 100%;
-    max-height: 86vh;
-    background: #000;
-  }
-  .hero__video-close {
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    width: 40px;
-    height: 40px;
-    color: var(--text-primary);
+    background: var(--text-primary);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
   }
 
   /* ---------- Cursor ---------- */
@@ -519,29 +342,9 @@ const LAPS = 3;
     }
   }
 
-  @media (max-width: 1099px) {
-    .hero__body {
-      grid-template-columns: minmax(260px, 36%) 1fr;
-    }
-  }
   @media (max-width: 809px) {
-    .hero {
-      height: auto;
-      min-height: 100svh;
-      gap: 28px;
-    }
-    .hero__body {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
-      gap: 28px;
-    }
-    .hero__intro {
-      padding-right: var(--gutter);
-    }
-    .hero__carousel {
-      height: 62svh;
-      -webkit-mask-image: none;
-      mask-image: none;
+    .hero__sticky {
+      gap: 20px;
     }
     .hero__track {
       gap: 12px;
@@ -551,11 +354,6 @@ const LAPS = 3;
     }
     .hcard__meta {
       display: none;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .hero__hint-icon {
-      animation: none;
     }
   }
 </style>
@@ -568,32 +366,25 @@ const LAPS = 3;
   const EASE_EXPO = 'cubic-bezier(0.16, 1, 0.3, 1)';
   const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 
+  const sticky = document.querySelector<HTMLElement>('[data-hero-sticky]');
   const carousel = document.querySelector<HTMLElement>('[data-carousel]');
   const track = document.querySelector<HTMLElement>('[data-track]');
   const cards = [...document.querySelectorAll<HTMLElement>('[data-card]')];
-  const medias = [...document.querySelectorAll<HTMLElement>('[data-media]')];
-  const quotes = cards.filter((c) => c.hasAttribute('data-quote'));
+  const medias = cards.map((c) => c.querySelector<HTMLElement>('[data-media]')!);
 
-  // ---------- Intro ----------
-  // The whole track arrives from the right with momentum and settles; the
-  // speed feeds the WebGL bend, so the covers flex as they fly in. Each card
-  // also fades up in turn so the row doesn't land as one block.
-  const playIntro = !!hero && root.classList.contains('is-intro');
-  const INTRO_MS = 1700;
-  let introStart = 0;
-  if (hero && playIntro) {
-    requestAnimationFrame((now) => {
-      introStart = now;
+  // ---------- Intro: cards sweep in from the right, one after another ----------
+  if (hero && root.classList.contains('is-intro')) {
+    requestAnimationFrame(() => {
       hero.classList.add('is-ready');
-      const vw = window.innerWidth;
       cards.forEach((c, i) => {
-        if (c.getBoundingClientRect().left > vw * 1.8) return;
-        c.animate([{ opacity: 0 }, { opacity: 1 }], {
-          duration: 700,
-          delay: 120 + i * 80,
-          easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
-          fill: 'backwards',
-        });
+        c.animate(
+          [
+            { transform: `translate3d(${window.innerWidth * 0.7}px, 0, 0)`, opacity: 0 },
+            { opacity: 1, offset: 0.3 },
+            { transform: 'translate3d(0, 0, 0)', opacity: 1 },
+          ],
+          { duration: 1300, delay: 260 + i * 70, easing: EASE_EXPO, fill: 'backwards' },
+        );
       });
     });
     window.setTimeout(() => {
@@ -606,127 +397,28 @@ const LAPS = 3;
   }
   document.dispatchEvent(new CustomEvent('intro:done'));
 
-  if (hero && carousel && track && cards.length) {
-    // ---------- Infinite loop ----------
-    // The offset grows forever and is wrapped by the width of one lap, so the
-    // second lap seamlessly takes the place of the first.
-    const perLap = cards.length / 3;
-    let lap = 1;
+  if (hero && sticky && carousel && track && cards.length) {
+    // ---------- Layout: vertical scroll → horizontal travel ----------
+    // First card starts centred, last card ends centred.
+    let vw = 0;
+    let vh = 0;
+    let startX = 0;
+    let travel = 0;
     const measure = () => {
-      const a = cards[0];
-      const b = cards[perLap];
-      lap = b && a ? b.offsetLeft - a.offsetLeft : track.scrollWidth / 3;
+      vw = window.innerWidth;
+      vh = window.innerHeight;
+      track.style.setProperty('--track-h', `${carousel.clientHeight}px`);
+      const cw = medias[0].offsetWidth;
+      const tw = track.scrollWidth;
+      startX = vw / 2 - cw / 2;
+      travel = Math.max(0, tw - cw);
+      hero.style.height = `${vh + travel * 1.1 + vh * 0.25}px`;
     };
 
-    const AUTO = reduceMotion ? 0 : 0.45; // px per frame at 60fps
-    let offset = 0;
-    let lastPos = 0;
-    let vel = 0; // smoothed on-screen speed, drives the bend
-    let push = 0; // extra speed from scrolling / flicking, decays
-    let dir = 1; // auto-drift follows the last scroll direction
-    let hovering = false;
-    let slow = 1;
-
-    // Scroll: page scroll nudges the loop in the same direction
-    let lastY = window.scrollY;
-    window.addEventListener(
-      'scroll',
-      () => {
-        const dy = window.scrollY - lastY;
-        lastY = window.scrollY;
-        if (reduceMotion) return;
-        push += dy * 0.6;
-        if (Math.abs(dy) > 1) dir = Math.sign(dy);
-      },
-      { passive: true },
-    );
-    // Wheel over the hero (also at the very top, where the page can't scroll up)
-    carousel.addEventListener(
-      'wheel',
-      (e) => {
-        if (reduceMotion) return;
-        const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : 0;
-        if (d) {
-          push += d * 0.8;
-          e.preventDefault();
-        }
-      },
-      { passive: false },
-    );
-
-    // Drag with momentum
-    let dragging = false;
-    let moved = 0;
-    let dragX = 0;
-    let dragV = 0;
-    carousel.addEventListener('pointerdown', (e) => {
-      if ((e.target as HTMLElement).closest('button')) return;
-      dragging = true;
-      moved = 0;
-      dragX = e.clientX;
-      dragV = 0;
-    });
-    carousel.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const dx = e.clientX - dragX;
-      dragX = e.clientX;
-      moved += Math.abs(dx);
-      // capture only once it's really a drag, so plain clicks still reach the links
-      if (moved > 6 && !carousel.hasPointerCapture(e.pointerId)) {
-        carousel.setPointerCapture(e.pointerId);
-        carousel.classList.add('is-dragging');
-      }
-      offset -= dx;
-      dragV = -dx;
-    });
-    const endDrag = () => {
-      if (!dragging) return;
-      dragging = false;
-      carousel.classList.remove('is-dragging');
-      push += dragV * 8;
-      if (Math.abs(dragV) > 0.5) dir = Math.sign(dragV);
-    };
-    carousel.addEventListener('pointerup', endDrag);
-    carousel.addEventListener('pointercancel', endDrag);
-    // A drag is not a click
-    carousel.addEventListener(
-      'click',
-      (e) => {
-        if (moved > 6) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      },
-      true,
-    );
-
-    // Opening a project: the clicked cover is handed to the view transition
-    // so it can morph into the case study's first image
-    let frozen = false;
-    track.addEventListener('click', (e) => {
-      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('.hcard__link');
-      if (!link || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey) return;
-      const card = link.closest<HTMLElement>('[data-card]');
-      const media = link.querySelector<HTMLElement>('[data-media]');
-      if (!card || !media || !('startViewTransition' in document)) return;
-      card.classList.add('is-opening');
-      media.style.viewTransitionName = 'project-cover';
-      frozen = true;
-      try {
-        sessionStorage.setItem('vt-card', '1');
-      } catch (err) {}
-    });
-    // Coming back (bfcache): release the name and let the loop run again
-    window.addEventListener('pageshow', () => {
-      frozen = false;
-      track.querySelectorAll<HTMLElement>('[data-media]').forEach((m) => (m.style.viewTransitionName = ''));
-      track.querySelectorAll('.is-opening').forEach((c) => c.classList.remove('is-opening'));
-    });
-
-    // Hover: the loop eases almost to a stop so a card can be read and clicked
+    const progressEl = hero.querySelector<HTMLElement>('[data-progress]');
     const cursor = hero.querySelector<HTMLElement>('[data-hero-cursor]');
     const ptr = { x: -200, y: -200, cx: -200, cy: -200 };
-    let hoveredMedia: HTMLElement | null = null;
+    let hovered = -1;
     if (finePointer) {
       window.addEventListener(
         'pointermove',
@@ -736,99 +428,71 @@ const LAPS = 3;
         },
         { passive: true },
       );
-      carousel.addEventListener('pointerenter', () => (hovering = true));
-      carousel.addEventListener('pointerleave', () => {
-        hovering = false;
-        hoveredMedia = null;
-      });
-      carousel.addEventListener('pointerover', (e) => {
-        hoveredMedia = (e.target as HTMLElement).closest<HTMLElement>('[data-card]')?.querySelector<HTMLElement>('[data-media]') ?? null;
+      cards.forEach((c, i) => {
+        c.addEventListener('pointerenter', () => (hovered = i));
+        c.addEventListener('pointerleave', () => hovered === i && (hovered = -1));
       });
     }
 
-    // Quote video
-    const dialog = hero.querySelector<HTMLDialogElement>('[data-hero-video]');
-    const dvideo = dialog?.querySelector('video');
-    hero.querySelectorAll<HTMLButtonElement>('[data-video-open]').forEach((b) =>
-      b.addEventListener('click', () => {
-        if (!dialog || !dvideo || !b.dataset.videoOpen) return;
-        dvideo.src = b.dataset.videoOpen;
-        dialog.showModal();
-        dvideo.play().catch(() => {});
-      }),
-    );
-    dialog?.querySelector('[data-video-close]')?.addEventListener('click', () => dialog.close());
-    dialog?.addEventListener('click', (e) => e.target === dialog && dialog.close());
-    dialog?.addEventListener('close', () => dvideo?.pause());
-
+    // ---------- WebGL: images drawn as soft, bendable planes ----------
     const gl = reduceMotion ? null : setupGL(carousel.querySelector<HTMLCanvasElement>('[data-gl]')!);
     if (gl) hero.classList.add('has-gl');
-    const hover = medias.map(() => 0);
-    const REVEAL_MS = 1000;
-    const revealAt = medias.map(() => -1);
-    const reveal = medias.map(() => 0);
 
+    let x = 0;
+    let lastX = 0;
+    let vel = 0;
     let visible = true;
     new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(hero);
+    const hover = cards.map(() => 0);
 
-    let prev = performance.now();
-    const frame = (now: number) => {
+    const frame = () => {
       requestAnimationFrame(frame);
-      const dt = Math.min(3, (now - prev) / 16.67);
-      prev = now;
       if (!visible) return;
+      const hr = hero.getBoundingClientRect();
+      const range = hero.offsetHeight - vh;
+      const p = clamp(-hr.top / (range || 1));
+      // a short hold at both ends so the first and last card can be read
+      const q = clamp((p - 0.04) / 0.86);
+      x = startX - travel * q;
+      track.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
+      if (progressEl) progressEl.style.transform = `scaleX(${q.toFixed(4)})`;
 
-      slow += ((hovering && !dragging ? 0.08 : 1) - slow) * 0.06;
-      if (!dragging && !frozen) {
-        offset += (AUTO * dir * slow + push * 0.12) * dt;
-        push *= Math.pow(0.9, dt);
-      }
-      // intro: start a screen and a half to the right, ease-out-expo into place
-      let shift = 0;
-      if (playIntro && !reduceMotion) {
-        const k = introStart ? clamp((now - introStart) / INTRO_MS) : 0;
-        shift = -window.innerWidth * 1.5 * (k >= 1 ? 0 : Math.pow(2, -10 * k));
-      }
-      const shown = offset + shift;
-      const pos = ((shown % lap) + lap) % lap;
-      track.style.transform = `translate3d(${(-pos).toFixed(2)}px, 0, 0)`;
+      // horizontal speed of the track → how much the images bend
+      vel += (x - lastX - vel) * 0.18;
+      lastX = x;
+      const bend = clamp(vel / 45, -1, 1);
 
-      // speed for the bend, ignoring the jump when the loop wraps
-      let d = shown - lastPos;
-      lastPos = shown;
-      if (Math.abs(d) > lap / 2) d = 0;
-      vel += (d - vel) * 0.18;
-      const bend = clamp(-vel / 30, -1, 1);
-
-      // DOM-only quote cards lean with the same motion
-      const skew = (bend * 4).toFixed(2);
-      for (const q of quotes) q.style.transform = reduceMotion ? '' : `skewX(${skew}deg)`;
-
-      for (let i = 0; i < medias.length; i++) hover[i] += ((hoveredMedia === medias[i] ? 1 : 0) - hover[i]) * 0.12;
-
-      // Each cover plays its reveal when it enters the carousel, and resets
-      // once it has left, so it plays again on the next lap.
-      if (gl) {
-        const cr = carousel.getBoundingClientRect();
-        for (let i = 0; i < medias.length; i++) {
-          const r = medias[i].getBoundingClientRect();
-          const inside = r.right > cr.left && r.left < cr.right;
-          if (inside && revealAt[i] < 0) revealAt[i] = now;
-          else if (!inside && (r.right < cr.left - 40 || r.left > cr.right + 40)) revealAt[i] = -1;
-          reveal[i] = revealAt[i] < 0 ? 0 : clamp((now - revealAt[i]) / REVEAL_MS);
-        }
-        gl.draw(medias, bend, hover, reveal);
-      }
+      for (let i = 0; i < cards.length; i++) hover[i] += ((hovered === i ? 1 : 0) - hover[i]) * 0.12;
+      if (gl) gl.draw(medias, bend, hover);
 
       if (cursor && finePointer) {
-        const on = !!hoveredMedia && !dragging;
+        const pinned = hr.bottom >= vh - 1;
+        const on = pinned && hovered >= 0;
         cursor.classList.toggle('is-on', on);
         ptr.cx += (ptr.x - ptr.cx) * 0.2;
         ptr.cy += (ptr.y - ptr.cy) * 0.2;
-        const hr = hero.getBoundingClientRect();
-        cursor.style.transform = `translate3d(${(ptr.cx - hr.left + 14).toFixed(1)}px, ${(ptr.cy - hr.top + 14).toFixed(1)}px, 0) scale(${on ? 1 : 0.9})`;
+        cursor.style.transform = `translate3d(${(ptr.cx + 14).toFixed(1)}px, ${(ptr.cy + 14).toFixed(1)}px, 0) scale(${on ? 1 : 0.9})`;
       }
     };
+
+    // Opening a project: the clicked cover is handed to the view transition
+    // so it morphs into the case study's first image
+    track.addEventListener('click', (e) => {
+      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('.hcard__link');
+      if (!link || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      const card = link.closest<HTMLElement>('[data-card]');
+      const media = link.querySelector<HTMLElement>('[data-media]');
+      if (!card || !media || !('startViewTransition' in document)) return;
+      card.classList.add('is-opening');
+      media.style.viewTransitionName = 'project-cover';
+      try {
+        sessionStorage.setItem('vt-card', '1');
+      } catch (err) {}
+    });
+    window.addEventListener('pageshow', () => {
+      track.querySelectorAll<HTMLElement>('[data-media]').forEach((m) => (m.style.viewTransitionName = ''));
+      track.querySelectorAll('.is-opening').forEach((c) => c.classList.remove('is-opening'));
+    });
 
     measure();
     requestAnimationFrame(frame);
@@ -877,48 +541,24 @@ const LAPS = 3;
       uniform float uHover;
       uniform float uAlpha;
       uniform float uTime;
-      uniform float uReveal;
-      uniform float uSeed;
       varying vec2 vUv;
       vec2 cover(vec2 uv) {
         float rs = uRect.z / uRect.w;
         float ri = uImg.x / uImg.y;
         vec2 s = rs < ri ? vec2(rs / ri, 1.0) : vec2(1.0, ri / rs);
-        uv = (uv - 0.5) * s + 0.5;
-        return (uv - 0.5) * (1.0 - 0.06 * uHover) + 0.5;
-      }
-      float hash(vec2 p) {
-        return fract(sin(dot(p, vec2(127.1, 311.7)) + uSeed * 17.31) * 43758.5453);
-      }
-      vec3 rgb(vec2 uv, float split) {
-        return vec3(
-          texture2D(uTex, uv + vec2(split, 0.0)).r,
-          texture2D(uTex, uv).g,
-          texture2D(uTex, uv - vec2(split, 0.0)).b
-        );
+        return (uv - 0.5) * s + 0.5;
       }
       void main() {
+        vec2 uv = cover(vUv);
+        uv = (uv - 0.5) * (1.0 - 0.06 * uHover) + 0.5;
         float a = abs(uBend);
-        vec2 wob = vec2(sin(vUv.y * 9.0 + uTime * 2.0) * 0.012, sin(vUv.x * 7.0 + uTime * 1.6) * 0.008) * a;
+        uv.x += sin(vUv.y * 9.0 + uTime * 2.0) * 0.012 * a;
+        uv.y += sin(vUv.x * 7.0 + uTime * 1.6) * 0.008 * a;
         float split = 0.012 * uBend;
-
-        // Reveal: coarse blocks switch on in random order, each with a short
-        // flash, while the picture resolves from a mosaic to full detail.
-        vec2 blocks = vec2(8.0, 10.0);
-        float h = hash(floor(vUv * blocks));
-        float t = uReveal * 1.2 - h;
-        float vis = step(0.0, t);
-        float cells = mix(10.0, 140.0, uReveal * uReveal);
-        vec2 grid = vec2(cells, cells * uRect.w / uRect.z);
-        vec2 pv = (floor(vUv * grid) + 0.5) / grid;
-        vec3 sharp = rgb(cover(vUv) + wob, split);
-        vec3 col = sharp;
-        if (uReveal < 1.0) {
-          vec3 pix = rgb(cover(pv) + wob, split + (1.0 - uReveal) * 0.01);
-          col = mix(pix, sharp, smoothstep(0.65, 1.0, uReveal));
-          col += vec3(0.4) * (1.0 - smoothstep(0.0, 0.18, t));
-        }
-        gl_FragColor = vec4(col, 1.0) * uAlpha * vis;
+        float r = texture2D(uTex, uv + vec2(split, 0.0)).r;
+        vec4 g = texture2D(uTex, uv);
+        float b = texture2D(uTex, uv - vec2(split, 0.0)).b;
+        gl_FragColor = vec4(r, g.g, b, 1.0) * uAlpha;
       }`;
     const compile = (type: number, src: string) => {
       const sh = gl.createShader(type)!;
@@ -959,17 +599,14 @@ const LAPS = 3;
     const uAlpha = u('uAlpha');
     const uImg = u('uImg');
     const uTime = u('uTime');
-    const uReveal = u('uReveal');
-    const uSeed = u('uSeed');
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     type Tex = { tex: WebGLTexture; w: number; h: number } | null;
-    const textures = new Map<string, Tex>();
+    const textures = new Map<HTMLElement, Tex>();
     const load = (el: HTMLElement) => {
-      const src = el.dataset.src!;
-      if (textures.has(src)) return;
-      textures.set(src, null);
+      if (textures.has(el)) return;
+      textures.set(el, null);
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
@@ -979,15 +616,15 @@ const LAPS = 3;
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        textures.set(src, { tex, w: img.naturalWidth, h: img.naturalHeight });
+        textures.set(el, { tex, w: img.naturalWidth, h: img.naturalHeight });
       };
-      img.src = src;
+      img.src = el.dataset.src!;
     };
 
     let dpr = 1;
     const t0 = performance.now();
     return {
-      draw(els: HTMLElement[], bend: number, hover: number[], reveal: number[]) {
+      draw(els: HTMLElement[], bend: number, hover: number[]) {
         const cr = canvas.getBoundingClientRect();
         dpr = Math.min(window.devicePixelRatio || 1, 2);
         const W = Math.round(cr.width * dpr);
@@ -1004,11 +641,11 @@ const LAPS = 3;
         gl.uniform1f(uTime, (performance.now() - t0) / 1000);
         els.forEach((el, i) => {
           const r = el.getBoundingClientRect();
-          if (r.right < cr.left - 200 || r.left > cr.right + 200) return;
           // the card being opened is shown by its DOM image for the morph
           if (el.closest('.is-opening')) return;
+          if (r.right < cr.left - 200 || r.left > cr.right + 200) return;
           load(el);
-          const t = textures.get(el.dataset.src!);
+          const t = textures.get(el);
           if (!t) return;
           const alpha = Number(getComputedStyle(el.closest('[data-card]')!).opacity);
           if (alpha <= 0.001) return;
@@ -1016,8 +653,6 @@ const LAPS = 3;
           gl.uniform4f(uRect, r.left - cr.left, r.top - cr.top, r.width, r.height);
           gl.uniform2f(uImg, t.w, t.h);
           gl.uniform1f(uHover, hover[i]);
-          gl.uniform1f(uReveal, reveal[i]);
-          gl.uniform1f(uSeed, i % 7);
           gl.uniform1f(uAlpha, alpha);
           gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         });
