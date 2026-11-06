@@ -51,9 +51,11 @@ const experience: any[] = about.experience ?? [];
 
     <section class="about__row about__row--line" data-build>
       <h2 class="about__label" data-split>Experience</h2>
-      <p class="t-compact about__col" data-split>
+      <div class="about__col">
+        <p class="t-compact" data-split>
         {about.experienceLead} <span class="muted">{about.experienceBody}</span>
-      </p>
+        </p>
+      </div>
     </section>
 
     {experience.length > 0 && (
