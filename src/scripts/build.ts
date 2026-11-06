@@ -403,6 +403,16 @@ async function buildItem(sec: Section, w: Cursor, item: Item) {
   finish(item);
 }
 
+/** Flex/grid parents would turn every word into its own item; keep the words together. */
+function holderFor(node: Text): DocumentFragment | HTMLElement {
+  const d = node.parentElement ? getComputedStyle(node.parentElement).display : '';
+  if (/flex|grid/.test(d)) {
+    const s = document.createElement('span');
+    return s;
+  }
+  return document.createDocumentFragment();
+}
+
 function wrapWords(el: HTMLElement) {
   if (el.querySelector('.bw')) return;
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
@@ -410,7 +420,7 @@ function wrapWords(el: HTMLElement) {
   while (walker.nextNode()) texts.push(walker.currentNode as Text);
   for (const node of texts) {
     if (!node.textContent?.trim()) continue;
-    const frag = document.createDocumentFragment();
+    const frag = holderFor(node);
     for (const part of node.textContent.split(/(\s+)/)) {
       if (!part) continue;
       if (/^\s+$/.test(part)) {

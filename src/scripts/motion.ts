@@ -9,13 +9,23 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').match
    delay, so lines rise one after another (~80 ms apart). Wrapping words
    rather than whole lines keeps nested markup (e.g. muted spans) intact. */
 
+/** Flex/grid parents would turn every word into its own item; keep the words together. */
+function holderFor(node: Text): DocumentFragment | HTMLElement {
+  const d = node.parentElement ? getComputedStyle(node.parentElement).display : '';
+  if (/flex|grid/.test(d)) {
+    const s = document.createElement('span');
+    return s;
+  }
+  return document.createDocumentFragment();
+}
+
 function wrapWords(root: HTMLElement) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const texts: Text[] = [];
   while (walker.nextNode()) texts.push(walker.currentNode as Text);
   for (const node of texts) {
     if (!node.textContent?.trim()) continue;
-    const frag = document.createDocumentFragment();
+    const frag = holderFor(node);
     for (const part of node.textContent.split(/(\s+)/)) {
       if (!part) continue;
       if (/^\s+$/.test(part)) {
