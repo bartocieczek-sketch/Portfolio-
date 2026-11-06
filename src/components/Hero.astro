@@ -433,6 +433,9 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     // Covers are a muted negative until their agent has drawn them in,
     // then take on their colour quickly (each one only once).
     // (read on the first frame: the build script marks the covers after this runs)
+    const COLOUR_DELAY = 450;
+    const COLOUR_MS = 1400;
+    const builtAt = medias.map(() => -1);
     const colourDone = medias.map(() => true);
     const neg = medias.map(() => 0);
     let negReady = false;
@@ -446,11 +449,17 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           neg[i] = colourDone[i] ? 0 : 1;
         });
       }
-      // each cover takes its colour as soon as its agent has drawn it in,
-      // i.e. right as it comes into view
+      // each cover takes its colour once its agent has drawn it in (right as it
+      // comes into view): a short beat in negative, then a smooth colour wash
+      const now = performance.now();
       for (let i = 0; i < medias.length; i++) {
-        if (!colourDone[i] && !medias[i].classList.contains('bp-box')) colourDone[i] = true;
-        neg[i] += ((colourDone[i] ? 0 : 1) - neg[i]) * 0.14;
+        if (!colourDone[i] && !medias[i].classList.contains('bp-box')) {
+          colourDone[i] = true;
+          builtAt[i] = now;
+        }
+        if (builtAt[i] < 0) continue;
+        const k = clamp((now - builtAt[i] - COLOUR_DELAY) / COLOUR_MS);
+        neg[i] = 1 - (k < 0.5 ? 4 * k ** 3 : 1 - (-2 * k + 2) ** 3 / 2);
       }
     };
 
@@ -767,10 +776,14 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         vec4 g = texture2D(uTex, uv);
         float b = texture2D(uTex, uv - vec2(split, 0.0)).b;
         vec3 col = vec3(r, g.g, b);
-        // muted grey negative, kept within the page's own tones
+        // muted grey negative, kept within the page's own tones; the colour
+        // then washes in diagonally with a soft edge (uNeg 1 → 0)
         float lum = dot(col, vec3(0.299, 0.587, 0.114));
         vec3 neg = vec3(mix(0.09, 0.6, 1.0 - lum));
-        col = mix(col, neg, uNeg);
+        float w = 0.35;
+        float front = (1.0 - uNeg) * (1.0 + w);
+        float d = (vUv.x + (1.0 - vUv.y)) * 0.5;
+        col = mix(col, neg, smoothstep(front - w, front, d));
         gl_FragColor = vec4(col, 1.0) * uAlpha;
       }`;
     const compile = (type: number, src: string) => {
