@@ -204,12 +204,35 @@ function init() {
       block.classList.add(kind === 'box' ? 'bp-box' : 'bp-text');
       const item: Item = { el: block, kind, section, state: 'pending' };
       itemByEl.set(block, item);
+      waiting.add(item);
       io.observe(block);
     }
   }
+  if (waiting.size) window.addEventListener('scroll', onScroll, { passive: true });
 }
 
 const itemByEl = new WeakMap<Element, Item>();
+const waiting = new Set<Item>();
+
+// Fast jumps (End key, anchor links) can skip over blocks without them ever
+// intersecting; anything that ends up above the viewport is shown at once.
+let sweepQueued = false;
+function sweep() {
+  sweepQueued = false;
+  for (const item of waiting) {
+    if (item.el.getBoundingClientRect().bottom >= 0) continue;
+    const q = item.section.queue;
+    const i = q.indexOf(item);
+    if (i >= 0) q.splice(i, 1);
+    finish(item);
+  }
+  if (!waiting.size) window.removeEventListener('scroll', onScroll);
+}
+function onScroll() {
+  if (sweepQueued) return;
+  sweepQueued = true;
+  requestAnimationFrame(sweep);
+}
 
 function onIntersect(entries: IntersectionObserverEntry[]) {
   for (const e of entries) {
@@ -348,7 +371,9 @@ function addEl(parent: HTMLElement, cls: string, css: Partial<CSSStyleDeclaratio
 }
 
 async function buildItem(sec: Section, w: Cursor, item: Item) {
+  if (item.state === 'done') return;
   item.state = 'building';
+  waiting.delete(item);
   const r = rel(item.el, sec.el);
   if (r.w < 2 || r.h < 2) return finish(item);
 
@@ -476,6 +501,7 @@ async function type(sec: Section, w: Cursor, item: Item) {
 
 function finish(item: Item) {
   item.state = 'done';
+  waiting.delete(item);
   item.el.classList.remove('bp-text', 'bp-box', 'is-typing');
 }
 
