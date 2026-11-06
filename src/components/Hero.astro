@@ -665,14 +665,17 @@ const LAPS = 3;
       moved = 0;
       dragX = e.clientX;
       dragV = 0;
-      carousel.setPointerCapture(e.pointerId);
-      carousel.classList.add('is-dragging');
     });
     carousel.addEventListener('pointermove', (e) => {
       if (!dragging) return;
       const dx = e.clientX - dragX;
       dragX = e.clientX;
       moved += Math.abs(dx);
+      // capture only once it's really a drag, so plain clicks still reach the links
+      if (moved > 6 && !carousel.hasPointerCapture(e.pointerId)) {
+        carousel.setPointerCapture(e.pointerId);
+        carousel.classList.add('is-dragging');
+      }
       offset -= dx;
       dragV = -dx;
     });
