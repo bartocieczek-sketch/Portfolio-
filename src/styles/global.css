@@ -441,7 +441,7 @@ html:active-view-transition-type(card-back)::view-transition-old(root) {
   animation: none;
 }
 html:active-view-transition-type(card-back)::view-transition-new(root) {
-  animation: vt-fade-in 0.35s ease both;
+  animation: vt-fade-in 0.5s var(--ease-out) both;
 }
 html:active-view-transition-type(card)::view-transition-old(root) {
   animation: vt-fade-out 0.45s ease both;

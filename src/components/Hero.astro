@@ -547,7 +547,9 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
 
       for (let i = 0; i < cards.length; i++) hover[i] += ((hovered === i ? 1 : 0) - hover[i]) * 0.12;
       updateNeg();
-      if (gl) gl.draw(medias, bend, hover, null, neg);
+      // a cover is about to fly back: draw nothing until it takes off, so the
+      // carousel never flashes in at its resting positions first
+      if (gl && !pendingReturn) gl.draw(medias, bend, hover, null, neg);
 
       if (cursor && finePointer) {
         const pinned = hr.bottom >= vh - 1;
@@ -637,6 +639,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         return null;
       }
     };
+    let pendingReturn = false;
     const startReturn = (keepScroll: boolean) => {
       const ret = takeReturn();
       const i = ret ? cards.findIndex((c) => c.querySelector<HTMLAnchorElement>('.hcard__link')?.pathname.replace(/\/$/, '').endsWith(`/${ret.slug}`)) : -1;
@@ -646,6 +649,9 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       }
       root.classList.add('is-returning');
       hero.classList.add('is-flying');
+      pendingReturn = true;
+      gl.clear();
+      gl.ready(medias[i]);
       if (!keepScroll && travel > 0) {
         const off = cards[i].offsetLeft;
         const q = clamp(off / travel);
@@ -655,10 +661,15 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         else window.scrollTo(0, y);
       }
       lenisRef()?.stop();
-      // let one frame place the track, then measure the card and take off
+      // let a frame place the track and the cover's texture load, then take off
       flight = null;
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
+      const t0 = performance.now();
+      const takeOff = () => {
+        if (!gl?.ready(medias[i]) && performance.now() - t0 < 800) {
+          requestAnimationFrame(takeOff);
+          return;
+        }
+        {
           const hr = hero.getBoundingClientRect();
           const p = clamp(-hr.top / (hero.offsetHeight - vh || 1));
           const q = clamp((p - 0.04) / 0.86);
@@ -680,8 +691,10 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
             done: true,
             back: true,
           };
-        }),
-      );
+          pendingReturn = false;
+        }
+      };
+      requestAnimationFrame(() => requestAnimationFrame(takeOff));
     };
 
     window.addEventListener('pageshow', (e) => {
@@ -869,6 +882,16 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     let lastSig = '';
     const t0 = performance.now();
     return {
+      clear() {
+        lastSig = '';
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      },
+      /** start loading a cover's texture; true once it can be drawn */
+      ready(el: HTMLElement) {
+        load(el);
+        return !!textures.get(el);
+      },
       draw(els: HTMLElement[], bend: number, hover: number[], fly?: Fly | null, neg?: number[]) {
         const cr = canvas.getBoundingClientRect();
         dpr = Math.min(window.devicePixelRatio || 1, window.matchMedia('(pointer: coarse)').matches ? 1 : 1.5);
