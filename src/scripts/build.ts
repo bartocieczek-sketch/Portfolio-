@@ -530,5 +530,71 @@ function finish(item: Item) {
   item.el.classList.remove('bp-text', 'bp-box', 'is-typing');
 }
 
+/* ---------------- Followers ----------------
+   Once the first screen is built, a few of the agents stay around and trail
+   the visitor's own cursor, each with its own lag, like collaborators in a
+   shared file. Mouse/trackpad only. */
+
+function followers() {
+  if (reduceMotion || preview || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const layer = document.createElement('div');
+  layer.className = 'bfollow';
+  layer.setAttribute('aria-hidden', 'true');
+  document.body.append(layer);
+
+  // offset from the pointer and how quickly each one catches up
+  const crew = [
+    { name: 'Design', c: '#dfdfdf', ox: -46, oy: 26, k: 0.11 },
+    { name: 'Motion', c: '#a8a8a8', ox: 34, oy: 38, k: 0.075 },
+    { name: 'Dev', c: '#7d7d7d', ox: -10, oy: 64, k: 0.05 },
+  ].map((m, i) => {
+    const el = document.createElement('div');
+    el.className = 'bcur';
+    el.style.setProperty('--c', m.c);
+    el.innerHTML = `${ARROW}<span class="bcur__tag">${m.name}</span>`;
+    layer.append(el);
+    return { ...m, el, x: -100, y: -100, phase: i * 2.1 };
+  });
+
+  let px = -100;
+  let py = -100;
+  let seen = false;
+  window.addEventListener(
+    'pointermove',
+    (e) => {
+      px = e.clientX;
+      py = e.clientY;
+      if (!seen) {
+        seen = true;
+        // arrive from just outside the nearest edge rather than popping in
+        for (const m of crew) {
+          m.x = px + m.ox * 4;
+          m.y = py + m.oy * 4;
+        }
+      }
+      layer.classList.add('is-on');
+    },
+    { passive: true },
+  );
+  document.documentElement.addEventListener('pointerleave', () => layer.classList.remove('is-on'));
+
+  const tick = (now: number) => {
+    requestAnimationFrame(tick);
+    if (!seen) return;
+    const t = now / 1000;
+    for (const m of crew) {
+      // a slow drift around their spot so they never sit perfectly still
+      const tx = px + m.ox + Math.sin(t * 0.8 + m.phase) * 6;
+      const ty = py + m.oy + Math.cos(t * 0.6 + m.phase) * 5;
+      m.x += (tx - m.x) * m.k;
+      m.y += (ty - m.y) * m.k;
+      m.el.style.transform = `translate3d(${m.x.toFixed(1)}px, ${m.y.toFixed(1)}px, 0)`;
+    }
+  };
+  requestAnimationFrame(tick);
+}
+
 // Start last, once every helper above is defined
 if (sectionEls.length && !reduceMotion && !preview) init();
+// Followers join once the page has been put together
+window.setTimeout(followers, root.classList.contains('is-returning') ? 300 : 2600);
