@@ -602,7 +602,9 @@ const captions = [{ title: 'Showreel', meta: `${name} · ©${new Date().getFullY
       ptr.x += (ptr.tx - ptr.x) * 0.08;
       ptr.y += (ptr.ty - ptr.y) * 0.08;
 
-      const s = Math.max(0, -hero.getBoundingClientRect().top);
+      const hr = hero.getBoundingClientRect();
+      const s = Math.max(0, -hr.top);
+      const pinned = hr.bottom >= vh - 1;
       const q1 = clamp(s / (0.8 * unit));
       const e1 = reduceMotion ? (q1 > 0.5 ? 1 : 0) : q1 * q1 * (3 - 2 * q1);
       const calm = 1 - e1; // pointer play fades out as the frame grows
@@ -661,7 +663,7 @@ const captions = [{ title: 'Showreel', meta: `${name} · ©${new Date().getFullY
       if (cursor && finePointer) {
         const fw = (base.w * target) / 2;
         const fh = (base.h * target) / 2;
-        const over = e1 > 0.95 && shown > 0 && Math.abs(ptr.cx - vw / 2) < fw && Math.abs(ptr.cy - vh / 2) < fh;
+        const over = pinned && e1 > 0.95 && shown > 0 && Math.abs(ptr.cx - vw / 2) < fw && Math.abs(ptr.cy - vh / 2) < fh;
         cursor.classList.toggle('is-on', over);
         ptr.ccx += (ptr.cx - ptr.ccx) * 0.2;
         ptr.ccy += (ptr.cy - ptr.ccy) * 0.2;
