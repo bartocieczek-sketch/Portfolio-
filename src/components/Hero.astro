@@ -430,8 +430,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     let visible = true;
     new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(hero);
     const hover = cards.map(() => 0);
-    // Covers stay a muted negative while the agents build the page, then take
-    // on their colour once the building is done (each one only once).
+    // Covers are a muted negative until their agent has drawn them in,
+    // then take on their colour quickly (each one only once).
     // (read on the first frame: the build script marks the covers after this runs)
     const colourDone = medias.map(() => true);
     const neg = medias.map(() => 0);
@@ -446,10 +446,11 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           neg[i] = colourDone[i] ? 0 : 1;
         });
       }
-      const building = root.classList.contains('is-building');
+      // each cover takes its colour as soon as its agent has drawn it in,
+      // i.e. right as it comes into view
       for (let i = 0; i < medias.length; i++) {
-        if (!colourDone[i] && !medias[i].classList.contains('bp-box') && !building) colourDone[i] = true;
-        neg[i] += ((colourDone[i] ? 0 : 1) - neg[i]) * 0.045;
+        if (!colourDone[i] && !medias[i].classList.contains('bp-box')) colourDone[i] = true;
+        neg[i] += ((colourDone[i] ? 0 : 1) - neg[i]) * 0.14;
       }
     };
 

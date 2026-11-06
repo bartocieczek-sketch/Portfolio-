@@ -287,7 +287,7 @@ function dispatch(sec: Section) {
   }
 }
 
-// Sections show a faint 12-column layout grid while agents are working in them
+// Marks a section while agents are working in it
 const activeIn = new WeakMap<Section, number>();
 function constructing(sec: Section, d: number) {
   const n = (activeIn.get(sec) ?? 0) + d;
