@@ -1,6 +1,8 @@
 ---
 import Nav from './Nav.astro';
 import { stegaClean } from '@sanity/client/stega';
+import { urlFor } from '../lib/sanity';
+import { href } from '../lib/preview';
 
 interface Props {
   // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
@@ -9,7 +11,22 @@ interface Props {
   settings: any;
 }
 const { home, settings } = Astro.props;
-const name: string = stegaClean(settings.name ?? 'Bart Ocieczek').toUpperCase();
+const name: string = stegaClean(settings.name ?? 'Bart Ocieczek');
+
+// Up to four case studies flank the reel: half on each side
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const picks: any[] = (home.projects ?? []).filter((p: any) => p?.cover?.asset).slice(0, 4);
+const half = Math.ceil(picks.length / 2);
+const tile = (p: any, side: 'l' | 'r', i: number) => ({
+  title: (p.cardTitle || p.title || '').trim(),
+  href: href(Astro.locals, `/${p.slug}`),
+  src: urlFor(p.cover).width(520).quality(80).url(),
+  side,
+  // distance from the reel: 1 = next to it, 2 = outer
+  dist: i,
+});
+const left = picks.slice(0, half).map((p, i, a) => tile(p, 'l', a.length - i));
+const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
 ---
 
 <script is:inline>
@@ -25,72 +42,79 @@ const name: string = stegaClean(settings.name ?? 'Bart Ocieczek').toUpperCase();
       skip = type === 'back_forward' || (type === 'navigate' && internal);
     } catch (e) {}
     if (!skip && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      // Start from the top instead of the restored scroll position
       if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
       window.scrollTo(0, 0);
-      document.documentElement.classList.add('is-intro', 'is-scroll-locked');
+      document.documentElement.classList.add('is-intro');
     }
   })();
 </script>
 
 <section class="hero" data-hero>
-  <canvas class="hero__dither intro-fade" aria-hidden="true" data-dither style="--delay:0ms"></canvas>
+  <div class="hero__sticky">
+    <canvas class="hero__dither" aria-hidden="true" data-dither></canvas>
 
-  <div class="hero__inner">
-    <div class="intro-fade" style="--delay:0ms">
+    <div class="hero__nav intro-item" style="--delay:0ms">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
     </div>
 
-    <div class="hero__meta">
-      <span class="t-label intro-fade" style="--delay:120ms">{home.established}</span>
-      <span class="t-label intro-fade" style="--delay:160ms">{home.location}</span>
-    </div>
-
-    {home.heroVideoUrl && (
-      <div class="hero__stage" data-hero-stage>
-        <div class="hero__frame" data-intro-frame>
-          <video src={home.heroVideoUrl} autoplay muted playsinline preload="auto" data-intro-video />
-        </div>
-        <span class="hero__mark hero__mark--tl intro-fade" aria-hidden="true" style="--delay:60ms"></span>
-        <span class="hero__mark hero__mark--tr intro-fade" aria-hidden="true" style="--delay:90ms"></span>
-        <span class="hero__mark hero__mark--bl intro-fade" aria-hidden="true" style="--delay:120ms"></span>
-        <span class="hero__mark hero__mark--br intro-fade" aria-hidden="true" style="--delay:150ms"></span>
-        <p class="hero__caption t-label-small intro-fade" style="--delay:200ms">
-          <span>{name}</span>
-          <span class="muted">Reel ©{new Date().getFullYear()}</span>
-        </p>
-      </div>
-    )}
-
-    <div class="hero__bottom">
-      <div class="hero__headline">
+    <div class="hero__center">
+      <div class="hero__text" data-hero-text>
         {home.badgeLabel && (
-          <a class="badge intro-fade intro-rise" href={home.badgeUrl} target="_blank" rel="noopener" style="--delay:140ms">
+          <a class="badge intro-item" href={home.badgeUrl} target="_blank" rel="noopener" style="--delay:80ms">
             <svg viewBox="0 0 10 15" width="8" height="12" aria-hidden="true"><path d="M0 0h10v5H5L0 0Zm0 5h5l5 5H5v5L0 10V5Z" fill="currentColor" /></svg>
             {home.badgeLabel}
           </a>
         )}
-        {home.heroText && <h1 class="hero__statement t-subheading intro-rise" style="--delay:200ms">{home.heroText}</h1>}
+        {home.heroText && <h1 class="hero__statement intro-item" style="--delay:140ms">{home.heroText}</h1>}
       </div>
-      <div class="hero__aside intro-fade intro-rise" style="--delay:280ms">
-        {settings.role && <p class="t-label muted">{settings.role}</p>}
-        <span class="hero__scroll t-label" aria-hidden="true">Scroll <span class="hero__arrow">↓</span></span>
+
+      <div class="hero__strip" data-hero-strip>
+        {left.map((t) => (
+          <a class="hero__tile intro-tile" href={t.href} data-side="l" style={`--dist:${t.dist}`}>
+            <img src={t.src} alt="" loading="eager" decoding="async" />
+            <span class="hero__tile-label t-label-small">{t.title}</span>
+          </a>
+        ))}
+        {home.heroVideoUrl && (
+          <div class="hero__reel intro-tile" style="--dist:0" data-hero-reel>
+            <video src={home.heroVideoUrl} autoplay muted playsinline preload="auto" aria-label={`${name} showreel`} />
+          </div>
+        )}
+        {right.map((t) => (
+          <a class="hero__tile intro-tile" href={t.href} data-side="r" style={`--dist:${t.dist}`}>
+            <img src={t.src} alt="" loading="eager" decoding="async" />
+            <span class="hero__tile-label t-label-small">{t.title}</span>
+          </a>
+        ))}
       </div>
+
+      <p class="hero__meta t-label-small intro-item" style="--delay:420ms" data-hero-meta>
+        <span>{home.established}</span>
+        <span aria-hidden="true">·</span>
+        <span>{home.location}</span>
+      </p>
     </div>
   </div>
 </section>
 
 <style>
+  /* The section is taller than the screen: the content stays pinned while the
+     extra height drives the reel's scroll scale. */
   .hero {
+    position: relative;
+    height: 200vh;
+    background: var(--surface-dark);
+  }
+  .hero__sticky {
     position: sticky;
     top: 0;
     height: 100vh;
     height: 100svh;
     min-height: 560px;
-    background: var(--surface-dark);
     overflow: clip;
-    z-index: 1;
     padding: var(--gutter);
+    display: flex;
+    flex-direction: column;
   }
   .hero__dither {
     position: absolute;
@@ -99,103 +123,38 @@ const name: string = stegaClean(settings.name ?? 'Bart Ocieczek').toUpperCase();
     height: 100%;
     pointer-events: none;
   }
-  .hero__inner {
+  .hero__nav {
+    position: relative;
+    z-index: 3;
+  }
+  .hero__center {
     position: relative;
     z-index: 2;
-    height: 100%;
-    display: grid;
-    grid-template-rows: auto auto 1fr auto;
-    gap: 24px;
-  }
-  .hero__meta {
-    display: flex;
-    justify-content: space-between;
-  }
-  .hero__meta .t-label {
-    color: var(--text-secondary);
-  }
-
-  /* ---------- Key visual ---------- */
-  .hero__stage {
-    position: relative;
-    z-index: 5;
-    align-self: center;
-    justify-self: center;
-    width: clamp(240px, 24vw, 460px);
-    transform-origin: 50% 50%;
-    will-change: transform;
-  }
-  .hero__frame {
-    position: relative;
-    aspect-ratio: 1.43;
-    overflow: hidden;
-    transform-origin: 50% 50%;
-  }
-  .hero__frame video {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  /* Crop marks around the tile */
-  .hero__mark {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border: 0 solid var(--text-secondary);
-  }
-  .hero__mark--tl {
-    top: -10px;
-    left: -10px;
-    border-top-width: 1px;
-    border-left-width: 1px;
-  }
-  .hero__mark--tr {
-    top: -10px;
-    right: -10px;
-    border-top-width: 1px;
-    border-right-width: 1px;
-  }
-  .hero__mark--bl {
-    bottom: -10px;
-    left: -10px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
-  }
-  .hero__mark--br {
-    bottom: -10px;
-    right: -10px;
-    border-bottom-width: 1px;
-    border-right-width: 1px;
-  }
-  .hero__caption {
-    position: absolute;
-    top: calc(100% + 18px);
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    color: var(--text-primary);
-  }
-
-  /* ---------- Bottom ---------- */
-  .hero__bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 40px;
-  }
-  .hero__headline {
-    width: 504px;
-    max-width: 100%;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 24px;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    padding-bottom: 32px;
+  }
+  .hero__text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    text-align: center;
   }
   .hero__statement {
     margin: 0;
+    max-width: 560px;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: clamp(22px, 1.9vw, 30px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    text-wrap: balance;
   }
   .badge {
     display: inline-flex;
@@ -211,70 +170,107 @@ const name: string = stegaClean(settings.name ?? 'Bart Ocieczek').toUpperCase();
     letter-spacing: -0.01em;
     border-radius: 2px;
   }
-  .hero__aside {
+
+  /* ---------- Strip: projects around the reel ---------- */
+  .hero__strip {
+    --h: clamp(150px, 15vw, 250px);
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 16px;
-    text-align: right;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
   }
-  .hero__aside .t-label {
-    max-width: 320px;
-    text-wrap: balance;
+  .hero__reel {
+    position: relative;
+    z-index: 2;
+    height: var(--h);
+    aspect-ratio: 1.43;
+    transform-origin: 50% 50%;
+    will-change: transform;
   }
-  .hero__scroll {
-    display: inline-flex;
-    gap: 8px;
+  .hero__reel video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero__tile {
+    position: relative;
+    height: calc(var(--h) * 0.62);
+    aspect-ratio: 0.8;
+    will-change: transform, opacity;
+  }
+  .hero__tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(1) brightness(0.7);
+    transition: filter 0.4s var(--ease-out), transform 0.5s var(--ease-out);
+  }
+  .hero__tile-label {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    white-space: nowrap;
     color: var(--text-primary);
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.25s var(--ease-out), transform 0.25s var(--ease-out);
   }
-  .hero__arrow {
-    display: inline-block;
-    animation: hero-nudge 1.8s var(--ease-in-out) infinite;
+  .hero__tile[data-side='l'] .hero__tile-label {
+    left: auto;
+    right: 0;
   }
-  @keyframes hero-nudge {
-    0%,
-    100% {
-      transform: translateY(-2px);
+  @media (hover: hover) and (pointer: fine) {
+    .hero__tile:hover img,
+    .hero__tile:focus-visible img {
+      filter: none;
+      transform: scale(1.04);
     }
-    50% {
-      transform: translateY(3px);
+    .hero__tile:hover .hero__tile-label,
+    .hero__tile:focus-visible .hero__tile-label {
+      opacity: 1;
+      transform: none;
     }
   }
 
-  /* ---------- Intro ----------
-     1. The reel fills the whole screen and fades in.
-     2. It plays for a moment, then shrinks into its small framed tile.
-     3. Crop marks, captions and text arrive as it lands. Scroll is locked
-        until then. */
-  :global(html.is-intro) .intro-fade {
-    opacity: 0;
+  .hero__meta {
+    display: flex;
+    gap: 10px;
+    color: var(--text-secondary);
   }
-  :global(html.is-intro) .intro-rise {
-    transform: translateY(12px);
+
+  /* ---------- Intro ----------
+     Text rises in, then the tiles appear from the reel outwards. */
+  :global(html.is-intro) .intro-item {
+    opacity: 0;
+    transform: translateY(14px);
   }
   /* 1% instead of 0 so the browser counts the h1 as painted from the first
      frame (otherwise Lighthouse reports NO_LCP). */
   :global(html.is-intro) .hero__statement {
     opacity: 0.01;
   }
-  :global(html.is-intro) .hero__frame {
+  :global(html.is-intro) .intro-tile {
     opacity: 0;
+    transform: translateY(24px) scale(0.96);
   }
-  .hero.is-ready .intro-fade,
-  .hero.is-ready .intro-rise {
+  .hero.is-ready .intro-item,
+  .hero.is-ready .intro-tile {
     opacity: 1;
     transform: none;
-    transition: opacity 0.7s var(--ease-out), transform 0.9s var(--ease-expo);
+    transition: opacity 0.8s var(--ease-out), transform 1s var(--ease-expo);
     transition-delay: var(--delay, 0ms);
   }
-  .hero.is-ready .hero__dither {
-    transition-duration: 1.2s;
+  .hero.is-ready .intro-tile {
+    transition-delay: calc(260ms + var(--dist) * 90ms);
+  }
+  /* Once settled, scroll drives these directly; transitions would make it lag */
+  .hero.is-settled :is(.intro-item, .intro-tile) {
+    transition: none;
   }
   /* Safety net: if the intro script never runs, show everything anyway */
-  :global(html.is-intro) .hero:not(.is-ready) .intro-fade,
-  :global(html.is-intro) .hero:not(.is-ready) .intro-rise,
-  :global(html.is-intro) .hero:not(.is-ready) .hero__frame {
-    animation: intro-fallback 0.6s 4.5s forwards;
+  :global(html.is-intro) .hero:not(.is-ready) :is(.intro-item, .intro-tile) {
+    animation: intro-fallback 0.6s 3s forwards;
   }
   @keyframes intro-fallback {
     to {
@@ -282,33 +278,29 @@ const name: string = stegaClean(settings.name ?? 'Bart Ocieczek').toUpperCase();
       transform: none;
     }
   }
-  :global(html.is-scroll-locked),
-  :global(html.is-scroll-locked body) {
-    overflow: hidden;
+
+  @media (max-width: 809px) {
+    .hero {
+      height: 170vh;
+    }
+    .hero__center {
+      gap: 36px;
+    }
+    .hero__strip {
+      --h: 46vw;
+      gap: 8px;
+    }
+    /* Only the inner pair fits on a phone */
+    .hero__tile[style*='--dist:2'] {
+      display: none;
+    }
+    .hero__tile {
+      height: calc(var(--h) * 0.7);
+    }
   }
   @media (prefers-reduced-motion: reduce) {
-    .hero__arrow {
-      animation: none;
-    }
-  }
-  @media (max-width: 809px) {
-    .hero__stage {
-      width: min(72vw, 360px);
-    }
-    .hero__bottom {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 28px;
-    }
-    .hero__aside {
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: flex-end;
-      width: 100%;
-      text-align: left;
-    }
-    .hero__statement {
-      font-size: 22px;
+    .hero {
+      height: auto;
     }
   }
 </style>
@@ -317,85 +309,79 @@ const name: string = stegaClean(settings.name ?? 'Bart Ocieczek').toUpperCase();
   const hero = document.querySelector<HTMLElement>('[data-hero]');
   const root = document.documentElement;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const finishIntro = () => {
-    root.classList.remove('is-scroll-locked');
-    document.dispatchEvent(new CustomEvent('intro:done'));
-  };
-  const frame = document.querySelector<HTMLElement>('[data-intro-frame]');
 
   // ---------- Intro ----------
-  if (hero && root.classList.contains('is-intro') && frame) {
-    // Timeline (ms):
-    //   0–800      reel fades in full screen, settling from a slight zoom
-    //   800–2000   holds while the reel plays
-    //   2000–3200  shrinks into its tile; the rest arrives at ~55% of that
-    const easeOut = 'cubic-bezier(0.23, 1, 0.32, 1)';
-    const easeShrink = 'cubic-bezier(0.76, 0, 0.24, 1)';
-    const ENTER = 800;
-    const HOLD = 1200;
-    const SHRINK = 1200;
-
-    const r = frame.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // Uniform scale that covers the screen (the video is object-fit: cover,
-    // so it keeps its crop all the way down)
-    const s = Math.max(vw / r.width, vh / r.height) * 1.02;
-    const dx = vw / 2 - (r.left + r.width / 2);
-    const dy = vh / 2 - (r.top + r.height / 2);
-    const full = `translate(${dx}px, ${dy}px) scale(${s})`;
-
-    frame.style.opacity = '1';
-    frame.animate(
-      [
-        { transform: `translate(${dx}px, ${dy}px) scale(${s * 1.08})`, opacity: 0 },
-        { transform: full, opacity: 1 },
-      ],
-      { duration: ENTER, easing: easeOut, fill: 'both' },
-    );
-    frame
-      .animate([{ transform: full }, { transform: 'none' }], {
-        duration: SHRINK,
-        delay: ENTER + HOLD,
-        easing: easeShrink,
-        fill: 'both',
-      })
-      .finished.then(() => {
-        frame.getAnimations().forEach((a) => a.cancel());
-        finishIntro();
-      });
-
-    setTimeout(() => hero.classList.add('is-ready'), ENTER + HOLD + SHRINK * 0.55);
+  if (hero && root.classList.contains('is-intro')) {
+    requestAnimationFrame(() => requestAnimationFrame(() => hero.classList.add('is-ready')));
+    window.setTimeout(() => hero.classList.add('is-settled'), 1800);
   } else {
-    hero?.classList.add('is-ready');
+    hero?.classList.add('is-ready', 'is-settled');
     root.classList.remove('is-intro');
-    finishIntro();
   }
+  document.dispatchEvent(new CustomEvent('intro:done'));
 
   // ---------- Scroll ----------
-  // While the page slides over the sticky hero, the tile grows a little and
-  // the text around it fades, so the reel stays the last thing you see.
-  const stage = document.querySelector<HTMLElement>('[data-hero-stage]');
-  if (hero && stage && !reduceMotion) {
-    const fading = [...hero.querySelectorAll<HTMLElement>('.hero__meta, .hero__bottom, .hero__caption, .hero__mark')];
+  // While the hero is pinned, the reel grows to a large (not full-screen)
+  // frame in the centre; the projects slide outwards and the text fades.
+  const reel = document.querySelector<HTMLElement>('[data-hero-reel]');
+  if (hero && reel && !reduceMotion) {
+    const tiles = [...hero.querySelectorAll<HTMLElement>('.hero__tile')];
+    const text = hero.querySelector<HTMLElement>('[data-hero-text]');
+    const meta = hero.querySelector<HTMLElement>('[data-hero-meta]');
+    let base = { w: 1, h: 1, cx: 0, cy: 0 };
+
+    const measure = () => {
+      const prev = reel.style.transform;
+      reel.style.transform = '';
+      const r = reel.getBoundingClientRect();
+      const top = hero.getBoundingClientRect().top;
+      base = { w: r.width, h: r.height, cx: r.left + r.width / 2, cy: r.top - top + r.height / 2 };
+      reel.style.transform = prev;
+    };
+
     let queued = false;
     const update = () => {
       queued = false;
-      const p = Math.min(1, Math.max(0, window.scrollY / window.innerHeight));
-      stage.style.transform = p ? `translateY(${(p * 12).toFixed(2)}vh) scale(${(1 + p * 0.6).toFixed(4)})` : '';
-      const o = p ? String(Math.max(0, 1 - p * 1.6).toFixed(3)) : '';
-      for (const el of fading) el.style.opacity = o;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const range = hero.offsetHeight - vh;
+      const p = Math.min(1, Math.max(0, -hero.getBoundingClientRect().top / range));
+      // ease the progress so the growth settles gently
+      const e = 1 - Math.pow(1 - p, 3);
+
+      // target: 72% of the width, never taller than 78% of the screen
+      const target = Math.min((vw * 0.72) / base.w, (vh * 0.78) / base.h);
+      const scale = 1 + (target - 1) * e;
+      const dx = (vw / 2 - base.cx) * e;
+      const dy = (vh / 2 - base.cy) * e;
+      reel.style.transform = p ? `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale(${scale.toFixed(4)})` : '';
+
+      for (const t of tiles) {
+        const dir = t.dataset.side === 'l' ? -1 : 1;
+        const dist = Number(t.style.getPropertyValue('--dist')) || 1;
+        const x = dir * e * (base.w * (target - 1) * 0.5 + 60 * dist);
+        t.style.transform = p ? `translate3d(${x.toFixed(1)}px, ${(dy * 0.4).toFixed(1)}px, 0)` : '';
+        t.style.opacity = p ? String(Math.max(0, 1 - p * 1.8).toFixed(3)) : '';
+      }
+      const fade = p ? String(Math.max(0, 1 - p * 2.4).toFixed(3)) : '';
+      if (text) {
+        text.style.opacity = fade;
+        text.style.transform = p ? `translateY(${(-p * 60).toFixed(1)}px)` : '';
+      }
+      if (meta) meta.style.opacity = fade;
     };
-    window.addEventListener(
-      'scroll',
-      () => {
-        if (queued) return;
-        queued = true;
-        requestAnimationFrame(update);
-      },
-      { passive: true },
-    );
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(update);
+    };
+    measure();
     update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', () => {
+      measure();
+      update();
+    });
   }
 
   // ASCII cursor field (inspired by dovetail.com): an invisible grid of
