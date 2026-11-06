@@ -366,6 +366,10 @@ const LAPS = 3;
     opacity: 0.35;
   }
   .hquote__text {
+    /* don't let the quote's one-line width stretch the card */
+    width: 0;
+    min-width: 100%;
+    color: inherit;
     margin: 0;
     flex: 1;
     min-height: 0;
@@ -380,6 +384,8 @@ const LAPS = 3;
     -webkit-line-clamp: 11;
   }
   .hquote__author {
+    width: 0;
+    min-width: 100%;
     display: flex;
     align-items: center;
     gap: 14px;
