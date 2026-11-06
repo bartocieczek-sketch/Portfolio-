@@ -1,7 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
-import Testimonial from '../components/Testimonial.astro';
 import Footer from '../components/Footer.astro';
 import { HOME_QUERY, SETTINGS_QUERY } from '../lib/sanity';
 import { load } from '../lib/load';
@@ -43,7 +42,6 @@ const brands: any[] = home.brands ?? [];
       )}
 
 
-      <Testimonial heading={home.testimonialsHeading} testimonial={home.testimonial} />
 
       <Footer settings={settings} ctaText={home.ctaText} />
     </div>

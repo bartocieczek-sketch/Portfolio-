@@ -37,7 +37,8 @@ interface Section {
 
 const MAX_WORKERS = 5;
 const AMBIENT = 3;
-const COLORS = ['#3d8bff', '#22c55e', '#f59e0b', '#ec4899', '#a855f7', '#ef4444', '#14b8a6', '#eab308'];
+// Site tones only: off-white to mid grey, so the agents read as part of the page
+const COLORS = ['#dfdfdf', '#a8a8a8', '#f4f4f4', '#7d7d7d', '#c6c6c6'];
 const NAMES = ['Design', 'Copy', 'Motion', 'Dev', 'Layout', 'Type', 'Grid', 'QA', 'Brand', 'Color'];
 // Motion tokens (see global.css)
 const EASE_MOVE = 'cubic-bezier(0.77, 0, 0.175, 1)'; // travelling across the screen
@@ -94,11 +95,11 @@ const rulers = (() => {
 
     // top
     let ctx = size(top, vw, S, dpr);
-    ctx.fillStyle = '#111';
+    ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, vw, S);
-    ctx.fillStyle = 'rgba(61, 139, 255, 0.25)';
+    ctx.fillStyle = 'rgba(223, 223, 223, 0.1)';
     for (const r of sels) ctx.fillRect(r.left, 0, r.width, S);
-    ctx.strokeStyle = '#3a3a3a';
+    ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let x = 0; x < vw; x += 10) {
@@ -113,23 +114,23 @@ const rulers = (() => {
     ctx.textBaseline = 'top';
     ctx.fillStyle = '#666';
     for (let x = 100; x < vw; x += 100) ctx.fillText(String(x), x + 3, 4);
-    ctx.fillStyle = '#8ab4ff';
+    ctx.fillStyle = '#dfdfdf';
     for (const r of sels) {
       ctx.fillText(String(Math.round(r.left)), r.left + 3, 4);
       const end = String(Math.round(r.right));
       ctx.fillText(end, r.right - ctx.measureText(end).width - 3, 4);
     }
-    ctx.fillStyle = '#111';
+    ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, S, S);
 
     // left
     ctx = size(left, S, vh - S, dpr);
-    ctx.fillStyle = '#111';
+    ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, S, vh);
-    ctx.fillStyle = 'rgba(61, 139, 255, 0.25)';
+    ctx.fillStyle = 'rgba(223, 223, 223, 0.1)';
     for (const r of sels) ctx.fillRect(0, r.top - S, S, r.height);
     const sy = window.scrollY;
-    ctx.strokeStyle = '#3a3a3a';
+    ctx.strokeStyle = '#333';
     ctx.beginPath();
     for (let d = Math.ceil((sy + S) / 10) * 10; d < sy + vh; d += 10) {
       const y = d - sy - S;
@@ -281,14 +282,28 @@ function dispatch(sec: Section) {
   }
 }
 
+// Sections show a faint 12-column layout grid while agents are working in them
+const activeIn = new WeakMap<Section, number>();
+function constructing(sec: Section, d: number) {
+  const n = (activeIn.get(sec) ?? 0) + d;
+  activeIn.set(sec, n);
+  if (n > 0) sec.el.classList.add('is-constructing');
+  else
+    window.setTimeout(() => {
+      if (!activeIn.get(sec) && !sec.queue.length) sec.el.classList.remove('is-constructing');
+    }, 500);
+}
+
 async function run(sec: Section, w: Cursor, item: Item) {
   w.busy = true;
   clearTimeout(w.idle);
   rulers.inc();
+  constructing(sec, 1);
   try {
     await buildItem(sec, w, item);
   } finally {
     rulers.dec();
+    constructing(sec, -1);
     w.busy = false;
     if (sec.queue.length) dispatch(sec);
     else w.idle = window.setTimeout(() => retire(sec, w), 900);
@@ -298,9 +313,9 @@ async function run(sec: Section, w: Cursor, item: Item) {
 /* ---------------- Cursors ---------------- */
 
 const ARROW =
-  '<svg class="bcur__arrow" width="18" height="20" viewBox="0 0 18 20"><path d="M1 1v14.5l3.8-3.6 2.8 6.3 2.6-1.1-2.7-6.2h5.3z" style="fill: var(--c)" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+  '<svg class="bcur__arrow" width="18" height="20" viewBox="0 0 18 20"><path d="M1 1v14.5l3.8-3.6 2.8 6.3 2.6-1.1-2.7-6.2h5.3z" style="fill: var(--c)" stroke="#181818" stroke-width="1.4" stroke-linejoin="round"/></svg>';
 const IBEAM =
-  '<svg class="bcur__ibeam" width="10" height="18" viewBox="0 0 10 18"><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" style="stroke: var(--c)" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  '<svg class="bcur__ibeam" width="10" height="18" viewBox="0 0 10 18"><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" stroke="#181818" stroke-width="3" stroke-linecap="round"/><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" style="stroke: var(--c)" stroke-width="1.5" stroke-linecap="round"/></svg>';
 
 function makeCursor(sec: Section, x: number, y: number): Cursor {
   const el = document.createElement('div');
