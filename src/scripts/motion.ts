@@ -106,6 +106,7 @@ if (frames.length && !reduceMotion) {
         if (e.isIntersecting) visible.add(e.target as HTMLElement);
         else visible.delete(e.target as HTMLElement);
       }
+      schedule();
     },
     { rootMargin: '20% 0px' },
   );
@@ -114,7 +115,9 @@ if (frames.length && !reduceMotion) {
     io.observe(f);
   });
 
+  let queued = false;
   const update = () => {
+    queued = false;
     const vh = window.innerHeight;
     for (const frame of visible) {
       const inner = frame.firstElementChild as HTMLElement | null;
@@ -125,7 +128,14 @@ if (frames.length && !reduceMotion) {
       const shift = p * r.height * 0.07;
       inner.style.transform = `translate3d(0, ${shift.toFixed(1)}px, 0) scale(1.15)`;
     }
+  };
+  // only when the page actually moves, not every frame
+  const schedule = () => {
+    if (queued) return;
+    queued = true;
     requestAnimationFrame(update);
   };
-  requestAnimationFrame(update);
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
+  schedule();
 }

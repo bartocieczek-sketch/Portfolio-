@@ -406,8 +406,23 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     }
 
     // ---------- WebGL: images drawn as soft, bendable planes ----------
-    const gl = reduceMotion ? null : setupGL(sticky.querySelector<HTMLCanvasElement>('[data-gl]')!);
-    if (gl) hero.classList.add('has-gl');
+    // On touch devices WebGL starts once the page has loaded and gone idle, so
+    // it never competes with loading; until then the plain images are shown.
+    let gl: ReturnType<typeof setupGL> = null;
+    const enableGL = () => {
+      if (gl || reduceMotion) return;
+      gl = setupGL(sticky.querySelector<HTMLCanvasElement>('[data-gl]')!);
+      if (gl) hero.classList.add('has-gl');
+    };
+    if (finePointer) enableGL();
+    else {
+      const later = () =>
+        'requestIdleCallback' in window
+          ? (window as unknown as { requestIdleCallback(cb: () => void, o: object): void }).requestIdleCallback(enableGL, { timeout: 2500 })
+          : window.setTimeout(enableGL, 1500);
+      if (document.readyState === 'complete') later();
+      else window.addEventListener('load', later, { once: true });
+    }
 
     let x = 0;
     let lastX = 0;
@@ -827,30 +842,32 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
         textures.set(el, { tex, w: img.naturalWidth, h: img.naturalHeight });
       };
-      img.src = el.dataset.src!;
+      // touch screens get a lighter texture
+      const coarse = window.matchMedia('(pointer: coarse)').matches;
+      img.src = coarse ? el.dataset.src!.replace(/([?&])w=\d+/, '$1w=600').replace(/([?&])h=\d+/, '$1h=750') : el.dataset.src!;
     };
 
     let dpr = 1;
+    let lastSig = '';
     const t0 = performance.now();
     return {
       draw(els: HTMLElement[], bend: number, hover: number[], fly?: Fly | null, neg?: number[]) {
         const cr = canvas.getBoundingClientRect();
-        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        dpr = Math.min(window.devicePixelRatio || 1, window.matchMedia('(pointer: coarse)').matches ? 1 : 1.5);
         const W = Math.round(cr.width * dpr);
         const H = Math.round(cr.height * dpr);
         if (canvas.width !== W || canvas.height !== H) {
           canvas.width = W;
           canvas.height = H;
         }
-        gl.viewport(0, 0, W, H);
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.uniform2f(uView, cr.width, cr.height);
-        gl.uniform1f(uTime, (performance.now() - t0) / 1000);
+        // Work out what each plane needs first; skip the frame when nothing moved
+        type Job = { el: HTMLElement; i: number; r: { left: number; top: number; width: number; height: number }; bx: number; by: number; alpha: number; clip: [number, number, number, number] };
+        const jobs: Job[] = [];
+        let sig = `${cr.left | 0},${cr.top | 0},${W},${H};`;
+        let moving = false;
         els.forEach((el, i) => {
-          let r: { left: number; top: number; width: number; height: number; right: number } = el.getBoundingClientRect();
-          // the card being opened by the view-transition fallback shows its DOM image
           if (el.closest('.is-opening')) return;
+          let r: { left: number; top: number; width: number; height: number; right: number } = el.getBoundingClientRect();
           let bx = bend;
           let by = 0;
           let fade = 1;
@@ -865,21 +882,34 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           load(el);
           const t = textures.get(el);
           if (!t) return;
-          const alpha = Number(getComputedStyle(el.closest('[data-card]')!).opacity) * fade;
-          if (alpha <= 0.001) return;
+          // the build reveal clips the cover while an agent draws it
+          const clip: [number, number, number, number] = !(fly && i === fly.i) && el.classList.contains('bp-box') ? clipOf(el, r.width, r.height) : [0, 0, 0, 0];
+          if (clip[0] + clip[2] >= 1 || clip[1] + clip[3] >= 1) return;
+          if (Math.abs(bx) > 0.002 || Math.abs(by) > 0.002) moving = true;
+          jobs.push({ el, i, r, bx, by, alpha: fade, clip });
+          sig += `${i}:${r.left.toFixed(1)},${r.top.toFixed(1)},${r.width.toFixed(1)},${r.height.toFixed(1)},${fade.toFixed(3)},${clip.map((c) => c.toFixed(3)).join(',')},${hover[i].toFixed(3)},${(neg ? neg[i] : 0).toFixed(3)};`;
+        });
+        if (!moving && sig === lastSig) return;
+        lastSig = sig;
+
+        gl.viewport(0, 0, W, H);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.uniform2f(uView, cr.width, cr.height);
+        gl.uniform1f(uTime, (performance.now() - t0) / 1000);
+        for (const { el, i, r, bx, by, alpha, clip } of jobs) {
+          const t = textures.get(el)!;
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
           gl.uniform4f(uRect, r.left - cr.left, r.top - cr.top, r.width, r.height);
           gl.uniform2f(uImg, t.w, t.h);
           gl.uniform1f(uHover, hover[i]);
-          const [ct, cr2, cb, cl] = fly && i === fly.i ? [0, 0, 0, 0] : clipOf(el, r.width, r.height);
-          if (ct + cb >= 1 || cl + cr2 >= 1) return;
-          gl.uniform4f(uClip, ct, cr2, cb, cl);
+          gl.uniform4f(uClip, clip[0], clip[1], clip[2], clip[3]);
           gl.uniform1f(uNeg, neg ? neg[i] : 0);
           gl.uniform1f(uBend, bx);
           gl.uniform1f(uBendY, by);
           gl.uniform1f(uAlpha, alpha);
           gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
-        });
+        }
       },
     };
   }
@@ -888,7 +918,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   // monospace characters lights up around the pointer, flickers, and fades
   // out behind it, with the odd faint character twinkling in the background.
   const canvas = document.querySelector<HTMLCanvasElement>('[data-dither]');
-  if (canvas && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  // pointer-driven, so mouse/trackpad only
+  if (canvas && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     const ctx = canvas.getContext('2d')!;
     const CHARS = '0123.:*%+-=<>/|_';
     const CELL_W = 16;
@@ -903,6 +934,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     let dpr = 1;
     let visible = true;
     let lastPoint: { x: number; y: number } | null = null;
+    let lastMove = -1e9;
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -959,6 +991,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         }
         stamp(x, y);
         lastPoint = { x, y };
+        lastMove = performance.now();
       },
       { passive: true },
     );
@@ -967,16 +1000,23 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(canvas);
 
     let last = 0;
+    let lit = true;
     const draw = (now: number) => {
       requestAnimationFrame(draw);
       if (!visible || now - last < 1000 / 40) return;
+      // nothing lit and the pointer is resting: no work at all
+      const active = now - lastMove < 4000;
+      if (!lit && !active) return;
       last = now;
 
-      // ambient twinkle: a couple of faint characters appear at random
-      for (let k = 0; k < 2; k++) {
-        const i = (Math.random() * energy.length) | 0;
-        energy[i] = Math.max(energy[i], 0.12 + Math.random() * 0.12);
+      // ambient twinkle while the pointer is around
+      if (active) {
+        for (let k = 0; k < 2; k++) {
+          const i = (Math.random() * energy.length) | 0;
+          energy[i] = Math.max(energy[i], 0.12 + Math.random() * 0.12);
+        }
       }
+      lit = false;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -997,6 +1037,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         ctx.fillStyle = `rgba(${COLOR}, ${(v * 0.6).toFixed(3)})`;
         ctx.fillText(CHARS[glyph[i]], c * CELL_W + CELL_W / 2, r * CELL_H + CELL_H / 2);
         energy[i] = v * DECAY;
+        lit = true;
       }
     };
     requestAnimationFrame(draw);
