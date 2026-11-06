@@ -40,6 +40,12 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       // so the slide runs in the matching direction.
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
+        try {
+          if (sessionStorage.getItem('vt-return') && document.querySelector('[data-hero]') && window.innerWidth >= 810) {
+            e.viewTransition.types.add('card-back');
+            return;
+          }
+        } catch (err) {}
         var a = window.navigation && navigation.activation;
         var back = a && a.navigationType === 'traverse' && a.from && a.entry && a.entry.index < a.from.index;
         e.viewTransition.types.add(back ? 'back' : 'forward');

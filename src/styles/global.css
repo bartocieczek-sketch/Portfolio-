@@ -425,10 +425,23 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 
+/* After the WebGL flight the cover is already in place on both pages, so the
+   case study simply fades in over the home page around it */
 html:active-view-transition-type(card-gl)::view-transition-group(root),
-html:active-view-transition-type(card-gl)::view-transition-old(root),
-html:active-view-transition-type(card-gl)::view-transition-new(root) {
+html:active-view-transition-type(card-gl)::view-transition-old(root) {
   animation: none;
+}
+html:active-view-transition-type(card-gl)::view-transition-new(root) {
+  animation: vt-fade-in 0.4s ease both;
+}
+/* Back to home with a flying cover: home fades in over the case page while
+   the cover (drawn in WebGL on the home page) travels back to its card */
+html:active-view-transition-type(card-back)::view-transition-group(root),
+html:active-view-transition-type(card-back)::view-transition-old(root) {
+  animation: none;
+}
+html:active-view-transition-type(card-back)::view-transition-new(root) {
+  animation: vt-fade-in 0.35s ease both;
 }
 html:active-view-transition-type(card)::view-transition-old(root) {
   animation: vt-fade-out 0.45s ease both;

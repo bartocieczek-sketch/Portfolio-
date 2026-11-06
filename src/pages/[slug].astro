@@ -286,3 +286,22 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
   }
 </style>
+
+<script>
+  // Heading back home: leave the cover's on-screen box for the home page,
+  // which flies it back into its card (only if the cover is still in view).
+  const cover = document.querySelector<HTMLElement>('[data-vt-cover]');
+  const slug = location.pathname.replace(/\/$/, '').split('/').pop();
+  const isHome = (url: string) => /^\/(preview\/?)?$/.test(new URL(url).pathname);
+  window.addEventListener('pageswap', (e) => {
+    const to = (e as unknown as { activation?: { entry?: { url?: string } } }).activation?.entry?.url;
+    try {
+      sessionStorage.removeItem('vt-return');
+      if (!cover || !to || !isHome(to)) return;
+      const r = cover.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) return;
+      sessionStorage.setItem('vt-return', JSON.stringify({ slug, rect: { left: r.left, top: r.top, width: r.width, height: r.height } }));
+    } catch (err) {}
+  });
+</script>
+

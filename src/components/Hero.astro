@@ -33,6 +33,12 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       var internal = !!document.referrer && new URL(document.referrer).origin === location.origin;
       skip = type === 'back_forward' || (type === 'navigate' && internal);
     } catch (e) {}
+    try {
+      // a case study cover is flying back to its card: hide the rest until it lands
+      if (sessionStorage.getItem('vt-return') && window.innerWidth >= 810 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('is-returning');
+      }
+    } catch (e) {}
     if (!skip && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
       window.scrollTo(0, 0);
@@ -270,6 +276,12 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   .hero.is-flying .hero__cursor {
     display: none;
   }
+  :global(html.is-returning) .hero :is(.hero__text, .hero__foot, .hcard__info) {
+    opacity: 0;
+  }
+  :global(html.is-returning) .hero .hcard__media img {
+    opacity: 0;
+  }
 
   /* ---------- Foot ---------- */
   .hero__foot {
@@ -462,7 +474,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     // page replaces this one underneath it with no visible cut.
     const FLY_MS = 950;
     type Rect = { left: number; top: number; width: number; height: number; right: number };
-    let flight: null | { i: number; from: Rect; to: Rect; start: number; cx: number; cy: number; href: string; done: boolean } = null;
+    let flight: null | { i: number; from: Rect; to: Rect; start: number; cx: number; cy: number; href: string; done: boolean; back: boolean } = null;
     const flyState = { i: -1, rect: { left: 0, top: 0, width: 0, height: 0, right: 0 }, bx: 0, by: 0, others: 1 };
     const easeInOut = (t: number) => (t < 0.5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2);
     // Where the cover sits on a case study page (see [slug].astro): first cell of
@@ -503,9 +515,17 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         flight.cy = cy;
         flyState.i = flight.i;
         flyState.rect = r;
-        flyState.others = 1 - clamp(t / 0.35);
+        // leaving: the other cards fade out early; coming back: they fade in late
+        flyState.others = flight.back ? clamp((t - 0.45) / 0.55) : 1 - clamp(t / 0.35);
         hover[flight.i] *= 0.85;
         if (gl) gl.draw(medias, 0, hover, flyState);
+        if (t >= 1 && flight.back) {
+          flight = null;
+          hero.classList.remove('is-flying');
+          root.classList.remove('is-returning');
+          (window as unknown as { lenis?: { start(): void } }).lenis?.start();
+          return;
+        }
         if (t >= 1 && !flight.done) {
           flight.done = true;
           try {
@@ -543,6 +563,33 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       }
     };
 
+    // Get the case study ready before the click lands: prerender it (Chrome,
+    // Edge) or at least prefetch it, so the page is there when the cover arrives
+    const warmed = new Set<string>();
+    const canPrerender = (HTMLScriptElement as unknown as { supports?: (t: string) => boolean }).supports?.('speculationrules');
+    const warm = (href: string) => {
+      if (warmed.has(href)) return;
+      warmed.add(href);
+      if (canPrerender) {
+        const sr = document.createElement('script');
+        sr.type = 'speculationrules';
+        sr.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [href] }] });
+        document.head.append(sr);
+      } else {
+        const l = document.createElement('link');
+        l.rel = 'prefetch';
+        l.href = href;
+        document.head.append(l);
+      }
+    };
+    cards.forEach((c) => {
+      const href = c.querySelector<HTMLAnchorElement>('.hcard__link')?.href;
+      if (!href) return;
+      c.addEventListener('pointerenter', () => warm(href));
+      c.addEventListener('pointerdown', () => warm(href));
+      c.addEventListener('focusin', () => warm(href));
+    });
+
     // Opening a project: the clicked cover is handed to the view transition
     // so it morphs into the case study's first image
     track.addEventListener('click', (e) => {
@@ -551,6 +598,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       const card = link.closest<HTMLElement>('[data-card]');
       const media = link.querySelector<HTMLElement>('[data-media]');
       if (!card || !media) return;
+      warm(link.href);
       const target = gl ? caseCoverRect() : null;
       if (target && !flight) {
         e.preventDefault();
@@ -564,6 +612,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           cy: from.top + from.height / 2,
           href: link.href,
           done: false,
+          back: false,
         };
         flyState.bx = 0;
         flyState.by = 0;
@@ -578,16 +627,80 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         sessionStorage.setItem('vt-card', '1');
       } catch (err) {}
     });
-    window.addEventListener('pageshow', () => {
+    // ---------- Coming back from a case study ----------
+    // The case page leaves the cover's on-screen box in sessionStorage; the
+    // carousel scrolls so that project's card sits in the middle, and the
+    // cover flies from where it was back into the card.
+    const lenisRef = () => (window as unknown as { lenis?: { stop(): void; start(): void; scrollTo(y: number, o?: object): void } }).lenis;
+    const takeReturn = (): { slug: string; rect: Rect } | null => {
+      try {
+        const raw = sessionStorage.getItem('vt-return');
+        sessionStorage.removeItem('vt-return');
+        return raw ? JSON.parse(raw) : null;
+      } catch (err) {
+        return null;
+      }
+    };
+    const startReturn = (keepScroll: boolean) => {
+      const ret = takeReturn();
+      const i = ret ? cards.findIndex((c) => c.querySelector<HTMLAnchorElement>('.hcard__link')?.pathname.replace(/\/$/, '').endsWith(`/${ret.slug}`)) : -1;
+      if (!ret || i < 0 || !gl || document.documentElement.clientWidth < 810) {
+        root.classList.remove('is-returning');
+        return;
+      }
+      root.classList.add('is-returning');
+      hero.classList.add('is-flying');
+      if (!keepScroll && travel > 0) {
+        const off = cards[i].offsetLeft;
+        const q = clamp(off / travel);
+        const y = hero.offsetTop + (0.04 + q * 0.86) * (hero.offsetHeight - vh);
+        const l = lenisRef();
+        if (l) l.scrollTo(y, { immediate: true, force: true });
+        else window.scrollTo(0, y);
+      }
+      lenisRef()?.stop();
+      // let one frame place the track, then measure the card and take off
+      flight = null;
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          const hr = hero.getBoundingClientRect();
+          const p = clamp(-hr.top / (hero.offsetHeight - vh || 1));
+          const q = clamp((p - 0.04) / 0.86);
+          x = startX - travel * q;
+          lastX = x;
+          track.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
+          const to = medias[i].getBoundingClientRect();
+          const from = { ...ret.rect, right: ret.rect.left + ret.rect.width };
+          flyState.bx = 0;
+          flyState.by = 0;
+          flight = {
+            i,
+            from,
+            to: { left: to.left, top: to.top, width: to.width, height: to.height, right: to.right },
+            start: performance.now(),
+            cx: from.left + from.width / 2,
+            cy: from.top + from.height / 2,
+            href: '',
+            done: true,
+            back: true,
+          };
+        }),
+      );
+    };
+
+    window.addEventListener('pageshow', (e) => {
       flight = null;
       hero.classList.remove('is-flying');
-      (window as unknown as { lenis?: { start(): void } }).lenis?.start();
+      lenisRef()?.start();
       track.querySelectorAll<HTMLElement>('[data-media]').forEach((m) => (m.style.viewTransitionName = ''));
       track.querySelectorAll('.is-opening').forEach((c) => c.classList.remove('is-opening'));
+      // restored from the back/forward cache: the scroll is already where it was
+      if ((e as PageTransitionEvent).persisted) startReturn(true);
     });
 
     measure();
     requestAnimationFrame(frame);
+    startReturn(false);
     window.addEventListener('resize', measure);
     document.fonts?.ready.then(measure);
   }
