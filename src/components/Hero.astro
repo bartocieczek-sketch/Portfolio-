@@ -12,21 +12,24 @@ interface Props {
 }
 const { home, settings } = Astro.props;
 const name: string = stegaClean(settings.name ?? 'Bart Ocieczek');
+const pad = (n: number) => String(n).padStart(2, '0');
 
-// Up to four case studies flank the reel: half on each side
+// Every case study with a cover takes part: four flank the reel at first,
+// then all of them play inside the reel's frame as you scroll.
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
-const picks: any[] = (home.projects ?? []).filter((p: any) => p?.cover?.asset).slice(0, 4);
-const half = Math.ceil(picks.length / 2);
-const tile = (p: any, side: 'l' | 'r', i: number) => ({
+const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((p: any) => ({
   title: (p.cardTitle || p.title || '').trim(),
+  meta: [p.year, ...(p.cardTags ?? [])].filter(Boolean).join(' · '),
   href: href(Astro.locals, `/${p.slug}`),
-  src: urlFor(p.cover).width(520).quality(80).url(),
-  side,
-  // distance from the reel: 1 = next to it, 2 = outer
-  dist: i,
-});
-const left = picks.slice(0, half).map((p, i, a) => tile(p, 'l', a.length - i));
-const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
+  thumb: urlFor(p.cover).width(520).quality(80).url(),
+  full: urlFor(p.cover).width(1800).quality(82).url(),
+}));
+const strip = projects.slice(0, 4);
+const half = Math.ceil(strip.length / 2);
+// dist: 1 = next to the reel, 2 = outer
+const left = strip.slice(0, half).map((p: any, i: number, a: any[]) => ({ ...p, side: 'l', dist: a.length - i }));
+const right = strip.slice(half).map((p: any, i: number) => ({ ...p, side: 'r', dist: i + 1 }));
+const captions = [{ title: 'Showreel', meta: `${name} · ©${new Date().getFullYear()}` }, ...projects];
 ---
 
 <script is:inline>
@@ -49,8 +52,8 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
   })();
 </script>
 
-<section class="hero" data-hero>
-  <div class="hero__sticky">
+<section class="hero" data-hero style={`--n:${projects.length}`}>
+  <div class="hero__sticky" data-hero-sticky>
     <canvas class="hero__dither" aria-hidden="true" data-dither></canvas>
 
     <div class="hero__nav intro-item" style="--delay:0ms">
@@ -68,21 +71,26 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
         {home.heroText && <h1 class="hero__statement intro-item" style="--delay:140ms">{home.heroText}</h1>}
       </div>
 
-      <div class="hero__strip" data-hero-strip>
-        {left.map((t) => (
-          <a class="hero__tile intro-tile" href={t.href} data-side="l" style={`--dist:${t.dist}`}>
-            <img src={t.src} alt="" loading="eager" decoding="async" />
+      <div class="hero__strip">
+        {left.map((t: any) => (
+          <a class="hero__tile" href={t.href} data-side="l" data-dist={t.dist} tabindex="-1">
+            <img src={t.thumb} alt="" loading="eager" decoding="async" />
             <span class="hero__tile-label t-label-small">{t.title}</span>
           </a>
         ))}
         {home.heroVideoUrl && (
-          <div class="hero__reel intro-tile" style="--dist:0" data-hero-reel>
+          <div class="hero__reel" data-hero-reel>
             <video src={home.heroVideoUrl} autoplay muted playsinline preload="auto" aria-label={`${name} showreel`} />
+            {projects.map((p: any, i: number) => (
+              <a class="hero__slide" href={p.href} data-slide aria-label={`${p.title} case study`}>
+                <img src={p.full} alt="" loading={i < 2 ? 'eager' : 'lazy'} decoding="async" />
+              </a>
+            ))}
           </div>
         )}
-        {right.map((t) => (
-          <a class="hero__tile intro-tile" href={t.href} data-side="r" style={`--dist:${t.dist}`}>
-            <img src={t.src} alt="" loading="eager" decoding="async" />
+        {right.map((t: any) => (
+          <a class="hero__tile" href={t.href} data-side="r" data-dist={t.dist} tabindex="-1">
+            <img src={t.thumb} alt="" loading="eager" decoding="async" />
             <span class="hero__tile-label t-label-small">{t.title}</span>
           </a>
         ))}
@@ -94,15 +102,39 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
         <span>{home.location}</span>
       </p>
     </div>
+
+    <!-- Caption under the enlarged frame: rolls to the project in view -->
+    <div class="hero__caption" data-hero-caption aria-hidden="true">
+      <div class="hero__cap-row">
+        <span class="hero__cap-index t-label-small">
+          {captions.map((_, i) => <span class="hero__roll" data-cap>{pad(i)}</span>)}
+        </span>
+        <span class="hero__cap-title">
+          {captions.map((c) => <span class="hero__roll" data-cap>{c.title}</span>)}
+        </span>
+        <span class="hero__cap-meta t-label-small">
+          {captions.map((c) => <span class="hero__roll" data-cap>{c.meta}</span>)}
+        </span>
+      </div>
+      <div class="hero__rail">
+        {projects.map((p: any, i: number) => (
+          <button class="hero__seg" type="button" data-seg={i} aria-label={`Show ${p.title}`} tabindex="-1">
+            <span class="hero__seg-fill" data-seg-fill></span>
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <span class="hero__cursor t-label-small" data-hero-cursor aria-hidden="true">View case</span>
   </div>
 </section>
 
 <style>
-  /* The section is taller than the screen: the content stays pinned while the
-     extra height drives the reel's scroll scale. */
+  /* Pinned for the whole run: the extra height is the scroll that zooms the
+     reel and then plays each project inside it. */
   .hero {
     position: relative;
-    height: 200vh;
+    height: calc(100vh + (0.8 + var(--n) * 0.8 + 0.3) * 100vh);
     background: var(--surface-dark);
   }
   .hero__sticky {
@@ -125,7 +157,7 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
   }
   .hero__nav {
     position: relative;
-    z-index: 3;
+    z-index: 4;
   }
   .hero__center {
     position: relative;
@@ -170,8 +202,13 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
     letter-spacing: -0.01em;
     border-radius: 2px;
   }
+  .hero__meta {
+    display: flex;
+    gap: 10px;
+    color: var(--text-secondary);
+  }
 
-  /* ---------- Strip: projects around the reel ---------- */
+  /* ---------- Strip ---------- */
   .hero__strip {
     --h: clamp(150px, 15vw, 250px);
     display: flex;
@@ -179,22 +216,9 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
     justify-content: center;
     gap: 12px;
   }
-  .hero__reel {
-    position: relative;
-    z-index: 2;
-    height: var(--h);
-    aspect-ratio: 1.43;
-    transform-origin: 50% 50%;
-    will-change: transform;
-  }
-  .hero__reel video {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
   .hero__tile {
     position: relative;
+    z-index: 1;
     height: calc(var(--h) * 0.62);
     aspect-ratio: 0.8;
     will-change: transform, opacity;
@@ -204,7 +228,11 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
     height: 100%;
     object-fit: cover;
     filter: grayscale(1) brightness(0.7);
-    transition: filter 0.4s var(--ease-out), transform 0.5s var(--ease-out);
+    transition: filter 0.4s ease, transform 0.5s var(--ease-out), opacity 0.3s ease;
+  }
+  .hero__tile:active img {
+    transform: scale(0.97);
+    transition-duration: 0.16s;
   }
   .hero__tile-label {
     position: absolute;
@@ -214,33 +242,172 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
     color: var(--text-primary);
     opacity: 0;
     transform: translateY(-4px);
-    transition: opacity 0.25s var(--ease-out), transform 0.25s var(--ease-out);
+    transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out);
   }
   .hero__tile[data-side='l'] .hero__tile-label {
     left: auto;
     right: 0;
   }
   @media (hover: hover) and (pointer: fine) {
-    .hero__tile:hover img,
-    .hero__tile:focus-visible img {
+    .hero__tile:hover img {
       filter: none;
-      transform: scale(1.04);
+      transform: scale(1.05);
     }
-    .hero__tile:hover .hero__tile-label,
-    .hero__tile:focus-visible .hero__tile-label {
+    .hero__strip:has(.hero__tile:hover) .hero__tile:not(:hover) img {
+      opacity: 0.45;
+    }
+    .hero__tile:hover .hero__tile-label {
       opacity: 1;
       transform: none;
     }
   }
 
-  .hero__meta {
-    display: flex;
-    gap: 10px;
-    color: var(--text-secondary);
+  /* ---------- Reel + slides ---------- */
+  .hero__reel {
+    position: relative;
+    z-index: 2;
+    height: var(--h);
+    aspect-ratio: 1.43;
+    transform-origin: 50% 50%;
+    will-change: transform;
+    overflow: hidden;
+    background: #000;
+  }
+  .hero__reel video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero__slide {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    clip-path: inset(0 0 0 100%);
+  }
+  .hero__slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform-origin: 50% 50%;
   }
 
-  /* ---------- Intro ----------
-     Text rises in, then the tiles appear from the reel outwards. */
+  /* ---------- Caption + rail ---------- */
+  .hero__caption {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    top: 0;
+    width: var(--cap-w, 60vw);
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hero__caption.is-on {
+    pointer-events: auto;
+  }
+  .hero__cap-row {
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .hero__cap-index,
+  .hero__cap-title,
+  .hero__cap-meta {
+    position: relative;
+    display: grid;
+    overflow: hidden;
+  }
+  .hero__cap-index {
+    color: var(--text-secondary);
+  }
+  .hero__cap-title {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+  .hero__cap-meta {
+    color: var(--text-secondary);
+    text-align: right;
+  }
+  /* All lines share one grid cell; the active one sits in place, the others
+     wait above or below and roll through when the project changes. */
+  .hero__roll {
+    grid-area: 1 / 1;
+    white-space: nowrap;
+    transform: translateY(110%);
+    opacity: 0;
+    transition: transform 0.5s var(--ease-out), opacity 0.3s ease;
+  }
+  .hero__roll.is-past {
+    transform: translateY(-110%);
+  }
+  .hero__roll.is-active {
+    transform: none;
+    opacity: 1;
+  }
+  .hero__cap-meta .hero__roll {
+    justify-self: end;
+  }
+  .hero__rail {
+    display: flex;
+    gap: 6px;
+  }
+  .hero__seg {
+    position: relative;
+    flex: 1;
+    height: 14px;
+    cursor: pointer;
+  }
+  .hero__seg::before,
+  .hero__seg-fill {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 6px;
+    height: 2px;
+    background: var(--line);
+  }
+  .hero__seg-fill {
+    background: var(--text-primary);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+  }
+
+  /* ---------- Cursor ---------- */
+  .hero__cursor {
+    position: absolute;
+    z-index: 5;
+    left: 0;
+    top: 0;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: var(--text-primary);
+    color: var(--surface-dark);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate3d(-100px, -100px, 0) scale(0.9);
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+  }
+  .hero__cursor.is-on {
+    opacity: 1;
+  }
+  @media (hover: none), (pointer: coarse) {
+    .hero__cursor {
+      display: none;
+    }
+  }
+
+  /* ---------- Intro ---------- */
   :global(html.is-intro) .intro-item {
     opacity: 0;
     transform: translateY(14px);
@@ -250,26 +417,19 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
   :global(html.is-intro) .hero__statement {
     opacity: 0.01;
   }
-  :global(html.is-intro) .intro-tile {
+  :global(html.is-intro) .hero:not(.is-ready) :is(.hero__tile, .hero__reel) {
     opacity: 0;
-    transform: translateY(24px) scale(0.96);
   }
-  .hero.is-ready .intro-item,
-  .hero.is-ready .intro-tile {
+  .hero.is-ready .intro-item {
     opacity: 1;
     transform: none;
     transition: opacity 0.8s var(--ease-out), transform 1s var(--ease-expo);
     transition-delay: var(--delay, 0ms);
   }
-  .hero.is-ready .intro-tile {
-    transition-delay: calc(260ms + var(--dist) * 90ms);
-  }
-  /* Once settled, scroll drives these directly; transitions would make it lag */
-  .hero.is-settled :is(.intro-item, .intro-tile) {
+  .hero.is-settled .intro-item {
     transition: none;
   }
-  /* Safety net: if the intro script never runs, show everything anyway */
-  :global(html.is-intro) .hero:not(.is-ready) :is(.intro-item, .intro-tile) {
+  :global(html.is-intro) .hero:not(.is-ready) :is(.intro-item, .hero__tile, .hero__reel) {
     animation: intro-fallback 0.6s 3s forwards;
   }
   @keyframes intro-fallback {
@@ -280,9 +440,6 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
   }
 
   @media (max-width: 809px) {
-    .hero {
-      height: 170vh;
-    }
     .hero__center {
       gap: 36px;
     }
@@ -290,17 +447,26 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
       --h: 46vw;
       gap: 8px;
     }
-    /* Only the inner pair fits on a phone */
-    .hero__tile[style*='--dist:2'] {
+    .hero__tile[data-dist='2'] {
       display: none;
     }
     .hero__tile {
       height: calc(var(--h) * 0.7);
     }
+    .hero__cap-row {
+      grid-template-columns: 32px 1fr;
+    }
+    .hero__cap-meta {
+      display: none;
+    }
+    .hero__cap-title {
+      font-size: 17px;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
-    .hero {
-      height: auto;
+    .hero__roll {
+      transition: opacity 0.2s ease;
+      transform: none !important;
     }
   }
 </style>
@@ -309,79 +475,216 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
   const hero = document.querySelector<HTMLElement>('[data-hero]');
   const root = document.documentElement;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+  const EASE_EXPO = 'cubic-bezier(0.16, 1, 0.3, 1)';
 
-  // ---------- Intro ----------
-  if (hero && root.classList.contains('is-intro')) {
-    requestAnimationFrame(() => requestAnimationFrame(() => hero.classList.add('is-ready')));
-    window.setTimeout(() => hero.classList.add('is-settled'), 1800);
+  const reel = document.querySelector<HTMLElement>('[data-hero-reel]');
+  const sticky = document.querySelector<HTMLElement>('[data-hero-sticky]');
+  const tiles = [...document.querySelectorAll<HTMLElement>('.hero__tile')];
+  const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+
+  // ---------- Intro: the tiles are dealt out from behind the reel ----------
+  if (hero && root.classList.contains('is-intro') && reel) {
+    const rr = reel.getBoundingClientRect();
+    const rcx = rr.left + rr.width / 2;
+    const rcy = rr.top + rr.height / 2;
+    requestAnimationFrame(() => {
+      hero.classList.add('is-ready');
+      reel.animate(
+        [
+          { transform: 'translateY(28px) scale(0.92)', opacity: 0 },
+          { transform: 'none', opacity: 1 },
+        ],
+        { duration: 1000, delay: 180, easing: EASE_EXPO, fill: 'backwards' },
+      );
+      for (const t of tiles) {
+        const r = t.getBoundingClientRect();
+        const dist = Number(t.dataset.dist) || 1;
+        const dir = t.dataset.side === 'l' ? -1 : 1;
+        const dx = rcx - (r.left + r.width / 2);
+        const dy = rcy - (r.top + r.height / 2);
+        t.animate(
+          [
+            { transform: `translate(${dx}px, ${dy}px) rotate(${-dir * 6}deg) scale(0.8)`, opacity: 0 },
+            { opacity: 1, offset: 0.25 },
+            { transform: 'none', opacity: 1 },
+          ],
+          { duration: 1100, delay: 520 + (dist - 1) * 110, easing: EASE_EXPO, fill: 'backwards' },
+        );
+      }
+    });
+    window.setTimeout(() => {
+      hero.classList.add('is-settled');
+      root.classList.remove('is-intro');
+    }, 2000);
   } else {
     hero?.classList.add('is-ready', 'is-settled');
     root.classList.remove('is-intro');
   }
   document.dispatchEvent(new CustomEvent('intro:done'));
 
-  // ---------- Scroll ----------
-  // While the hero is pinned, the reel grows to a large (not full-screen)
-  // frame in the centre; the projects slide outwards and the text fades.
-  const reel = document.querySelector<HTMLElement>('[data-hero-reel]');
-  if (hero && reel && !reduceMotion) {
-    const tiles = [...hero.querySelectorAll<HTMLElement>('.hero__tile')];
+  // ---------- Scroll + pointer ----------
+  // Phase 1: the reel grows into a large centred frame, the strip flies apart.
+  // Phase 2: each project wipes in over the frame, scrubbed by the scroll;
+  //          the caption rolls to it and its rail segment fills.
+  if (hero && reel && sticky) {
+    const slides = [...reel.querySelectorAll<HTMLElement>('[data-slide]')];
+    const slideImgs = slides.map((s) => s.querySelector('img') as HTMLImageElement);
+    const N = slides.length;
     const text = hero.querySelector<HTMLElement>('[data-hero-text]');
     const meta = hero.querySelector<HTMLElement>('[data-hero-meta]');
+    const caption = hero.querySelector<HTMLElement>('[data-hero-caption]');
+    const capGroups = caption ? [...caption.querySelectorAll<HTMLElement>('.hero__cap-index, .hero__cap-title, .hero__cap-meta')] : [];
+    const fills = [...hero.querySelectorAll<HTMLElement>('[data-seg-fill]')];
+    const cursor = hero.querySelector<HTMLElement>('[data-hero-cursor]');
+
+    let vw = 0;
+    let vh = 0;
     let base = { w: 1, h: 1, cx: 0, cy: 0 };
+    let target = 1;
+    let unit = 1;
 
     const measure = () => {
+      vw = window.innerWidth;
+      vh = window.innerHeight;
       const prev = reel.style.transform;
-      reel.style.transform = '';
+      reel.style.transform = 'none';
       const r = reel.getBoundingClientRect();
-      const top = hero.getBoundingClientRect().top;
-      base = { w: r.width, h: r.height, cx: r.left + r.width / 2, cy: r.top - top + r.height / 2 };
+      const st = sticky.getBoundingClientRect();
+      base = { w: r.width, h: r.height, cx: r.left - st.left + r.width / 2, cy: r.top - st.top + r.height / 2 };
       reel.style.transform = prev;
+      const mobile = vw < 810;
+      target = Math.min(((mobile ? 0.9 : 0.6) * vw) / base.w, ((mobile ? 0.5 : 0.62) * vh) / base.h);
+      // the scroll budget in CSS: 0.8 zoom + 0.8 per project + 0.3 hold
+      unit = (hero.offsetHeight - vh) / (0.8 + N * 0.8 + 0.3);
+      if (caption) {
+        const fw = base.w * target;
+        const fh = base.h * target;
+        caption.style.setProperty('--cap-w', `${fw}px`);
+        caption.style.top = `${vh / 2 + fh / 2 - 16 + 20}px`;
+      }
     };
 
-    let queued = false;
-    const update = () => {
-      queued = false;
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const range = hero.offsetHeight - vh;
-      const p = Math.min(1, Math.max(0, -hero.getBoundingClientRect().top / range));
-      // ease the progress so the growth settles gently
-      const e = 1 - Math.pow(1 - p, 3);
+    // Pointer, smoothed so the strip drifts rather than snaps
+    const ptr = { x: 0, y: 0, tx: 0, ty: 0, cx: -200, cy: -200, ccx: -200, ccy: -200 };
+    if (finePointer && !reduceMotion) {
+      window.addEventListener(
+        'pointermove',
+        (e) => {
+          ptr.tx = (e.clientX / vw) * 2 - 1;
+          ptr.ty = (e.clientY / vh) * 2 - 1;
+          ptr.cx = e.clientX;
+          ptr.cy = e.clientY;
+        },
+        { passive: true },
+      );
+    }
 
-      // target: 64% of the width, never taller than 72% of the screen
-      const target = Math.min((vw * 0.64) / base.w, (vh * 0.72) / base.h);
-      const scale = 1 + (target - 1) * e;
-      const dx = (vw / 2 - base.cx) * e;
-      const dy = (vh / 2 - base.cy) * e;
-      reel.style.transform = p ? `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale(${scale.toFixed(4)})` : '';
+    let active = -2;
+    const setActive = (i: number) => {
+      if (i === active) return;
+      active = i;
+      for (const g of capGroups) {
+        [...g.children].forEach((el, k) => {
+          el.classList.toggle('is-active', k === i);
+          el.classList.toggle('is-past', k < i);
+        });
+      }
+    };
 
+    let visible = true;
+    new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(hero);
+
+    const frame = () => {
+      requestAnimationFrame(frame);
+      if (!visible) return;
+      ptr.x += (ptr.tx - ptr.x) * 0.08;
+      ptr.y += (ptr.ty - ptr.y) * 0.08;
+
+      const s = Math.max(0, -hero.getBoundingClientRect().top);
+      const q1 = clamp(s / (0.8 * unit));
+      const e1 = reduceMotion ? (q1 > 0.5 ? 1 : 0) : q1 * q1 * (3 - 2 * q1);
+      const calm = 1 - e1; // pointer play fades out as the frame grows
+
+      // Reel
+      const scale = 1 + (target - 1) * e1;
+      const dx = (vw / 2 - base.cx) * e1;
+      const dy = (vh / 2 - base.cy) * e1;
+      const rx = -ptr.y * 4 * calm;
+      const ry = ptr.x * 6 * calm;
+      reel.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
+
+      // Strip
       for (const t of tiles) {
         const dir = t.dataset.side === 'l' ? -1 : 1;
-        const dist = Number(t.style.getPropertyValue('--dist')) || 1;
-        const x = dir * e * (base.w * (target - 1) * 0.5 + 60 * dist);
-        t.style.transform = p ? `translate3d(${x.toFixed(1)}px, ${(dy * 0.4).toFixed(1)}px, 0)` : '';
-        t.style.opacity = p ? String(Math.max(0, 1 - p * 1.8).toFixed(3)) : '';
+        const dist = Number(t.dataset.dist) || 1;
+        const out = e1 * (base.w * (target - 1) * 0.5 + 90 * dist);
+        const x = dir * out + ptr.x * 14 * dist * calm;
+        const y = dy * 0.5 + ptr.y * 10 * dist * calm - e1 * 40 * (dist - 1);
+        const rot = dir * e1 * 8 * dist;
+        t.style.transform = reduceMotion ? '' : `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotate(${rot.toFixed(2)}deg)`;
+        t.style.opacity = q1 ? clamp(1 - q1 * 1.6).toFixed(3) : '';
       }
-      const fade = p ? String(Math.max(0, 1 - p * 2.4).toFixed(3)) : '';
+      const fade = q1 ? clamp(1 - q1 * 2.4).toFixed(3) : '';
       if (text) {
         text.style.opacity = fade;
-        text.style.transform = p ? `translateY(${(-p * 60).toFixed(1)}px)` : '';
+        text.style.transform = q1 && !reduceMotion ? `translateY(${(-q1 * 60).toFixed(1)}px)` : '';
       }
       if (meta) meta.style.opacity = fade;
+
+      // Slides
+      const t2 = (s - 0.8 * unit) / (0.8 * unit);
+      let shown = 0;
+      for (let k = 0; k < N; k++) {
+        const r = clamp((t2 - k) / 0.7);
+        const re = 1 - Math.pow(1 - r, 3);
+        if (reduceMotion) {
+          slides[k].style.clipPath = 'none';
+          slides[k].style.opacity = r > 0.5 ? '1' : '0';
+        } else {
+          slides[k].style.clipPath = `inset(0 0 0 ${((1 - re) * 100).toFixed(2)}%)`;
+          slideImgs[k].style.transform = `translateX(${((1 - re) * 18).toFixed(2)}%) scale(${(1.2 - 0.2 * re).toFixed(4)})`;
+        }
+        if (fills[k]) fills[k].style.transform = `scaleX(${r.toFixed(3)})`;
+        if (r > 0.5) shown = k + 1;
+      }
+      setActive(shown);
+
+      if (caption) {
+        const co = clamp((q1 - 0.75) / 0.25);
+        caption.style.opacity = co.toFixed(3);
+        caption.classList.toggle('is-on', co > 0.5);
+      }
+
+      // "View case" pill over the enlarged frame
+      if (cursor && finePointer) {
+        const fw = (base.w * target) / 2;
+        const fh = (base.h * target) / 2;
+        const over = e1 > 0.95 && shown > 0 && Math.abs(ptr.cx - vw / 2) < fw && Math.abs(ptr.cy - vh / 2) < fh;
+        cursor.classList.toggle('is-on', over);
+        ptr.ccx += (ptr.cx - ptr.ccx) * 0.2;
+        ptr.ccy += (ptr.cy - ptr.ccy) * 0.2;
+        cursor.style.transform = `translate3d(${(ptr.ccx + 14).toFixed(1)}px, ${(ptr.ccy + 14).toFixed(1)}px, 0) scale(${over ? 1 : 0.9})`;
+        reel.style.cursor = over ? 'none' : '';
+      }
     };
-    const onScroll = () => {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(update);
-    };
+
     measure();
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', () => {
-      measure();
-      update();
-    });
+    requestAnimationFrame(frame);
+    window.addEventListener('resize', measure);
+    document.fonts?.ready.then(measure);
+
+    // Rail: jump to a project
+    hero.querySelectorAll<HTMLButtonElement>('[data-seg]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const k = Number(b.dataset.seg);
+        const y = hero.offsetTop + 0.8 * unit + (k + 0.75) * 0.8 * unit;
+        const lenis = (window as unknown as { lenis?: { scrollTo(y: number, o?: object): void } }).lenis;
+        if (lenis) lenis.scrollTo(y, { duration: 1.2 });
+        else window.scrollTo({ top: y, behavior: reduceMotion ? 'auto' : 'smooth' });
+      }),
+    );
   }
 
   // ASCII cursor field (inspired by dovetail.com): an invisible grid of
