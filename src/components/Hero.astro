@@ -453,7 +453,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       // comes into view): a short beat in negative, then a smooth colour wash
       const now = performance.now();
       for (let i = 0; i < medias.length; i++) {
-        if (!colourDone[i] && !medias[i].classList.contains('bp-box')) {
+        if (!colourDone[i] && !medias[i].classList.contains('bp-box') && !medias[i].classList.contains('bp-drawing')) {
           colourDone[i] = true;
           builtAt[i] = now;
         }
@@ -765,9 +765,19 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         return (uv - 0.5) * s + 0.5;
       }
       void main() {
-        if (vUv.y < uClip.x || vUv.x > 1.0 - uClip.y || vUv.y > 1.0 - uClip.z || vUv.x < uClip.w) discard;
+        // Build reveal: the clip edge is feathered (about 48px) so the image
+        // sweeps in softly, and it settles from a slight zoom as it opens up
+        float fx = 48.0 / uRect.z;
+        float fy = 48.0 / uRect.w;
+        float m = 1.0;
+        if (uClip.y > 0.0) m *= 1.0 - smoothstep(1.0 - uClip.y - fx, 1.0 - uClip.y, vUv.x);
+        if (uClip.z > 0.0) m *= 1.0 - smoothstep(1.0 - uClip.z - fy, 1.0 - uClip.z, vUv.y);
+        if (uClip.x > 0.0) m *= smoothstep(uClip.x, uClip.x + fy, vUv.y);
+        if (uClip.w > 0.0) m *= smoothstep(uClip.w, uClip.w + fx, vUv.x);
+        if (m <= 0.001) discard;
+        float rem = max(max(uClip.y, uClip.z), max(uClip.x, uClip.w));
         vec2 uv = cover(vUv);
-        uv = (uv - 0.5) * (1.0 - 0.06 * uHover) + 0.5;
+        uv = (uv - 0.5) * (1.0 - 0.06 * uHover) / (1.0 + 0.16 * rem) + 0.5;
         float a = abs(uBend);
         uv.x += sin(vUv.y * 9.0 + uTime * 2.0) * 0.012 * a;
         uv.y += sin(vUv.x * 7.0 + uTime * 1.6) * 0.008 * a;
@@ -784,7 +794,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         float front = (1.0 - uNeg) * (1.0 + w);
         float d = (vUv.x + (1.0 - vUv.y)) * 0.5;
         col = mix(col, neg, smoothstep(front - w, front, d));
-        gl_FragColor = vec4(col, 1.0) * uAlpha;
+        gl_FragColor = vec4(col, 1.0) * uAlpha * m;
       }`;
     const compile = (type: number, src: string) => {
       const sh = gl.createShader(type)!;
@@ -897,7 +907,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           const t = textures.get(el);
           if (!t) return;
           // the build reveal clips the cover while an agent draws it
-          const clip: [number, number, number, number] = !(fly && i === fly.i) && el.classList.contains('bp-box') ? clipOf(el, r.width, r.height) : [0, 0, 0, 0];
+          const clip: [number, number, number, number] =
+            !(fly && i === fly.i) && (el.classList.contains('bp-box') || el.classList.contains('bp-drawing')) ? clipOf(el, r.width, r.height) : [0, 0, 0, 0];
           if (clip[0] + clip[2] >= 1 || clip[1] + clip[3] >= 1) return;
           if (Math.abs(bx) > 0.002 || Math.abs(by) > 0.002) moving = true;
           jobs.push({ el, i, r, bx, by, alpha: fade, clip });

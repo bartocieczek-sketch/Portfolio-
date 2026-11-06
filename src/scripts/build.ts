@@ -418,11 +418,14 @@ async function buildItem(sec: Section, w: Cursor, item: Item) {
 
   // Drag the selection from the top-left to the bottom-right corner
   const isBox = item.kind === 'box';
-  const dur = isBox ? 560 : 300;
+  // images are drawn in a little slower so the reveal reads as one smooth sweep
+  const dur = isBox ? 900 : 300;
   box.animate([{ clipPath: CLIP_FROM }, { clipPath: CLIP_TO }], { duration: dur, easing: EASE_DRAW, fill: 'forwards' });
   let reveal: Animation | undefined;
   if (isBox) {
     reveal = item.el.animate([{ clipPath: CLIP_FROM }, { clipPath: CLIP_TO }], { duration: dur, easing: EASE_DRAW, fill: 'both' });
+    // 'bp-drawing' tells WebGL covers to follow the animated clip
+    item.el.classList.add('bp-drawing');
     item.el.classList.remove('bp-box');
   }
 
@@ -444,6 +447,7 @@ async function buildItem(sec: Section, w: Cursor, item: Item) {
   badge.style.transform = `translate3d(${r.x + r.w / 2}px, ${r.y + r.h + 8}px, 0) translateX(-50%)`;
   sel.classList.add('has-handles');
   reveal?.cancel();
+  item.el.classList.remove('bp-drawing');
 
   if (!isBox) await type(sec, w, item);
   await wait(220);
