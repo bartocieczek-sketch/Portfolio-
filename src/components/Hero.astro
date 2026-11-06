@@ -498,19 +498,22 @@ const captions = [{ title: 'Showreel', meta: `${name} · ©${new Date().getFullY
         ],
         { duration: 1000, delay: 180, easing: EASE_EXPO, fill: 'backwards' },
       );
+      // Covers sweep in from the sides of the screen, turning flat as they land
       for (const t of tiles) {
         const r = t.getBoundingClientRect();
         const dist = Number(t.dataset.dist) || 1;
         const dir = t.dataset.side === 'l' ? -1 : 1;
-        const dx = rcx - (r.left + r.width / 2);
-        const dy = rcy - (r.top + r.height / 2);
+        const fromX = dir > 0 ? window.innerWidth - r.left + 40 : -(r.right + 40);
         t.animate(
           [
-            { transform: `translate(${dx}px, ${dy}px) rotate(${-dir * 6}deg) scale(0.8)`, opacity: 0 },
-            { opacity: 1, offset: 0.25 },
-            { transform: 'none', opacity: 1 },
+            {
+              transform: `translate3d(${fromX}px, ${dist * 24}px, 0) perspective(800px) rotateY(${dir * -75}deg) rotateZ(${dir * 18}deg) scale(0.9)`,
+              opacity: 0,
+            },
+            { opacity: 1, offset: 0.2 },
+            { transform: 'translate3d(0px, 0px, 0) perspective(800px) rotateY(0deg) rotateZ(0deg) scale(1)', opacity: 1 },
           ],
-          { duration: 1100, delay: 520 + (dist - 1) * 110, easing: EASE_EXPO, fill: 'backwards' },
+          { duration: 1400, delay: 380 + (dist === 1 ? 140 : 0), easing: EASE_EXPO, fill: 'backwards' },
         );
       }
     });
@@ -581,6 +584,7 @@ const captions = [{ title: 'Showreel', meta: `${name} · ©${new Date().getFullY
       );
     }
 
+    let vel = 0;
     let active = -2;
     const setActive = (i: number) => {
       if (i === active) return;
@@ -618,15 +622,23 @@ const captions = [{ title: 'Showreel', meta: `${name} · ©${new Date().getFullY
       reel.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
 
       // Strip
+      // Strip: the covers spin around their vertical axis as they fly apart,
+      // a full turn over the zoom, and wobble with the scroll speed
+      const lenis = (window as unknown as { lenis?: { velocity: number } }).lenis;
+      vel += ((lenis?.velocity ?? 0) - vel) * 0.12;
+      const kick = clamp(vel * 1.6, -35, 35);
       for (const t of tiles) {
         const dir = t.dataset.side === 'l' ? -1 : 1;
         const dist = Number(t.dataset.dist) || 1;
-        const out = e1 * (base.w * (target - 1) * 0.5 + 90 * dist);
+        const out = e1 * (base.w * (target - 1) * 0.5 + 120 * dist);
         const x = dir * out + ptr.x * 14 * dist * calm;
-        const y = dy * 0.5 + ptr.y * 10 * dist * calm - e1 * 40 * (dist - 1);
-        const rot = dir * e1 * 8 * dist;
-        t.style.transform = reduceMotion ? '' : `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotate(${rot.toFixed(2)}deg)`;
-        t.style.opacity = q1 ? clamp(1 - q1 * 1.6).toFixed(3) : '';
+        const y = dy * 0.5 + ptr.y * 10 * dist * calm - e1 * 60 * (dist - 1);
+        const spinY = dir * q1 * 360 * (0.75 + 0.25 * dist) + kick * dir;
+        const spinZ = dir * e1 * 10 * dist + kick * 0.15;
+        t.style.transform = reduceMotion
+          ? ''
+          : `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) perspective(800px) rotateY(${spinY.toFixed(2)}deg) rotateZ(${spinZ.toFixed(2)}deg) scale(1)`;
+        t.style.opacity = q1 ? clamp(1 - (q1 - 0.45) * 2.4).toFixed(3) : '';
       }
       const fade = q1 ? clamp(1 - q1 * 2.4).toFixed(3) : '';
       if (text) {
