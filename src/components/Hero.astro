@@ -84,11 +84,6 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       </ol>
     </div>
 
-    <div class="hero__foot intro-item" style="--delay:500ms">
-      <span class="t-label-small muted">{home.established}</span>
-      <span class="hero__progress" aria-hidden="true"><span data-progress></span></span>
-      <span class="t-label-small muted">{home.location}</span>
-    </div>
 
     <canvas class="hero__gl" aria-hidden="true" data-gl></canvas>
 
@@ -283,30 +278,6 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     opacity: 0;
   }
 
-  /* ---------- Foot ---------- */
-  .hero__foot {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    padding: 0 var(--gutter);
-  }
-  .hero__progress {
-    position: relative;
-    width: 160px;
-    height: 1px;
-    background: var(--line);
-    overflow: hidden;
-  }
-  .hero__progress span {
-    position: absolute;
-    inset: 0;
-    background: var(--text-primary);
-    transform: scaleX(0);
-    transform-origin: 0 50%;
-  }
 
   /* ---------- Cursor ---------- */
   .hero__cursor {
