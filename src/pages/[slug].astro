@@ -25,7 +25,10 @@ const next = list.length > 1 ? list[(index + 1) % list.length] : undefined;
 const number = (n: number) => String(n).padStart(2, '0');
 
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
-const gallery: any[] = project.gallery ?? [];
+// The cover opens the gallery, so skip a gallery image that is the same file
+const gallery: any[] = (project.gallery ?? []).filter(
+  (g: any) => !(project.cover?.asset?._id && g?.image?.asset?._id === project.cover.asset._id),
+);
 // First graphic: the card cover in the same 4:5 crop as the home carousel,
 // so the thumbnail can morph straight into it
 const coverSrc = project.cover?.asset ? urlFor(project.cover).width(1000).height(1250).fit('crop').quality(82).url() : undefined;
