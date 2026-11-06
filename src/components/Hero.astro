@@ -39,30 +39,27 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         document.documentElement.classList.add('is-returning');
       }
     } catch (e) {}
-    if (!skip && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-      window.scrollTo(0, 0);
-      document.documentElement.classList.add('is-intro');
-    }
+    // no intro animation: the build agents put the hero together instead
+    if (!skip && 'scrollRestoration' in history) history.scrollRestoration = 'manual';
   })();
 </script>
 
 <section class="hero" data-hero>
-  <div class="hero__sticky" data-hero-sticky>
+  <div class="hero__sticky" data-hero-sticky data-build>
     <canvas class="hero__dither" aria-hidden="true" data-dither></canvas>
 
-    <div class="hero__nav intro-item" style="--delay:0ms">
+    <div class="hero__nav" data-build-item>
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
     </div>
 
     <div class="hero__text">
       {home.badgeLabel && (
-        <a class="badge intro-item" href={home.badgeUrl} target="_blank" rel="noopener" style="--delay:80ms">
+        <a class="badge" href={home.badgeUrl} target="_blank" rel="noopener" data-build-item>
           <svg viewBox="0 0 10 15" width="8" height="12" aria-hidden="true"><path d="M0 0h10v5H5L0 0Zm0 5h5l5 5H5v5L0 10V5Z" fill="currentColor" /></svg>
           {home.badgeLabel}
         </a>
       )}
-      {home.heroText && <h1 class="hero__statement intro-item" style="--delay:140ms">{home.heroText}</h1>}
+      {home.heroText && <h1 class="hero__statement" data-build-item>{home.heroText}</h1>}
     </div>
 
     <div class="hero__carousel" data-carousel>
@@ -70,10 +67,10 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         {projects.map((p: any, i: number) => (
           <li class="hcard" data-card>
             <a class="hcard__link" href={p.href}>
-              <span class="hcard__media" data-media data-src={p.src}>
+              <span class="hcard__media" data-media data-src={p.src} data-build-item>
                 <img src={p.src} alt="" loading={i < 4 ? 'eager' : 'lazy'} decoding="async" />
               </span>
-              <span class="hcard__info">
+              <span class="hcard__info" data-build-item>
                 <span class="hcard__num t-label-small">{pad(i + 1)}</span>
                 <span class="hcard__title">{p.title}</span>
                 <span class="hcard__meta t-label-small">{p.meta}</span>
@@ -366,29 +363,9 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   const cards = [...document.querySelectorAll<HTMLElement>('[data-card]')];
   const medias = cards.map((c) => c.querySelector<HTMLElement>('[data-media]')!);
 
-  // ---------- Intro: cards sweep in from the right, one after another ----------
-  if (hero && root.classList.contains('is-intro')) {
-    requestAnimationFrame(() => {
-      hero.classList.add('is-ready');
-      cards.forEach((c, i) => {
-        c.animate(
-          [
-            { transform: `translate3d(${window.innerWidth * 0.7}px, 0, 0)`, opacity: 0 },
-            { opacity: 1, offset: 0.3 },
-            { transform: 'translate3d(0, 0, 0)', opacity: 1 },
-          ],
-          { duration: 1300, delay: 260 + i * 70, easing: EASE_EXPO, fill: 'backwards' },
-        );
-      });
-    });
-    window.setTimeout(() => {
-      hero.classList.add('is-settled');
-      root.classList.remove('is-intro');
-    }, 2200);
-  } else {
-    hero?.classList.add('is-ready', 'is-settled');
-    root.classList.remove('is-intro');
-  }
+  // No intro of its own: the build agents assemble the hero (see scripts/build.ts)
+  hero?.classList.add('is-ready', 'is-settled');
+  root.classList.remove('is-intro');
   document.dispatchEvent(new CustomEvent('intro:done'));
 
   if (hero && sticky && carousel && track && cards.length) {
@@ -730,6 +707,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       uniform float uHover;
       uniform float uAlpha;
       uniform float uTime;
+      uniform vec4 uClip; // top, right, bottom, left as fractions, from the build reveal
       varying vec2 vUv;
       vec2 cover(vec2 uv) {
         float rs = uRect.z / uRect.w;
@@ -738,6 +716,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         return (uv - 0.5) * s + 0.5;
       }
       void main() {
+        if (vUv.y < uClip.x || vUv.x > 1.0 - uClip.y || vUv.y > 1.0 - uClip.z || vUv.x < uClip.w) discard;
         vec2 uv = cover(vUv);
         uv = (uv - 0.5) * (1.0 - 0.06 * uHover) + 0.5;
         float a = abs(uBend);
@@ -789,6 +768,16 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     const uAlpha = u('uAlpha');
     const uImg = u('uImg');
     const uTime = u('uTime');
+    const uClip = u('uClip');
+    // clip-path: inset(t r b l) → fractions of the box (the build agents draw covers in)
+    const clipOf = (el: HTMLElement, w: number, h: number): [number, number, number, number] => {
+      const cp = getComputedStyle(el).clipPath;
+      if (!cp || !cp.startsWith('inset(')) return [0, 0, 0, 0];
+      const parts = cp.slice(6, cp.indexOf(')')).split(/\s+/).filter(Boolean).slice(0, 4);
+      const v = (str: string, size: number) => (str.endsWith('%') ? parseFloat(str) / 100 : parseFloat(str) / size) || 0;
+      const [t = '0', r = t, b = t, l = r] = parts;
+      return [v(t, h), v(r, w), v(b, h), v(l, w)];
+    };
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -852,6 +841,9 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           gl.uniform4f(uRect, r.left - cr.left, r.top - cr.top, r.width, r.height);
           gl.uniform2f(uImg, t.w, t.h);
           gl.uniform1f(uHover, hover[i]);
+          const [ct, cr2, cb, cl] = fly && i === fly.i ? [0, 0, 0, 0] : clipOf(el, r.width, r.height);
+          if (ct + cb >= 1 || cl + cr2 >= 1) return;
+          gl.uniform4f(uClip, ct, cr2, cb, cl);
           gl.uniform1f(uBend, bx);
           gl.uniform1f(uBendY, by);
           gl.uniform1f(uAlpha, alpha);

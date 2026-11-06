@@ -516,7 +516,7 @@ html:active-view-transition-type(card)::view-transition-new(root) {
 }
 
 /* ---------- Swarm build reveal (see src/scripts/build.ts) ---------- */
-[data-build] {
+:where([data-build]) {
   position: relative;
 }
 .bp-text {

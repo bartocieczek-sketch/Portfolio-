@@ -180,6 +180,9 @@ const rulers = (() => {
 
 function init() {
   const vh = window.innerHeight;
+  // On a normal visit the agents build everything, including the first screen.
+  // When a cover is flying back from a case study, the first screen is left as is.
+  const buildFirstScreen = !root.classList.contains('is-returning');
   const io = new IntersectionObserver(onIntersect, { rootMargin: '0px 0px -12% 0px' });
 
   for (const el of sectionEls) {
@@ -194,7 +197,7 @@ function init() {
     const blocks = candidates.filter((c) => !candidates.some((o) => o !== c && c.contains(o)));
 
     for (const block of blocks) {
-      if (block.getBoundingClientRect().top < vh * 0.92) continue; // already visible: leave alone
+      if (!buildFirstScreen && block.getBoundingClientRect().top < vh * 0.92) continue; // already visible: leave alone
       // Take the block over from the regular reveal/split animations
       block.removeAttribute('data-split');
       block.removeAttribute('data-reveal');
