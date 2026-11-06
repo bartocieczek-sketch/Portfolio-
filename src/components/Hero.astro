@@ -423,6 +423,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     let negReady = false;
     const updateNeg = () => {
       if (!negReady) {
+        // wait for the build script to mark the covers (it runs after this one)
+        if (root.dataset.build !== 'ready' && performance.now() < 4000) return;
         negReady = true;
         medias.forEach((m, i) => {
           colourDone[i] = !m.classList.contains('bp-box');

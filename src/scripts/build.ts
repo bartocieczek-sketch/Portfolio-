@@ -213,6 +213,8 @@ function init() {
     }
   }
   if (waiting.size) window.addEventListener('scroll', onScroll, { passive: true });
+  // lets other scripts (the hero's WebGL covers) know which blocks are queued
+  root.dataset.build = 'ready';
 }
 
 const itemByEl = new WeakMap<Element, Item>();
