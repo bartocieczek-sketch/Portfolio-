@@ -456,6 +456,10 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
   will-change: transform;
 }
+.bcur svg {
+  /* the cursor box has no width of its own; don't let max-width: 100% shrink the icons */
+  max-width: none;
+}
 .bcur__arrow {
   position: absolute;
   left: -1px;
