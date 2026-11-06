@@ -349,8 +349,8 @@ const right = picks.slice(half).map((p, i) => tile(p, 'r', i + 1));
       // ease the progress so the growth settles gently
       const e = 1 - Math.pow(1 - p, 3);
 
-      // target: 72% of the width, never taller than 78% of the screen
-      const target = Math.min((vw * 0.72) / base.w, (vh * 0.78) / base.h);
+      // target: 64% of the width, never taller than 72% of the screen
+      const target = Math.min((vw * 0.64) / base.w, (vh * 0.72) / base.h);
       const scale = 1 + (target - 1) * e;
       const dx = (vw / 2 - base.cx) * e;
       const dy = (vh / 2 - base.cy) * e;
