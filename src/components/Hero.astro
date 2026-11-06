@@ -210,6 +210,9 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     opacity: 0;
   }
   .hcard__info {
+    /* as wide as the image, never wider */
+    width: 0;
+    min-width: 100%;
     display: grid;
     grid-template-columns: 28px 1fr auto;
     align-items: baseline;
@@ -218,6 +221,12 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   .hcard__num,
   .hcard__meta {
     color: var(--text-secondary);
+  }
+  .hcard__meta {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 22ch;
   }
   .hcard__title {
     font-family: var(--font-head);
@@ -479,6 +488,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     if (!gl) return null;
 
     const vs = `
+      precision highp float;
       attribute vec2 aPos;
       uniform vec4 uRect;   // x, y, w, h in CSS px, relative to the canvas
       uniform vec2 uView;
@@ -495,8 +505,13 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         vec2 clip = p / uView * 2.0 - 1.0;
         gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
       }`;
+    // uniforms shared with the vertex shader must have the same precision
     const fs = `
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
+      precision highp float;
+      #else
       precision mediump float;
+      #endif
       uniform sampler2D uTex;
       uniform vec2 uImg;
       uniform vec4 uRect;
