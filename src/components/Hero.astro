@@ -268,6 +268,10 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   .hero.is-flying .hero__cursor {
     display: none;
   }
+  /* fade back in after a return flight instead of popping */
+  .hero :is(.hero__text, .hcard__info) {
+    transition: opacity 0.5s var(--ease-out);
+  }
   :global(html.is-returning) .hero :is(.hero__text, .hero__foot, .hcard__info) {
     opacity: 0 !important;
   }
