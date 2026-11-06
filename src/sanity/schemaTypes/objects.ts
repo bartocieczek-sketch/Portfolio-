@@ -4,9 +4,6 @@ import { ImageIcon } from '@sanity/icons/Image';
 import { TagIcon } from '@sanity/icons/Tag';
 import { CaseIcon } from '@sanity/icons/Case';
 import { CommentIcon } from '@sanity/icons/Comment';
-import { BarChartIcon } from '@sanity/icons/BarChart';
-import { BulbOutlineIcon } from '@sanity/icons/BulbOutline';
-import { HelpCircleIcon } from '@sanity/icons/HelpCircle';
 
 export const link = defineType({
   name: 'link',
@@ -132,40 +129,4 @@ export const testimonial = defineType({
     defineField({ name: 'thumbnail', description: 'Image or GIF shown with a play button.', type: 'image' }),
     defineField({ name: 'video', description: 'Plays in a lightbox when the thumbnail is clicked.', type: 'file', options: { accept: 'video/*' } }),
   ],
-});
-
-
-export const stat = defineType({
-  name: 'stat',
-  title: 'Result / number',
-  type: 'object',
-  icon: BarChartIcon,
-  fields: [
-    defineField({ name: 'value', description: 'e.g. +21%, $100K+, 6+', type: 'string', validation: (rule) => rule.required() }),
-    defineField({ name: 'label', description: 'What the number means, in one line.', type: 'string', validation: (rule) => rule.required() }),
-  ],
-  preview: { select: { title: 'value', subtitle: 'label' } },
-});
-
-export const service = defineType({
-  name: 'service',
-  type: 'object',
-  icon: BulbOutlineIcon,
-  fields: [
-    defineField({ name: 'title', type: 'string', validation: (rule) => rule.required() }),
-    defineField({ name: 'description', type: 'text', rows: 3 }),
-  ],
-  preview: { select: { title: 'title', subtitle: 'description' } },
-});
-
-export const faqItem = defineType({
-  name: 'faqItem',
-  title: 'Question',
-  type: 'object',
-  icon: HelpCircleIcon,
-  fields: [
-    defineField({ name: 'question', type: 'string', validation: (rule) => rule.required() }),
-    defineField({ name: 'answer', type: 'text', rows: 4, validation: (rule) => rule.required() }),
-  ],
-  preview: { select: { title: 'question', subtitle: 'answer' } },
 });

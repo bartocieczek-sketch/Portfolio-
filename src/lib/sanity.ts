@@ -34,7 +34,6 @@ export const PROJECT_QUERY = `*[_type == "project" && slug.current == $slug][0]{
   ...,
   "slug": slug.current,
   cover{${imageFields}},
-  results[]{_key, value, label},
   gallery[]{
     _key, kind, size,
     image{${imageFields}},

@@ -34,8 +34,6 @@ const galleryItems = first ? rest : gallery;
 // biome-ignore lint/suspicious/noExplicitAny: Portable Text blocks
 const intro: any[] = project.intro ?? [];
 const [lead, ...body] = intro;
-// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
-const results: any[] = project.results ?? [];
 const meta = [
   ['Client', project.client],
   ['Services', project.services],
@@ -86,17 +84,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     {coverItem && (
       <section class="case__cover">
         <Media item={{ ...coverItem, size: 'full' }} eager />
-      </section>
-    )}
-
-    {results.length > 0 && (
-      <section class="case__results" aria-label="Results" data-build>
-        {results.map((r) => (
-          <div class="result" data-reveal>
-            <p class="result__value">{r.value}</p>
-            <p class="t-compact muted">{r.label}</p>
-          </div>
-        ))}
       </section>
     )}
 
@@ -210,27 +197,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     object-fit: cover;
   }
 
-  /* ---------- Results ---------- */
-  .case__results {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 24px;
-    padding: 96px var(--gutter) 0;
-  }
-  .result {
-    border-top: 1px solid var(--line);
-    padding-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .result__value {
-    font-family: var(--font-display);
-    font-size: clamp(56px, 7vw, 112px);
-    line-height: 0.9;
-    color: var(--text-primary);
-  }
-
   /* ---------- Overview ---------- */
   .case__overview {
     display: flex;
@@ -256,8 +222,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__gallery :global(.media--full) {
     grid-column: 1 / -1;
   }
-  .case__overview + .case__gallery,
-  .case__results + .case__gallery {
+  .case__overview + .case__gallery {
     padding-top: 12px;
   }
   .case__cover + .case__gallery {
@@ -326,9 +291,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
     .case__gallery {
       grid-template-columns: 1fr;
-    }
-    .case__results {
-      padding-top: 56px;
     }
     .next {
       padding: 96px var(--gutter) 80px;

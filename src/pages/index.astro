@@ -4,7 +4,6 @@ import Hero from '../components/Hero.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import Testimonial from '../components/Testimonial.astro';
 import Footer from '../components/Footer.astro';
-import SalesSections from '../components/SalesSections.astro';
 import { HOME_QUERY, SETTINGS_QUERY } from '../lib/sanity';
 import { load } from '../lib/load';
 
@@ -62,20 +61,10 @@ const brands: any[] = home.brands ?? [];
         </aside>
       </section>
 
-      <SalesSections
-        statsHeading={home.statsHeading}
-        stats={home.stats}
-        servicesHeading={home.servicesHeading}
-        services={home.services}
-        processHeading={home.processHeading}
-        process={home.process}
-      />
 
       <Testimonial heading={home.testimonialsHeading} testimonial={home.testimonial} />
 
-      <SalesSections faqHeading={home.faqHeading} faq={home.faq} />
-
-      <Footer settings={settings} ctaText={home.ctaText} availability={home.availability} />
+      <Footer settings={settings} ctaText={home.ctaText} />
     </div>
   </main>
 </Base>
