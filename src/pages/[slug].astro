@@ -469,6 +469,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
   }
   @media (max-width: 809px) {
+    /* phones: the main picture is 4:3, not the whole screen */
+    .case__cover {
+      height: auto;
+      aspect-ratio: 4 / 3;
+    }
     .case__panel {
       left: 24px;
       width: auto;
