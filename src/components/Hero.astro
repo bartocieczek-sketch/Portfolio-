@@ -980,6 +980,11 @@ const LAPS = 3;
     let lastSig = '';
     // when covers were first put on screen (textures loaded by then show whole)
     let shownSince = -1;
+    // when each cover was first drawn by WebGL: its edge lens grows in over a
+    // moment from then, so taking over from the flat DOM picture (e.g. coming
+    // back to a freshly loaded home) never snaps into the distortion
+    const firstDrawn = new Map<number, number>();
+    const LENS_IN = 380;
     return {
       ready(els: HTMLElement[]) {
         return els.every((el) => {
@@ -1016,8 +1021,11 @@ const LAPS = 3;
           // covers ready before they're first shown appear whole; one whose
           // picture arrives later fades in over its slot
           const alpha = t.at <= since ? 1 : clamp((now - t.at) / 450);
-          jobs.push({ i, t, x: r.left - cr.left, y: p.top - cr.top, w: r.width, h: r.height, alpha, speed: p.speed, lens: p.lens });
-          sig += `${i}:${r.left.toFixed(1)},${p.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${p.speed.toFixed(3)},${p.lens.toFixed(3)};`;
+          if (!firstDrawn.has(i)) firstDrawn.set(i, now);
+          const li = clamp((now - (firstDrawn.get(i) as number)) / LENS_IN);
+          const lensIn = 1 - (1 - li) * (1 - li) * (1 - li); // ease-out cubic
+          jobs.push({ i, t, x: r.left - cr.left, y: p.top - cr.top, w: r.width, h: r.height, alpha, speed: p.speed, lens: p.lens * lensIn });
+          sig += `${i}:${r.left.toFixed(1)},${p.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${p.speed.toFixed(3)},${(p.lens * lensIn).toFixed(3)};`;
         });
         if (jobs.length && shownSince < 0) shownSince = now;
         if (sig === lastSig) return;
