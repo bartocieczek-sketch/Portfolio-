@@ -160,10 +160,12 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     gap: 8px;
     padding: 8px;
   }
+  /* no fill behind the picture: if it isn't painted yet when the cover
+     starts flying, the frame is see-through (the pill's photo underneath
+     shows) instead of a pale block over the photo */
   .case__cover {
     height: calc(100svh - 16px);
     overflow: hidden;
-    background: #f2f2f2;
     border-radius: var(--radius);
   }
   .case__cover {
