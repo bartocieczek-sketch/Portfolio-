@@ -110,9 +110,9 @@ const LAPS = 3;
 </section>
 
 <script is:inline>
-  // Back from a case study (see [slug].astro): the picture that flies home
-  // becomes this project's cover, and the column starts on that project, so
-  // the view transition lands it straight into place.
+  // Back from a case study (see [slug].astro): the column is put back exactly
+  // where it was when the project was opened, and the case study's cover flies
+  // into the very pill that was clicked.
   (function () {
     try {
       var raw = sessionStorage.getItem('vt-back');
@@ -129,16 +129,21 @@ const LAPS = 3;
       if (idx < 0) return;
       var step = pills[1].offsetTop - pills[0].offsetTop;
       var lap = pills[N].offsetTop - pills[0].offsetTop;
-      window.__vhStart = idx * step;
-      list.style.transform = 'translate3d(0,' + -(lap + idx * step) + 'px,0)';
-      for (var k = 0; k < 3; k++) {
-        var q = pills[k * N + idx];
-        q.setAttribute('data-src', d.src);
-        var im = q.querySelector('img');
-        im.loading = 'eager';
-        im.src = d.src;
-      }
+      // where the column was when this project was clicked (else: centre it)
+      var from = null;
+      try {
+        from = JSON.parse(sessionStorage.getItem('vh-from') || 'null');
+      } catch (e) {}
+      var pos = idx * step;
       var p = pills[N + idx];
+      if (from && pills[from.i] && pills[from.i].getAttribute('href') === pills[N + idx].getAttribute('href')) {
+        pos = from.pos;
+        p = pills[from.i];
+      }
+      var wrapped = ((pos % lap) + lap) % lap;
+      window.__vhStart = pos;
+      list.style.transform = 'translate3d(0,' + -(lap + wrapped) + 'px,0)';
+      p.querySelector('img').loading = 'eager';
       p.classList.add('is-opening');
       p.style.viewTransitionName = 'project-cover';
       document.documentElement.classList.add('is-cover-back');
@@ -568,6 +573,8 @@ const LAPS = 3;
             p.style.viewTransitionName = 'project-cover';
             try {
               sessionStorage.setItem('vt-card', '1');
+              // remember where it was, so coming back lands in the same spot
+              sessionStorage.setItem('vh-from', JSON.stringify({ pos, i }));
             } catch (err) {}
             // 3. go (after this frame has painted the DOM picture)
             requestAnimationFrame(() => (window.location.href = p.href));
@@ -633,26 +640,18 @@ const LAPS = 3;
         const img = p.querySelector('img');
         if (img) img.style.transform = '';
       }
-      // restored from the back/forward cache: swap in the returning picture on
-      // the copy of that project nearest the middle
+      // restored from the back/forward cache: the column is still where it was;
+      // the cover flies back into the pill that was clicked
       try {
         const raw = sessionStorage.getItem('vt-back');
-        if (raw && !reduceMotion) {
-          const d = JSON.parse(raw) as { slug: string; src: string };
-          const vh = window.innerHeight;
-          const mine = pills.filter((x) => x.getAttribute('href')?.replace(/\/$/, '').split('/').pop() === d.slug);
-          const near = mine.sort((a, b) => Math.abs(a.getBoundingClientRect().top + a.offsetHeight / 2 - vh / 2) - Math.abs(b.getBoundingClientRect().top + b.offsetHeight / 2 - vh / 2))[0];
-          if (near) {
-            for (const x of mine) {
-              x.dataset.src = d.src;
-              const im = x.querySelector('img');
-              if (im) im.src = d.src;
-            }
-            near.classList.add('is-opening');
-            near.style.viewTransitionName = 'project-cover';
-            root.classList.add('is-cover-back');
-            handBack();
-          }
+        const from = JSON.parse(sessionStorage.getItem('vh-from') || 'null') as { i: number } | null;
+        const back = raw ? (JSON.parse(raw) as { slug: string }) : null;
+        const p = from ? pills[from.i] : null;
+        if (back && p && !reduceMotion && p.getAttribute('href')?.replace(/\/$/, '').split('/').pop() === back.slug) {
+          p.classList.add('is-opening');
+          p.style.viewTransitionName = 'project-cover';
+          root.classList.add('is-cover-back');
+          handBack();
         }
       } catch (err) {}
     });
