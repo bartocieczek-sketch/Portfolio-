@@ -175,10 +175,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   /* no fill behind the picture: if it isn't painted yet when the cover
      starts flying, the frame is see-through (the pill's photo underneath
      shows) instead of a pale block over the photo */
+  /* the main visual in its own 4:5 shape, as big as the screen allows: the
+     whole picture is visible (nothing cropped away), and the home pill only
+     has to grow, not change shape, on the way in */
   .case__cover {
     grid-area: cover;
+    justify-self: center;
     position: relative;
-    height: calc(100svh - 48px);
+    width: min(100%, calc((100svh - 48px) * 0.8));
+    aspect-ratio: 4 / 5;
     overflow: hidden;
     border-radius: var(--radius);
   }
@@ -426,7 +431,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   @media (max-width: 809px) {
     /* phones: the main picture is 4:3, not the whole screen */
     .case__cover {
-      height: auto;
+      width: 100%;
       aspect-ratio: 4 / 3;
     }
     /* phones: one column — picture, story, then the rest of the pictures */
