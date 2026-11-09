@@ -1,4 +1,8 @@
 ---
+// Home: a single centred column of pill-shaped covers. As it scrolls, the
+// project in the middle of the screen drives the text on either side, and
+// covers near the top and bottom edges stretch, flare and split their colour
+// (drawn in WebGL over the DOM images, which keep layout and links).
 import Nav from './Nav.astro';
 import { urlFor } from '../lib/sanity';
 import { href } from '../lib/preview';
@@ -15,131 +19,191 @@ const pad = (n: number) => String(n).padStart(2, '0');
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((p: any) => ({
   title: (p.cardTitle || p.title || '').trim(),
-  meta: [p.year, ...(p.cardTags ?? []).slice(0, 1)].filter(Boolean).join(' · '),
+  year: p.year ?? '',
+  tags: ((p.cardTags ?? []) as string[]).map((t) => t.replace(/,\s*$/, '')).slice(0, 3),
   href: href(Astro.locals, `/${p.slug}`),
   src: urlFor(p.cover).width(1000).height(1250).fit('crop').quality(82).url(),
 }));
+const total = pad(projects.length);
 ---
 
-<script is:inline>
-  // Decide before first paint whether to play the intro, so nothing flashes.
-  // It plays on a fresh visit or a reload, but not when you come back to the
-  // home page from another page of the site (link click or browser back).
-  (function () {
-    var skip = false;
-    try {
-      var nav = performance.getEntriesByType('navigation')[0];
-      var type = nav ? nav.type : 'navigate';
-      var internal = !!document.referrer && new URL(document.referrer).origin === location.origin;
-      skip = type === 'back_forward' || (type === 'navigate' && internal);
-    } catch (e) {}
-    try {
-      // a case study cover is flying back to its card: hide the rest until it lands
-      if (sessionStorage.getItem('vt-return') && window.innerWidth >= 810 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        document.documentElement.classList.add('is-returning');
-      }
-    } catch (e) {}
-    // no intro animation: the build agents put the hero together instead
-    if (!skip && 'scrollRestoration' in history) history.scrollRestoration = 'manual';
-  })();
-</script>
+<section class="vh" data-vh>
+  <!-- Pinned layer over the scrolling column: WebGL, nav and the side texts -->
+  <div class="vh__stage" data-vh-stage>
+    <canvas class="vh__gl" aria-hidden="true" data-gl></canvas>
 
-<section class="hero" data-hero>
-  <div class="hero__sticky" data-hero-sticky data-build>
-    <canvas class="hero__dither" aria-hidden="true" data-dither></canvas>
-
-    <div class="hero__nav" data-build-item>
+    <div class="vh__nav">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
     </div>
 
-    <div class="hero__text">
+    <div class="vh__left" aria-hidden="true">
+      <span class="vh__stack vh__num t-label-small">
+        {projects.map((_: unknown, i: number) => <span class="vh__roll" data-roll>{pad(i + 1)} / {total}</span>)}
+      </span>
+      <span class="vh__stack vh__title">
+        {projects.map((p: any) => <span class="vh__roll" data-roll>{p.title}</span>)}
+      </span>
+    </div>
+
+    <div class="vh__right" aria-hidden="true">
+      <span class="vh__stack vh__year t-label-small">
+        {projects.map((p: any) => <span class="vh__roll" data-roll>{p.year}</span>)}
+      </span>
+      <span class="vh__stack vh__tags">
+        {projects.map((p: any) => (
+          <span class="vh__roll" data-roll>
+            {p.tags.map((t: string) => <span>{t}</span>)}
+          </span>
+        ))}
+      </span>
+      <span class="vh__stack vh__cta t-label">
+        {projects.map(() => <span class="vh__roll" data-roll>View case →</span>)}
+      </span>
+    </div>
+
+    <div class="vh__intro">
       {home.badgeLabel && (
-        <a class="badge" href={home.badgeUrl} target="_blank" rel="noopener" data-build-item>
+        <a class="badge" href={home.badgeUrl} target="_blank" rel="noopener">
           <svg viewBox="0 0 10 15" width="8" height="12" aria-hidden="true"><path d="M0 0h10v5H5L0 0Zm0 5h5l5 5H5v5L0 10V5Z" fill="currentColor" /></svg>
           {home.badgeLabel}
         </a>
       )}
-      {home.heroText && <h1 class="hero__statement" data-build-item>{home.heroText}</h1>}
+      {home.heroText && <h1 class="vh__statement">{home.heroText}</h1>}
     </div>
 
-    <div class="hero__carousel" data-carousel>
-      <ol class="hero__track" data-track>
-        {projects.map((p: any, i: number) => (
-          <li class="hcard" data-card>
-            <a class="hcard__link" href={p.href}>
-              <span class="hcard__media" data-media data-src={p.src} data-build-item>
-                <img src={p.src} alt="" loading={i < 4 ? 'eager' : 'lazy'} decoding="async" />
-              </span>
-              <span class="hcard__info" data-build-item>
-                <span class="hcard__num t-label-small">{pad(i + 1)}</span>
-                <span class="hcard__title">{p.title}</span>
-                <span class="hcard__meta t-label-small">{p.meta}</span>
-              </span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </div>
-
-
-    <canvas class="hero__gl" aria-hidden="true" data-gl></canvas>
-
-    <span class="hero__cursor t-label-small" data-hero-cursor aria-hidden="true">View case</span>
+    <p class="vh__hint t-label-small" aria-hidden="true">Scroll <span>↓</span></p>
   </div>
+
+  <ol class="vh__list" data-vh-list>
+    {projects.map((p: any, i: number) => (
+      <li class="vh__item">
+        <a class="vh__pill" href={p.href} data-media data-src={p.src} aria-label={`${p.title} case study`}>
+          <img src={p.src} alt="" width="1000" height="1250" loading={i < 2 ? 'eager' : 'lazy'} decoding="async" />
+        </a>
+      </li>
+    ))}
+  </ol>
 </section>
 
 <style>
-  /* Pinned while the vertical scroll drives the carousel sideways. The height
-     is set from the track width in the script; this is the fallback. */
-  .hero {
+  .vh {
+    --pill-w: clamp(200px, 17vw, 300px);
+    --pill-h: calc(var(--pill-w) / 0.75);
     position: relative;
-    height: 320vh;
     background: var(--surface-dark);
   }
-  .hero__sticky {
+
+  /* ---------- Pinned layer ---------- */
+  .vh__stage {
     position: sticky;
     top: 0;
+    z-index: 2;
     height: 100vh;
     height: 100svh;
-    min-height: 600px;
-    overflow: clip;
-    padding: var(--gutter) 0;
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
+    margin-bottom: -100vh;
+    margin-bottom: -100svh;
+    pointer-events: none;
   }
-  .hero__dither {
+  .vh__stage :is(a, button) {
+    pointer-events: auto;
+  }
+  .vh__gl {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none;
   }
-  .hero__nav {
+  .vh__nav {
     position: relative;
-    z-index: 4;
-    padding: 0 var(--gutter);
+    z-index: 3;
+    padding: var(--gutter) var(--gutter) 0;
+    pointer-events: auto;
   }
-  .hero__text {
-    position: relative;
-    z-index: 2;
+
+  /* Side texts, centred on the middle of the screen next to the column */
+  .vh__left,
+  .vh__right {
+    position: absolute;
+    z-index: 3;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    text-align: center;
-    padding: 0 var(--gutter);
+    gap: 14px;
   }
-  .hero__statement {
-    margin: 0;
-    max-width: 560px;
+  .vh__left {
+    right: calc(50% + var(--pill-w) / 2 + 56px);
+    align-items: flex-end;
+    text-align: right;
+  }
+  .vh__right {
+    left: calc(50% + var(--pill-w) / 2 + 56px);
+    align-items: flex-start;
+  }
+  /* All rows share one grid cell; the active one sits in place and the others
+     wait above/below, so a change rolls through like a split-flap */
+  .vh__stack {
+    display: grid;
+    overflow: hidden;
+  }
+  .vh__roll {
+    grid-area: 1 / 1;
+    white-space: nowrap;
+    transform: translateY(105%);
+    opacity: 0;
+    transition: transform 0.6s var(--ease-out), opacity 0.4s ease;
+  }
+  .vh__roll.is-past {
+    transform: translateY(-105%);
+  }
+  .vh__roll.is-active {
+    transform: none;
+    opacity: 1;
+  }
+  .vh__left .vh__roll {
+    justify-self: end;
+  }
+  .vh__title {
     font-family: var(--font-head);
-    font-weight: 700;
-    font-size: clamp(22px, 1.9vw, 30px);
-    line-height: 1.15;
+    font-weight: 500;
+    font-size: clamp(30px, 3.2vw, 52px);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    padding-bottom: 0.08em;
+  }
+  .vh__tags .vh__roll {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 15px;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+  .vh__cta {
+    margin-top: 10px;
+  }
+
+  .vh__intro {
+    position: absolute;
+    z-index: 3;
+    left: var(--gutter);
+    bottom: var(--gutter);
+    width: min(340px, 30vw);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .vh__statement {
+    margin: 0;
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: 17px;
+    line-height: 1.25;
     letter-spacing: -0.02em;
     color: var(--text-primary);
-    text-wrap: balance;
   }
   .badge {
     display: inline-flex;
@@ -149,273 +213,206 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     background: var(--text-primary);
     color: var(--surface-dark);
     font-family: var(--font-body);
-    font-weight: 600;
+    font-weight: 500;
     font-size: 12px;
     line-height: 1.2;
-    letter-spacing: -0.01em;
-    border-radius: 2px;
+    border-radius: 999px;
+  }
+  .vh__hint {
+    position: absolute;
+    z-index: 3;
+    right: var(--gutter);
+    bottom: var(--gutter);
+    display: flex;
+    gap: 6px;
+    color: var(--text-primary);
+  }
+  .vh__hint span {
+    display: inline-block;
+    animation: vh-nudge 1.8s var(--ease-in-out) infinite;
+  }
+  @keyframes vh-nudge {
+    0%,
+    100% {
+      transform: translateY(-2px);
+    }
+    50% {
+      transform: translateY(3px);
+    }
   }
 
-  /* ---------- Carousel ---------- */
-  .hero__carousel {
-    position: relative;
-    z-index: 2;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-  }
-  .hero__track {
-    --card-h: min(100%, 56vh);
+  /* ---------- Column ---------- */
+  .vh__list {
     list-style: none;
     margin: 0;
-    padding: 0;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    will-change: transform;
-  }
-  .hcard {
-    flex: none;
-    height: 100%;
-    display: flex;
-    align-items: center;
-  }
-  .hcard__link {
+    /* first and last cover can both reach the middle of the screen */
+    padding: calc(50vh - var(--pill-h) / 2) 0;
+    padding: calc(50svh - var(--pill-h) / 2) 0;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    align-items: center;
+    gap: 28px;
   }
-  .hcard__media {
+  .vh__pill {
     position: relative;
     display: block;
-    height: calc(var(--track-h, 56vh) - 40px);
-    aspect-ratio: 0.8;
+    width: var(--pill-w);
+    aspect-ratio: 0.75;
+    border-radius: 999px;
     overflow: hidden;
-    background: #222;
+    background: #f2f2f2;
   }
-  .hcard__media img {
+  .vh__pill img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.6s var(--ease-out);
   }
-  /* With WebGL running, the canvas draws the images; the DOM ones keep layout */
-  .hero.has-gl .hcard__media {
-    background: none;
-  }
-  .hero.has-gl .hcard__media img {
-    opacity: 0;
-  }
-  .hero.has-gl .hcard.is-opening .hcard__media img {
-    opacity: 1;
-  }
-  .hcard__info {
-    /* as wide as the image, never wider */
-    width: 0;
-    min-width: 100%;
-    display: grid;
-    grid-template-columns: 28px 1fr auto;
-    align-items: baseline;
-    gap: 10px;
-  }
-  .hcard__num,
-  .hcard__meta {
-    color: var(--text-secondary);
-  }
-  .hcard__meta {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 22ch;
-  }
-  .hcard__title {
-    font-family: var(--font-head);
-    font-weight: 700;
-    font-size: 17px;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   @media (hover: hover) and (pointer: fine) {
-    .hero:not(.has-gl) .hcard__link:hover img {
-      transform: scale(1.04);
+    .vh:not(.has-gl) .vh__pill:hover img {
+      transform: scale(1.05);
     }
   }
-  .hcard__link:active .hcard__media {
+  .vh__pill:active {
     transform: scale(0.98);
     transition: transform 0.16s var(--ease-out);
   }
-  .hero__gl {
-    z-index: 3;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
+  /* WebGL draws the covers; the DOM images keep the layout and the links */
+  .vh.has-gl .vh__pill {
+    background: none;
   }
-
-  /* While a cover flies to its case study, everything else steps back */
-  .hero.is-flying :is(.hero__text, .hero__foot, .hcard__info) {
-    opacity: 0 !important;
-    transition: opacity 0.35s ease !important;
-  }
-  .hero.is-flying .hero__cursor {
-    display: none;
-  }
-  /* fade back in after a return flight instead of popping */
-  .hero :is(.hero__text, .hcard__info) {
-    transition: opacity 0.5s var(--ease-out);
-  }
-  :global(html.is-returning) .hero :is(.hero__text, .hero__foot, .hcard__info) {
-    opacity: 0 !important;
-  }
-  :global(html.is-returning) .hero .hcard__media img {
+  .vh.has-gl .vh__pill img {
     opacity: 0;
   }
-
-
-  /* ---------- Cursor ---------- */
-  .hero__cursor {
-    position: absolute;
-    z-index: 5;
-    left: 0;
-    top: 0;
-    padding: 8px 12px;
-    border-radius: 999px;
-    background: var(--text-primary);
-    color: var(--surface-dark);
-    pointer-events: none;
-    opacity: 0;
-    transform: translate3d(-100px, -100px, 0) scale(0.9);
-    transition: opacity 0.2s ease;
-    white-space: nowrap;
-  }
-  .hero__cursor.is-on {
+  .vh.has-gl .vh__pill.is-opening img {
     opacity: 1;
   }
-  @media (hover: none), (pointer: coarse) {
-    .hero__cursor {
+
+  @media (max-width: 1099px) {
+    .vh__intro {
       display: none;
     }
   }
-
-  /* ---------- Intro ---------- */
-  :global(html.is-intro) .intro-item {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  /* 1% instead of 0 so the browser counts the h1 as painted from the first
-     frame (otherwise Lighthouse reports NO_LCP). */
-  :global(html.is-intro) .hero__statement {
-    opacity: 0.01;
-  }
-  :global(html.is-intro) .hero:not(.is-ready) .hcard {
-    opacity: 0;
-  }
-  .hero.is-ready .intro-item {
-    opacity: 1;
-    transform: none;
-    transition: opacity 0.8s var(--ease-out), transform 1s var(--ease-expo);
-    transition-delay: var(--delay, 0ms);
-  }
-  .hero.is-settled .intro-item {
-    transition: none;
-  }
-  :global(html.is-intro) .hero:not(.is-ready) :is(.intro-item, .hcard) {
-    animation: intro-fallback 0.6s 3s forwards;
-  }
-  @keyframes intro-fallback {
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
   @media (max-width: 809px) {
-    .hero__sticky {
-      gap: 20px;
+    .vh {
+      --pill-w: 58vw;
     }
-    .hero__track {
-      gap: 12px;
+    .vh__left,
+    .vh__right {
+      top: auto;
+      transform: none;
+      bottom: 72px;
+      gap: 8px;
     }
-    .hcard__info {
-      grid-template-columns: 24px 1fr;
+    .vh__left {
+      right: auto;
+      left: var(--gutter);
+      align-items: flex-start;
+      text-align: left;
     }
-    .hcard__meta {
+    .vh__left .vh__roll {
+      justify-self: start;
+    }
+    .vh__right {
+      left: auto;
+      right: var(--gutter);
+      align-items: flex-end;
+      text-align: right;
+    }
+    .vh__right .vh__roll {
+      justify-self: end;
+    }
+    .vh__tags,
+    .vh__cta {
       display: none;
+    }
+    .vh__title {
+      font-size: 26px;
+    }
+    .vh__list {
+      padding-block: calc(42svh - var(--pill-h) / 2) calc(58svh - var(--pill-h) / 2);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vh__roll {
+      transition: opacity 0.2s ease;
+      transform: none !important;
+    }
+    .vh__hint span {
+      animation: none;
     }
   }
 </style>
 
 <script>
-  const hero = document.querySelector<HTMLElement>('[data-hero]');
-  const root = document.documentElement;
+  const hero = document.querySelector<HTMLElement>('[data-vh]');
+  const stage = document.querySelector<HTMLElement>('[data-vh-stage]');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const EASE_EXPO = 'cubic-bezier(0.16, 1, 0.3, 1)';
   const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 
-  const sticky = document.querySelector<HTMLElement>('[data-hero-sticky]');
-  const carousel = document.querySelector<HTMLElement>('[data-carousel]');
-  const track = document.querySelector<HTMLElement>('[data-track]');
-  const cards = [...document.querySelectorAll<HTMLElement>('[data-card]')];
-  const medias = cards.map((c) => c.querySelector<HTMLElement>('[data-media]')!);
-
-  // No intro of its own: the build agents assemble the hero (see scripts/build.ts)
-  hero?.classList.add('is-ready', 'is-settled');
-  root.classList.remove('is-intro');
+  // Tell the layout script the intro is done (Lenis waits for it)
+  document.documentElement.classList.remove('is-intro');
   document.dispatchEvent(new CustomEvent('intro:done'));
 
-  if (hero && sticky && carousel && track && cards.length) {
-    // ---------- Layout: vertical scroll → horizontal travel ----------
-    // First card starts centred, last card ends centred.
-    let vw = 0;
-    let vh = 0;
-    let startX = 0;
-    let travel = 0;
-    const measure = () => {
-      vw = window.innerWidth;
-      vh = window.innerHeight;
-      track.style.setProperty('--track-h', `${carousel.clientHeight}px`);
-      const cw = medias[0].offsetWidth;
-      const tw = track.scrollWidth;
-      startX = vw / 2 - cw / 2;
-      travel = Math.max(0, tw - cw);
-      hero.style.height = `${vh + travel * 1.1 + vh * 0.25}px`;
+  if (hero && stage) {
+    const pills = [...hero.querySelectorAll<HTMLElement>('[data-media]')];
+    const groups = [...stage.querySelectorAll<HTMLElement>('.vh__stack')];
+
+    // ---------- Active project → side texts ----------
+    let active = -1;
+    const setActive = (i: number) => {
+      if (i === active) return;
+      active = i;
+      for (const g of groups) {
+        [...g.children].forEach((el, k) => {
+          el.classList.toggle('is-active', k === i);
+          el.classList.toggle('is-past', k < i);
+        });
+      }
+      const cta = stage.querySelector<HTMLElement>('.vh__cta');
+      if (cta) cta.dataset.href = pills[i]?.getAttribute('href') ?? '';
     };
+    // "View case" opens the project in the middle
+    stage.querySelector<HTMLElement>('.vh__cta')?.addEventListener('click', (e) => {
+      const to = (e.currentTarget as HTMLElement).dataset.href;
+      if (to) pills[active]?.click();
+    });
+    stage.querySelector<HTMLElement>('.vh__cta')?.style.setProperty('pointer-events', 'auto');
+    stage.querySelector<HTMLElement>('.vh__cta')?.style.setProperty('cursor', 'pointer');
 
-    const progressEl = hero.querySelector<HTMLElement>('[data-progress]');
-    const cursor = hero.querySelector<HTMLElement>('[data-hero-cursor]');
-    const ptr = { x: -200, y: -200, cx: -200, cy: -200 };
+    // ---------- Hover ----------
     let hovered = -1;
-    if (finePointer) {
-      window.addEventListener(
-        'pointermove',
-        (e) => {
-          ptr.x = e.clientX;
-          ptr.y = e.clientY;
-        },
-        { passive: true },
-      );
-      cards.forEach((c, i) => {
-        c.addEventListener('pointerenter', () => (hovered = i));
-        c.addEventListener('pointerleave', () => hovered === i && (hovered = -1));
-      });
-    }
+    pills.forEach((p, i) => {
+      p.addEventListener('pointerenter', () => (hovered = i));
+      p.addEventListener('pointerleave', () => hovered === i && (hovered = -1));
+    });
+    const hover = pills.map(() => 0);
 
-    // ---------- WebGL: images drawn as soft, bendable planes ----------
-    // On touch devices WebGL starts once the page has loaded and gone idle, so
-    // it never competes with loading; until then the plain images are shown.
+    // ---------- Opening a project: cover morphs into the case study ----------
+    pills.forEach((p) =>
+      p.addEventListener('click', (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || !('startViewTransition' in document)) return;
+        p.classList.add('is-opening');
+        p.style.viewTransitionName = 'project-cover';
+        try {
+          sessionStorage.setItem('vt-card', '1');
+        } catch (err) {}
+      }),
+    );
+    window.addEventListener('pageshow', (e) => {
+      if (!(e as PageTransitionEvent).persisted) return;
+      for (const p of pills) {
+        p.classList.remove('is-opening');
+        p.style.viewTransitionName = '';
+      }
+    });
+
+    // ---------- WebGL ----------
     let gl: ReturnType<typeof setupGL> = null;
     const enableGL = () => {
       if (gl || reduceMotion) return;
-      gl = setupGL(sticky.querySelector<HTMLCanvasElement>('[data-gl]')!);
+      gl = setupGL(stage.querySelector<HTMLCanvasElement>('[data-gl]')!);
       if (gl) hero.classList.add('has-gl');
     };
     if (finePointer) enableGL();
@@ -428,310 +425,46 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       else window.addEventListener('load', later, { once: true });
     }
 
-    let x = 0;
-    let lastX = 0;
-    let vel = 0;
     let visible = true;
     new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(hero);
-    const hover = cards.map(() => 0);
-    // Covers are a muted negative until their agent has drawn them in,
-    // then take on their colour quickly (each one only once).
-    // (read on the first frame: the build script marks the covers after this runs)
-    const COLOUR_DELAY = 450;
-    const COLOUR_MS = 1400;
-    const builtAt = medias.map(() => -1);
-    const colourDone = medias.map(() => true);
-    const neg = medias.map(() => 0);
-    let negReady = false;
-    const updateNeg = () => {
-      if (!negReady) {
-        // wait for the build script to mark the covers (it runs after this one)
-        if (root.dataset.build !== 'ready' && performance.now() < 4000) return;
-        negReady = true;
-        medias.forEach((m, i) => {
-          colourDone[i] = !m.classList.contains('bp-box');
-          neg[i] = colourDone[i] ? 0 : 1;
-        });
-      }
-      // each cover takes its colour once its agent has drawn it in (right as it
-      // comes into view): a short beat in negative, then a smooth colour wash
-      const now = performance.now();
-      for (let i = 0; i < medias.length; i++) {
-        if (!colourDone[i] && !medias[i].classList.contains('bp-box') && !medias[i].classList.contains('bp-drawing')) {
-          colourDone[i] = true;
-          builtAt[i] = now;
-        }
-        if (builtAt[i] < 0) continue;
-        const k = clamp((now - builtAt[i] - COLOUR_DELAY) / COLOUR_MS);
-        neg[i] = 1 - (k < 0.5 ? 4 * k ** 3 : 1 - (-2 * k + 2) ** 3 / 2);
-      }
-    };
 
-    // ---------- Opening a project: the cover flies to its spot on the case page ----------
-    // Drawn by the same WebGL planes, so it bends and splits with its own speed
-    // exactly like the carousel does on scroll. When it lands, the case study
-    // page replaces this one underneath it with no visible cut.
-    const FLY_MS = 950;
-    type Rect = { left: number; top: number; width: number; height: number; right: number };
-    let flight: null | { i: number; from: Rect; to: Rect; start: number; cx: number; cy: number; href: string; done: boolean; back: boolean } = null;
-    const flyState = { i: -1, rect: { left: 0, top: 0, width: 0, height: 0, right: 0 }, bx: 0, by: 0, others: 1 };
-    const easeInOut = (t: number) => (t < 0.5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2);
-    // Where the cover sits on a case study page (see [slug].astro): first cell of
-    // the 2-column gallery that takes 65% (60% below 1200px) of the content width
-    const caseCoverRect = (): Rect | null => {
-      const cw = document.documentElement.clientWidth;
-      if (cw < 810) return null;
-      const navEl = hero.querySelector<HTMLElement>('.hero__nav > *');
-      if (!navEl) return null;
-      const nr = navEl.getBoundingClientRect();
-      const g = nr.left;
-      const top = g + nr.height + 32;
-      const galleryW = (cw - 2 * g) * (cw >= 1200 ? 0.65 : 0.6);
-      const w = (galleryW - 12) / 2;
-      return { left: g, top, width: w, height: w / 0.8, right: g + w };
-    };
-
+    let lastY = window.scrollY;
+    let vel = 0;
     const frame = () => {
       requestAnimationFrame(frame);
-      if (flight) {
-        const now = performance.now();
-        const t = clamp((now - flight.start) / FLY_MS);
-        const e = easeInOut(t);
-        const { from, to } = flight;
-        const r = {
-          left: from.left + (to.left - from.left) * e,
-          top: from.top + (to.top - from.top) * e,
-          width: from.width + (to.width - from.width) * e,
-          height: from.height + (to.height - from.height) * e,
-          right: 0,
-        };
-        r.right = r.left + r.width;
-        const cx = r.left + r.width / 2;
-        const cy = r.top + r.height / 2;
-        flyState.bx += (clamp((cx - flight.cx) / 30, -1, 1) - flyState.bx) * 0.25;
-        flyState.by += (clamp((cy - flight.cy) / 30, -1, 1) - flyState.by) * 0.25;
-        flight.cx = cx;
-        flight.cy = cy;
-        flyState.i = flight.i;
-        flyState.rect = r;
-        // leaving: the other cards fade out early; coming back: they fade in late
-        flyState.others = flight.back ? clamp((t - 0.45) / 0.55) : 1 - clamp(t / 0.35);
-        hover[flight.i] *= 0.85;
-        if (gl) gl.draw(medias, 0, hover, flyState);
-        if (t >= 1 && flight.back) {
-          flight = null;
-          hero.classList.remove('is-flying');
-          root.classList.remove('is-returning');
-          (window as unknown as { lenis?: { start(): void } }).lenis?.start();
-          return;
-        }
-        if (t >= 1 && !flight.done) {
-          flight.done = true;
-          try {
-            sessionStorage.setItem('vt-card', 'gl');
-          } catch (err) {}
-          window.location.href = flight.href;
-        }
-        return;
-      }
       if (!visible) return;
-      const hr = hero.getBoundingClientRect();
-      const range = hero.offsetHeight - vh;
-      const p = clamp(-hr.top / (range || 1));
-      // a short hold at both ends so the first and last card can be read
-      const q = clamp((p - 0.04) / 0.86);
-      x = startX - travel * q;
-      track.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
-      if (progressEl) progressEl.style.transform = `scaleX(${q.toFixed(4)})`;
+      const vh = window.innerHeight;
 
-      // horizontal speed of the track → how much the images bend
-      vel += (x - lastX - vel) * 0.18;
-      lastX = x;
-      const bend = clamp(vel / 45, -1, 1);
-
-      for (let i = 0; i < cards.length; i++) hover[i] += ((hovered === i ? 1 : 0) - hover[i]) * 0.12;
-      updateNeg();
-      // a cover is about to fly back: draw nothing until it takes off, so the
-      // carousel never flashes in at its resting positions first
-      if (gl && !pendingReturn) gl.draw(medias, bend, hover, null, neg);
-
-      if (cursor && finePointer) {
-        const pinned = hr.bottom >= vh - 1;
-        const on = pinned && hovered >= 0;
-        cursor.classList.toggle('is-on', on);
-        ptr.cx += (ptr.x - ptr.cx) * 0.2;
-        ptr.cy += (ptr.y - ptr.cy) * 0.2;
-        cursor.style.transform = `translate3d(${(ptr.cx + 14).toFixed(1)}px, ${(ptr.cy + 14).toFixed(1)}px, 0) scale(${on ? 1 : 0.9})`;
-      }
-    };
-
-    // Get the case study ready before the click lands: prerender it (Chrome,
-    // Edge) or at least prefetch it, so the page is there when the cover arrives
-    const warmed = new Set<string>();
-    const canPrerender = (HTMLScriptElement as unknown as { supports?: (t: string) => boolean }).supports?.('speculationrules');
-    const warm = (href: string) => {
-      if (warmed.has(href)) return;
-      warmed.add(href);
-      if (canPrerender) {
-        const sr = document.createElement('script');
-        sr.type = 'speculationrules';
-        sr.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [href] }] });
-        document.head.append(sr);
-      } else {
-        const l = document.createElement('link');
-        l.rel = 'prefetch';
-        l.href = href;
-        document.head.append(l);
-      }
-    };
-    cards.forEach((c) => {
-      const href = c.querySelector<HTMLAnchorElement>('.hcard__link')?.href;
-      if (!href) return;
-      c.addEventListener('pointerenter', () => warm(href));
-      c.addEventListener('pointerdown', () => warm(href));
-      c.addEventListener('focusin', () => warm(href));
-    });
-
-    // Opening a project: the clicked cover is handed to the view transition
-    // so it morphs into the case study's first image
-    track.addEventListener('click', (e) => {
-      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('.hcard__link');
-      if (!link || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey) return;
-      const card = link.closest<HTMLElement>('[data-card]');
-      const media = link.querySelector<HTMLElement>('[data-media]');
-      if (!card || !media) return;
-      warm(link.href);
-      const target = gl ? caseCoverRect() : null;
-      if (target && !flight) {
-        e.preventDefault();
-        const from = media.getBoundingClientRect();
-        flight = {
-          i: medias.indexOf(media),
-          from: { left: from.left, top: from.top, width: from.width, height: from.height, right: from.right },
-          to: target,
-          start: performance.now(),
-          cx: from.left + from.width / 2,
-          cy: from.top + from.height / 2,
-          href: link.href,
-          done: false,
-          back: false,
-        };
-        flyState.bx = 0;
-        flyState.by = 0;
-        hero.classList.add('is-flying');
-        (window as unknown as { lenis?: { stop(): void } }).lenis?.stop();
-        return;
-      }
-      if (!('startViewTransition' in document)) return;
-      card.classList.add('is-opening');
-      media.style.viewTransitionName = 'project-cover';
-      try {
-        sessionStorage.setItem('vt-card', '1');
-      } catch (err) {}
-    });
-    // ---------- Coming back from a case study ----------
-    // The case page leaves the cover's on-screen box in sessionStorage; the
-    // carousel scrolls so that project's card sits in the middle, and the
-    // cover flies from where it was back into the card.
-    const lenisRef = () => (window as unknown as { lenis?: { stop(): void; start(): void; scrollTo(y: number, o?: object): void } }).lenis;
-    const takeReturn = (): { slug: string; rect: Rect } | null => {
-      try {
-        const raw = sessionStorage.getItem('vt-return');
-        sessionStorage.removeItem('vt-return');
-        return raw ? JSON.parse(raw) : null;
-      } catch (err) {
-        return null;
-      }
-    };
-    let pendingReturn = false;
-    const startReturn = (keepScroll: boolean) => {
-      const ret = takeReturn();
-      const i = ret ? cards.findIndex((c) => c.querySelector<HTMLAnchorElement>('.hcard__link')?.pathname.replace(/\/$/, '').endsWith(`/${ret.slug}`)) : -1;
-      if (!ret || i < 0 || !gl || document.documentElement.clientWidth < 810) {
-        root.classList.remove('is-returning');
-        return;
-      }
-      root.classList.add('is-returning');
-      hero.classList.add('is-flying');
-      pendingReturn = true;
-      gl.clear();
-      gl.ready(medias[i]);
-      if (!keepScroll && travel > 0) {
-        const off = cards[i].offsetLeft;
-        const q = clamp(off / travel);
-        const y = hero.offsetTop + (0.04 + q * 0.86) * (hero.offsetHeight - vh);
-        const l = lenisRef();
-        if (l) l.scrollTo(y, { immediate: true, force: true });
-        else window.scrollTo(0, y);
-      }
-      lenisRef()?.stop();
-      // let a frame place the track and the cover's texture load, then take off
-      flight = null;
-      const t0 = performance.now();
-      const takeOff = () => {
-        if (!gl?.ready(medias[i]) && performance.now() - t0 < 800) {
-          requestAnimationFrame(takeOff);
-          return;
+      // the cover closest to the middle of the screen is the active one
+      let best = 0;
+      let bestD = Number.POSITIVE_INFINITY;
+      for (let i = 0; i < pills.length; i++) {
+        const r = pills[i].getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - vh / 2);
+        if (d < bestD) {
+          bestD = d;
+          best = i;
         }
-        {
-          const hr = hero.getBoundingClientRect();
-          const p = clamp(-hr.top / (hero.offsetHeight - vh || 1));
-          const q = clamp((p - 0.04) / 0.86);
-          x = startX - travel * q;
-          lastX = x;
-          track.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
-          const to = medias[i].getBoundingClientRect();
-          const from = { ...ret.rect, right: ret.rect.left + ret.rect.width };
-          flyState.bx = 0;
-          flyState.by = 0;
-          flight = {
-            i,
-            from,
-            to: { left: to.left, top: to.top, width: to.width, height: to.height, right: to.right },
-            start: performance.now(),
-            cx: from.left + from.width / 2,
-            cy: from.top + from.height / 2,
-            href: '',
-            done: true,
-            back: true,
-          };
-          pendingReturn = false;
-        }
-      };
-      requestAnimationFrame(() => requestAnimationFrame(takeOff));
+      }
+      setActive(best);
+
+      const y = window.scrollY;
+      vel += (y - lastY - vel) * 0.2;
+      lastY = y;
+      for (let i = 0; i < pills.length; i++) hover[i] += ((hovered === i ? 1 : 0) - hover[i]) * 0.12;
+      if (gl) gl.draw(pills, clamp(Math.abs(vel) / 60), hover);
     };
-
-    window.addEventListener('pageshow', (e) => {
-      // only a page restored from the back/forward cache needs resetting
-      if (!(e as PageTransitionEvent).persisted) return;
-      flight = null;
-      hero.classList.remove('is-flying');
-      lenisRef()?.start();
-      track.querySelectorAll<HTMLElement>('[data-media]').forEach((m) => (m.style.viewTransitionName = ''));
-      track.querySelectorAll('.is-opening').forEach((c) => c.classList.remove('is-opening'));
-      // the scroll is already where it was
-      startReturn(true);
-    });
-
-    measure();
     requestAnimationFrame(frame);
-    startReturn(false);
-    window.addEventListener('resize', measure);
-    document.fonts?.ready.then(measure);
   }
 
-  /* A tiny WebGL renderer: one subdivided plane per card, positioned over the
-     card's DOM box every frame. The vertex shader bows the plane against the
-     direction of travel (like cloth dragged through air); the fragment shader
-     adds a slight wave and colour split proportional to the speed, plus a
-     gentle zoom on hover. */
-  type Fly = {
-    i: number;
-    rect: { left: number; top: number; width: number; height: number; right: number };
-    bx: number;
-    by: number;
-    others: number;
-  };
+  /* WebGL: one finely subdivided plane per cover, placed over its DOM box.
+     - Pill shape: a rounded-rect distance field with anti-aliased edges.
+     - Edge lens: the closer a cover is to the top or bottom of the screen, the
+       more its vertices are pushed outwards (it stretches towards the edge and
+       flares wider), its colour channels split vertically and it smears along
+       the direction of travel. Scroll speed adds to the effect.
+     - Covers fade in once their texture is ready, and redraws only happen when
+       something actually changed. */
   function setupGL(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: true });
     if (!gl) return null;
@@ -739,26 +472,29 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     const vs = `
       precision highp float;
       attribute vec2 aPos;
-      uniform vec4 uRect;   // x, y, w, h in CSS px, relative to the canvas
+      uniform vec4 uRect;
       uniform vec2 uView;
-      uniform float uBend;
-      uniform float uBendY;
+      uniform float uSpeed;
       varying vec2 vUv;
+      varying float vEdge;
       void main() {
         vUv = aPos;
         vec2 p = uRect.xy + aPos * uRect.zw;
-        // bow sideways, most in the middle rows, trailing the motion
-        float bow = sin(aPos.y * 3.14159265);
-        p.x += bow * uBend * uRect.z * 0.09;
-        // corners lift a touch so it reads as a soft sheet, not a skew
-        p.y += (sin(aPos.x * 3.14159265) - 0.5) * abs(uBend) * uRect.w * 0.035;
-        // same bow vertically when the sheet travels up or down
-        p.y += sin(aPos.x * 3.14159265) * uBendY * uRect.w * 0.09;
-        p.x += (sin(aPos.y * 3.14159265) - 0.5) * abs(uBendY) * uRect.z * 0.035;
+        float cx = uRect.x + uRect.z * 0.5;
+        // -1 at the top of the screen, 0 in the middle, 1 at the bottom
+        float ny = (p.y - uView.y * 0.5) / (uView.y * 0.5);
+        float t = 0.3 - 0.15 * uSpeed;
+        float over = max(0.0, abs(ny) - t);
+        float k = 1.1 + 1.4 * uSpeed;
+        // stretch towards the edge: spacing grows the further out a point is
+        p.y += sign(ny) * over * over * k * uView.y * 0.5;
+        // and flare wider near the edge, like a bell
+        float e = smoothstep(t, 1.0, abs(ny));
+        p.x = cx + (p.x - cx) * (1.0 + 0.32 * e);
+        vEdge = e;
         vec2 clip = p / uView * 2.0 - 1.0;
         gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
       }`;
-    // uniforms shared with the vertex shader must have the same precision
     const fs = `
       #ifdef GL_FRAGMENT_PRECISION_HIGH
       precision highp float;
@@ -768,44 +504,41 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       uniform sampler2D uTex;
       uniform vec2 uImg;
       uniform vec4 uRect;
-      uniform float uBend;
       uniform float uHover;
       uniform float uAlpha;
-      uniform float uTime;
-      uniform vec4 uClip; // top, right, bottom, left as fractions, from the build reveal
-      uniform float uNeg; // 1 = muted negative while the page is being built, 0 = full colour
+      uniform float uSpeed;
       varying vec2 vUv;
+      varying float vEdge;
       vec2 cover(vec2 uv) {
         float rs = uRect.z / uRect.w;
         float ri = uImg.x / uImg.y;
         vec2 s = rs < ri ? vec2(rs / ri, 1.0) : vec2(1.0, ri / rs);
-        return (uv - 0.5) * s + 0.5;
+        uv = (uv - 0.5) * s + 0.5;
+        return (uv - 0.5) * (1.0 - 0.06 * uHover) + 0.5;
       }
       void main() {
-        // Build reveal: a clean edge that follows the agent's selection; the
-        // image settles from a slight zoom as it opens up
-        if (vUv.y < uClip.x || vUv.x > 1.0 - uClip.y || vUv.y > 1.0 - uClip.z || vUv.x < uClip.w) discard;
-        float m = 1.0;
-        float rem = max(max(uClip.y, uClip.z), max(uClip.x, uClip.w));
+        // pill mask, anti-aliased over ~1px
+        vec2 size = uRect.zw;
+        float r = size.x * 0.5;
+        vec2 q = abs(vUv * size - size * 0.5) - (size * 0.5 - r);
+        float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+        float mask = 1.0 - smoothstep(-1.0, 1.0, d);
+        if (mask <= 0.0) discard;
+
         vec2 uv = cover(vUv);
-        uv = (uv - 0.5) * (1.0 - 0.06 * uHover) / (1.0 + 0.16 * rem) + 0.5;
-        float a = abs(uBend);
-        uv.x += sin(vUv.y * 9.0 + uTime * 2.0) * 0.012 * a;
-        uv.y += sin(vUv.x * 7.0 + uTime * 1.6) * 0.008 * a;
-        float split = 0.012 * uBend;
-        float r = texture2D(uTex, uv + vec2(split, 0.0)).r;
-        vec4 g = texture2D(uTex, uv);
-        float b = texture2D(uTex, uv - vec2(split, 0.0)).b;
-        vec3 col = vec3(r, g.g, b);
-        // muted grey negative, kept within the page's own tones; the colour
-        // then washes in diagonally with a soft edge (uNeg 1 → 0)
-        float lum = dot(col, vec3(0.299, 0.587, 0.114));
-        vec3 neg = vec3(mix(0.09, 0.6, 1.0 - lum));
-        float w = 0.35;
-        float front = (1.0 - uNeg) * (1.0 + w);
-        float d = (vUv.x + (1.0 - vUv.y)) * 0.5;
-        col = mix(col, neg, smoothstep(front - w, front, d));
-        gl_FragColor = vec4(col, 1.0) * uAlpha * m;
+        float e = clamp(vEdge + uSpeed * 0.35, 0.0, 1.0);
+        // vertical smear and colour split near the edges
+        float smear = 0.05 * e;
+        float split = 0.025 * e;
+        vec3 col = vec3(0.0);
+        for (int i = 0; i < 5; i++) {
+          float o = (float(i) / 4.0 - 0.5) * smear;
+          col.r += texture2D(uTex, uv + vec2(0.0, o + split)).r;
+          col.g += texture2D(uTex, uv + vec2(0.0, o)).g;
+          col.b += texture2D(uTex, uv + vec2(0.0, o - split)).b;
+        }
+        col /= 5.0;
+        gl_FragColor = vec4(col, 1.0) * uAlpha * mask;
       }`;
     const compile = (type: number, src: string) => {
       const sh = gl.createShader(type)!;
@@ -820,15 +553,16 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
     gl.useProgram(prog);
 
-    // 32×32 grid so the bend is smooth
-    const SEG = 32;
+    // 16 × 64 grid: the stretch is vertical, so rows matter most
+    const SX = 16;
+    const SY = 64;
     const verts: number[] = [];
-    for (let j = 0; j <= SEG; j++) for (let i = 0; i <= SEG; i++) verts.push(i / SEG, j / SEG);
+    for (let j = 0; j <= SY; j++) for (let i = 0; i <= SX; i++) verts.push(i / SX, j / SY);
     const idx: number[] = [];
-    for (let j = 0; j < SEG; j++)
-      for (let i = 0; i < SEG; i++) {
-        const a = j * (SEG + 1) + i;
-        idx.push(a, a + 1, a + SEG + 1, a + 1, a + SEG + 2, a + SEG + 1);
+    for (let j = 0; j < SY; j++)
+      for (let i = 0; i < SX; i++) {
+        const a = j * (SX + 1) + i;
+        idx.push(a, a + 1, a + SX + 1, a + 1, a + SX + 2, a + SX + 1);
       }
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
@@ -841,28 +575,16 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     const u = (n: string) => gl.getUniformLocation(prog, n);
     const uRect = u('uRect');
     const uView = u('uView');
-    const uBend = u('uBend');
-    const uBendY = u('uBendY');
+    const uSpeed = u('uSpeed');
     const uHover = u('uHover');
     const uAlpha = u('uAlpha');
     const uImg = u('uImg');
-    const uTime = u('uTime');
-    const uClip = u('uClip');
-    const uNeg = u('uNeg');
-    // clip-path: inset(t r b l) → fractions of the box (the build agents draw covers in)
-    const clipOf = (el: HTMLElement, w: number, h: number): [number, number, number, number] => {
-      const cp = getComputedStyle(el).clipPath;
-      if (!cp || !cp.startsWith('inset(')) return [0, 0, 0, 0];
-      const parts = cp.slice(6, cp.indexOf(')')).split(/\s+/).filter(Boolean).slice(0, 4);
-      const v = (str: string, size: number) => (str.endsWith('%') ? parseFloat(str) / 100 : parseFloat(str) / size) || 0;
-      const [t = '0', r = t, b = t, l = r] = parts;
-      return [v(t, h), v(r, w), v(b, h), v(l, w)];
-    };
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
-    type Tex = { tex: WebGLTexture; w: number; h: number } | null;
+    type Tex = { tex: WebGLTexture; w: number; h: number; at: number } | null;
     const textures = new Map<HTMLElement, Tex>();
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
     const load = (el: HTMLElement) => {
       if (textures.has(el)) return;
       textures.set(el, null);
@@ -875,217 +597,56 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        textures.set(el, { tex, w: img.naturalWidth, h: img.naturalHeight });
+        textures.set(el, { tex, w: img.naturalWidth, h: img.naturalHeight, at: performance.now() });
       };
-      // touch screens get a lighter texture
-      const coarse = window.matchMedia('(pointer: coarse)').matches;
-      img.src = coarse ? el.dataset.src!.replace(/([?&])w=\d+/, '$1w=600').replace(/([?&])h=\d+/, '$1h=750') : el.dataset.src!;
+      const src = el.dataset.src!;
+      img.src = coarse ? src.replace(/([?&])w=\d+/, '$1w=600').replace(/([?&])h=\d+/, '$1h=750') : src;
     };
 
-    let dpr = 1;
     let lastSig = '';
-    const t0 = performance.now();
     return {
-      clear() {
-        lastSig = '';
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-      },
-      /** start loading a cover's texture; true once it can be drawn */
-      ready(el: HTMLElement) {
-        load(el);
-        return !!textures.get(el);
-      },
-      draw(els: HTMLElement[], bend: number, hover: number[], fly?: Fly | null, neg?: number[]) {
+      draw(els: HTMLElement[], speed: number, hover: number[]) {
         const cr = canvas.getBoundingClientRect();
-        dpr = Math.min(window.devicePixelRatio || 1, window.matchMedia('(pointer: coarse)').matches ? 1 : 1.5);
+        const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1 : 1.5);
         const W = Math.round(cr.width * dpr);
         const H = Math.round(cr.height * dpr);
         if (canvas.width !== W || canvas.height !== H) {
           canvas.width = W;
           canvas.height = H;
         }
-        // Work out what each plane needs first; skip the frame when nothing moved
-        type Job = { el: HTMLElement; i: number; r: { left: number; top: number; width: number; height: number }; bx: number; by: number; alpha: number; clip: [number, number, number, number] };
+        const now = performance.now();
+        type Job = { i: number; t: NonNullable<Tex>; r: DOMRect; alpha: number };
         const jobs: Job[] = [];
-        let sig = `${cr.left | 0},${cr.top | 0},${W},${H};`;
-        let moving = false;
+        let sig = `${W},${H},${speed.toFixed(3)};`;
         els.forEach((el, i) => {
-          if (el.closest('.is-opening')) return;
-          let r: { left: number; top: number; width: number; height: number; right: number } = el.getBoundingClientRect();
-          let bx = bend;
-          let by = 0;
-          let fade = 1;
-          if (fly) {
-            if (i === fly.i) {
-              r = fly.rect;
-              bx = fly.bx;
-              by = fly.by;
-            } else fade = fly.others;
-          }
-          if (fade <= 0.001 || r.right < cr.left - 200 || r.left > cr.right + 200) return;
+          if (el.classList.contains('is-opening')) return;
+          const r = el.getBoundingClientRect();
+          // generous margin: covers stretch beyond their box near the edges
+          if (r.bottom < cr.top - r.height || r.top > cr.bottom + r.height) return;
           load(el);
           const t = textures.get(el);
           if (!t) return;
-          // the build reveal clips the cover while an agent draws it
-          const clip: [number, number, number, number] =
-            !(fly && i === fly.i) && (el.classList.contains('bp-box') || el.classList.contains('bp-drawing')) ? clipOf(el, r.width, r.height) : [0, 0, 0, 0];
-          if (clip[0] + clip[2] >= 1 || clip[1] + clip[3] >= 1) return;
-          if (Math.abs(bx) > 0.002 || Math.abs(by) > 0.002) moving = true;
-          jobs.push({ el, i, r, bx, by, alpha: fade, clip });
-          sig += `${i}:${r.left.toFixed(1)},${r.top.toFixed(1)},${r.width.toFixed(1)},${r.height.toFixed(1)},${fade.toFixed(3)},${clip.map((c) => c.toFixed(3)).join(',')},${hover[i].toFixed(3)},${(neg ? neg[i] : 0).toFixed(3)};`;
+          const alpha = clamp((now - t.at) / 500);
+          jobs.push({ i, t, r, alpha });
+          sig += `${i}:${r.left.toFixed(1)},${r.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)};`;
         });
-        if (!moving && sig === lastSig) return;
+        if (sig === lastSig) return;
         lastSig = sig;
 
         gl.viewport(0, 0, W, H);
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform2f(uView, cr.width, cr.height);
-        gl.uniform1f(uTime, (performance.now() - t0) / 1000);
-        for (const { el, i, r, bx, by, alpha, clip } of jobs) {
-          const t = textures.get(el)!;
+        gl.uniform1f(uSpeed, speed);
+        for (const { i, t, r, alpha } of jobs) {
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
           gl.uniform4f(uRect, r.left - cr.left, r.top - cr.top, r.width, r.height);
           gl.uniform2f(uImg, t.w, t.h);
           gl.uniform1f(uHover, hover[i]);
-          gl.uniform4f(uClip, clip[0], clip[1], clip[2], clip[3]);
-          gl.uniform1f(uNeg, neg ? neg[i] : 0);
-          gl.uniform1f(uBend, bx);
-          gl.uniform1f(uBendY, by);
           gl.uniform1f(uAlpha, alpha);
           gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         }
       },
     };
-  }
-
-  // ASCII cursor field (inspired by dovetail.com): an invisible grid of
-  // monospace characters lights up around the pointer, flickers, and fades
-  // out behind it, with the odd faint character twinkling in the background.
-  const canvas = document.querySelector<HTMLCanvasElement>('[data-dither]');
-  // pointer-driven, so mouse/trackpad only
-  if (canvas && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    const ctx = canvas.getContext('2d')!;
-    const CHARS = '0123.:*%+-=<>/|_';
-    const CELL_W = 16;
-    const CELL_H = 16;
-    const RADIUS = 170;
-    const DECAY = 0.955;
-    const COLOR = '223, 223, 223';
-    let cols = 0;
-    let rows = 0;
-    let energy = new Float32Array(0);
-    let glyph = new Uint8Array(0);
-    let dpr = 1;
-    let visible = true;
-    let lastPoint: { x: number; y: number } | null = null;
-    let lastMove = -1e9;
-
-    const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      cols = Math.ceil(w / CELL_W);
-      rows = Math.ceil(h / CELL_H);
-      energy = new Float32Array(cols * rows);
-      glyph = new Uint8Array(cols * rows).map(() => (Math.random() * CHARS.length) | 0);
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Light up cells in a ragged circle around a point
-    const stamp = (px: number, py: number) => {
-      const c0 = Math.max(0, Math.floor((px - RADIUS) / CELL_W));
-      const c1 = Math.min(cols - 1, Math.ceil((px + RADIUS) / CELL_W));
-      const r0 = Math.max(0, Math.floor((py - RADIUS) / CELL_H));
-      const r1 = Math.min(rows - 1, Math.ceil((py + RADIUS) / CELL_H));
-      for (let r = r0; r <= r1; r++) {
-        for (let c = c0; c <= c1; c++) {
-          const dx = c * CELL_W + CELL_W / 2 - px;
-          const dy = r * CELL_H + CELL_H / 2 - py;
-          const d = Math.sqrt(dx * dx + dy * dy) / RADIUS;
-          if (d >= 1) continue;
-          // sparse, noisy fill so it reads as scattered glyphs, not a solid disc
-          if (Math.random() > 0.55 + (1 - d) * 0.25) continue;
-          const v = Math.pow(1 - d, 1.4) * (0.55 + Math.random() * 0.45);
-          const i = r * cols + c;
-          if (v > energy[i]) energy[i] = v;
-        }
-      }
-    };
-
-    window.addEventListener(
-      'pointermove',
-      (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        if (y < -RADIUS || y > rect.height + RADIUS) {
-          lastPoint = null;
-          return;
-        }
-        // fill the gap between fast pointer moves so the trail stays continuous
-        if (lastPoint) {
-          const dist = Math.hypot(x - lastPoint.x, y - lastPoint.y);
-          const steps = Math.min(8, Math.floor(dist / 40));
-          for (let k = 1; k <= steps; k++) {
-            stamp(lastPoint.x + ((x - lastPoint.x) * k) / (steps + 1), lastPoint.y + ((y - lastPoint.y) * k) / (steps + 1));
-          }
-        }
-        stamp(x, y);
-        lastPoint = { x, y };
-        lastMove = performance.now();
-      },
-      { passive: true },
-    );
-    document.addEventListener('pointerleave', () => (lastPoint = null));
-
-    new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(canvas);
-
-    let last = 0;
-    let lit = true;
-    const draw = (now: number) => {
-      requestAnimationFrame(draw);
-      if (!visible || now - last < 1000 / 40) return;
-      // nothing lit and the pointer is resting: no work at all
-      const active = now - lastMove < 4000;
-      if (!lit && !active) return;
-      last = now;
-
-      // ambient twinkle while the pointer is around
-      if (active) {
-        for (let k = 0; k < 2; k++) {
-          const i = (Math.random() * energy.length) | 0;
-          energy[i] = Math.max(energy[i], 0.12 + Math.random() * 0.12);
-        }
-      }
-      lit = false;
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = `500 12px 'Chivo Mono', ui-monospace, monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      for (let i = 0; i < energy.length; i++) {
-        const v = energy[i];
-        if (v < 0.02) {
-          energy[i] = 0;
-          continue;
-        }
-        // lit characters flicker to a new glyph now and then
-        if (Math.random() < 0.06) glyph[i] = (Math.random() * CHARS.length) | 0;
-        const c = i % cols;
-        const r = (i / cols) | 0;
-        ctx.fillStyle = `rgba(${COLOR}, ${(v * 0.6).toFixed(3)})`;
-        ctx.fillText(CHARS[glyph[i]], c * CELL_W + CELL_W / 2, r * CELL_H + CELL_H / 2);
-        energy[i] = v * DECAY;
-        lit = true;
-      }
-    };
-    requestAnimationFrame(draw);
   }
 </script>

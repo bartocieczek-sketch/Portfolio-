@@ -318,7 +318,7 @@ async function run(sec: Section, w: Cursor, item: Item) {
 /* ---------------- Cursors ---------------- */
 
 const ARROW =
-  '<svg class="bcur__arrow" width="18" height="20" viewBox="0 0 18 20"><path d="M1 1v14.5l3.8-3.6 2.8 6.3 2.6-1.1-2.7-6.2h5.3z" style="fill: var(--c)" stroke="#181818" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+  '<svg class="bcur__arrow" width="18" height="20" viewBox="0 0 18 20"><path d="M1 1v14.5l3.8-3.6 2.8 6.3 2.6-1.1-2.7-6.2h5.3z" style="fill: var(--c)" stroke="#ffffff" stroke-width="1.4" stroke-linejoin="round"/></svg>';
 const IBEAM =
   '<svg class="bcur__ibeam" width="10" height="18" viewBox="0 0 10 18"><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" stroke="#181818" stroke-width="3" stroke-linecap="round"/><path d="M2 1.5h6M2 16.5h6M5 1.5v15" fill="none" style="stroke: var(--c)" stroke-width="1.5" stroke-linecap="round"/></svg>';
 
@@ -550,9 +550,9 @@ function followers() {
 
   // offset from the pointer and how quickly each one catches up
   const crew = [
-    { name: 'Design', c: '#dfdfdf', ox: -46, oy: 26, k: 0.11 },
-    { name: 'Motion', c: '#a8a8a8', ox: 34, oy: 38, k: 0.075 },
-    { name: 'Dev', c: '#7d7d7d', ox: -10, oy: 64, k: 0.05 },
+    { name: 'Design', c: '#111111', ox: -46, oy: 26, k: 0.11 },
+    { name: 'Motion', c: '#555555', ox: 34, oy: 38, k: 0.075 },
+    { name: 'Dev', c: '#8c8c8c', ox: -10, oy: 64, k: 0.05 },
   ].map((m, i) => {
     const el = document.createElement('div');
     el.className = 'bcur';
