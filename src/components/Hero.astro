@@ -484,9 +484,9 @@ const total = pad(projects.length);
         // -1 at the top of the screen, 0 in the middle, 1 at the bottom
         float ny = (p.y - uView.y * 0.5) / (uView.y * 0.5);
         // the effect only starts in the outer part of the screen
-        float t = 0.55 - 0.1 * uSpeed;
+        float t = 0.72 - 0.06 * uSpeed;
         float over = max(0.0, abs(ny) - t);
-        float k = 0.8 + 1.0 * uSpeed;
+        float k = 1.2 + 1.2 * uSpeed;
         // stretch towards the edge: spacing grows the further out a point is
         p.y += sign(ny) * over * over * k * uView.y * 0.5;
         // and flare wider near the edge, like a bell
