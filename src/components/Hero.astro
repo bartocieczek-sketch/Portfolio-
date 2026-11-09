@@ -1,8 +1,12 @@
 ---
-// Home: a single centred column of pill-shaped covers. As it scrolls, the
-// project in the middle of the screen drives the text on either side, and
-// covers near the top and bottom edges stretch, flare and split their colour
-// (drawn in WebGL over the DOM images, which keep layout and links).
+// Home: an endless centred column of pill-shaped covers.
+// - The column loops forever: wheel, trackpad, touch or arrow keys move it,
+//   and when you let go it eases onto the nearest project.
+// - The project in the middle drives the rolling texts on either side.
+// - Covers near the top and bottom edges stretch, flare and split their colour,
+//   more the faster they move (drawn in WebGL over the DOM images, which keep
+//   the layout and the links).
+// - On arrival the covers stream down from above the screen and settle.
 import Nav from './Nav.astro';
 import { urlFor } from '../lib/sanity';
 import { href } from '../lib/preview';
@@ -23,118 +27,172 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   href: href(Astro.locals, `/${p.slug}`),
   src: urlFor(p.cover).width(1000).height(1250).fit('crop').quality(82).url(),
 }));
+// Three laps are rendered; the script keeps the middle one in view and wraps
+const LAPS = 3;
 ---
 
 <script is:inline>
-  // Liquid preloader: on a fresh visit or reload with a mouse/trackpad, not
-  // when coming back from another page of the site.
+  // The column streams in on a fresh visit or reload, not when coming back
+  // from another page of the site.
   (function () {
     try {
       var nav = performance.getEntriesByType('navigation')[0];
       var type = nav ? nav.type : 'navigate';
       var internal = !!document.referrer && new URL(document.referrer).origin === location.origin;
       var skip = type === 'back_forward' || (type === 'navigate' && internal);
-      var ok = matchMedia('(hover: hover) and (pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (!skip && ok) {
-        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-        window.scrollTo(0, 0);
-        document.documentElement.classList.add('is-intro', 'is-scroll-locked');
-      }
+      var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.documentElement.classList.add('is-endless');
+      if (!skip && !calm) document.documentElement.classList.add('is-arriving');
     } catch (e) {}
   })();
 </script>
 
 <section class="vh" data-vh>
-  <!-- Pinned layer over the scrolling column: WebGL, nav and the side texts -->
-  <div class="vh__stage" data-vh-stage>
-    <canvas class="vh__gl" aria-hidden="true" data-gl></canvas>
-    <span class="vh__ripple" aria-hidden="true" data-ripple></span>
-    <span class="vh__ripple" aria-hidden="true" data-ripple></span>
-    <span class="vh__blob" aria-hidden="true" data-blob></span>
+  <canvas class="vh__gl" aria-hidden="true" data-gl></canvas>
 
-    <div class="vh__nav">
-      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
-    </div>
-
-    <div class="vh__left" aria-hidden="true">
-      <span class="vh__stack vh__title">
-        {projects.map((p: any) => <span class="vh__roll" data-roll>{p.title}</span>)}
-      </span>
-    </div>
-
-    <div class="vh__right" aria-hidden="true">
-      <span class="vh__stack vh__year t-label-small">
-        {projects.map((p: any) => <span class="vh__roll" data-roll>{p.year}</span>)}
-      </span>
-      <span class="vh__stack vh__tags">
-        {projects.map((p: any) => (
-          <span class="vh__roll" data-roll>
-            {p.tags.map((t: string) => <span>{t}</span>)}
-          </span>
-        ))}
-      </span>
-    </div>
-
-    <div class="vh__intro">
-      {home.badgeLabel && (
-        <a class="badge" href={home.badgeUrl} target="_blank" rel="noopener">
-          <svg viewBox="0 0 10 15" width="8" height="12" aria-hidden="true"><path d="M0 0h10v5H5L0 0Zm0 5h5l5 5H5v5L0 10V5Z" fill="currentColor" /></svg>
-          {home.badgeLabel}
-        </a>
-      )}
-      {home.heroText && <h1 class="vh__statement">{home.heroText}</h1>}
-    </div>
-
-    <p class="vh__hint t-label-small" aria-hidden="true">Scroll <span>↓</span></p>
+  <div class="vh__nav">
+    <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
   </div>
 
-  <ol class="vh__list" data-vh-list>
-    {projects.map((p: any, i: number) => (
-      <li class="vh__item">
-        <a class="vh__pill" href={p.href} data-media data-src={p.src} aria-label={`${p.title} case study`}>
-          <img src={p.src} alt="" width="1000" height="1250" loading={i < 2 ? 'eager' : 'lazy'} decoding="async" />
-        </a>
-      </li>
-    ))}
-  </ol>
+  <div class="vh__left vh__fade" aria-hidden="true">
+    <span class="vh__stack vh__title">
+      {projects.map((p: any) => <span class="vh__roll">{p.title}</span>)}
+    </span>
+  </div>
+
+  <div class="vh__right vh__fade" aria-hidden="true">
+    <span class="vh__stack vh__year t-label-small">
+      {projects.map((p: any) => <span class="vh__roll">{p.year}</span>)}
+    </span>
+    <span class="vh__stack vh__tags">
+      {projects.map((p: any) => (
+        <span class="vh__roll">
+          {p.tags.map((t: string) => <span>{t}</span>)}
+        </span>
+      ))}
+    </span>
+  </div>
+
+  <div class="vh__intro vh__fade">
+    {home.badgeLabel && (
+      <a class="badge" href={home.badgeUrl} target="_blank" rel="noopener">
+        <svg viewBox="0 0 10 15" width="8" height="12" aria-hidden="true"><path d="M0 0h10v5H5L0 0Zm0 5h5l5 5H5v5L0 10V5Z" fill="currentColor" /></svg>
+        {home.badgeLabel}
+      </a>
+    )}
+    {home.heroText && <h1 class="vh__statement">{home.heroText}</h1>}
+  </div>
+
+  <p class="vh__hint vh__fade t-label-small" aria-hidden="true">Scroll <span>↕</span></p>
+
+  <div class="vh__viewport" data-vh-viewport>
+    <ol class="vh__list" data-vh-list>
+      {Array.from({ length: LAPS }, (_, lap) =>
+        projects.map((p: any, i: number) => (
+          <li class="vh__item" aria-hidden={lap === 1 ? undefined : 'true'}>
+            <a
+              class="vh__pill"
+              href={p.href}
+              data-media
+              data-index={i}
+              data-src={p.src}
+              tabindex={lap === 1 ? undefined : -1}
+              aria-label={lap === 1 ? `${p.title} case study` : undefined}
+              draggable="false"
+            >
+              <img src={p.src} alt="" width="1000" height="1250" loading={lap === 1 && i < 2 ? 'eager' : 'lazy'} decoding="async" draggable="false" />
+            </a>
+          </li>
+        )),
+      )}
+    </ol>
+  </div>
 </section>
 
 <style>
+  /* Home doesn't scroll as a page: the column scrolls inside the screen */
+  :global(html.is-endless),
+  :global(html.is-endless body) {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   .vh {
     --pill-w: clamp(200px, 17vw, 300px);
     --pill-h: calc(var(--pill-w) / 0.75);
+    --gap: 28px;
     position: relative;
-    background: var(--surface-dark);
-  }
-
-  /* ---------- Pinned layer ---------- */
-  .vh__stage {
-    position: sticky;
-    top: 0;
-    z-index: 2;
     height: 100vh;
     height: 100svh;
-    margin-bottom: -100vh;
-    margin-bottom: -100svh;
-    pointer-events: none;
-  }
-  .vh__stage :is(a, button) {
-    pointer-events: auto;
+    overflow: hidden;
+    background: var(--surface-dark);
+    touch-action: none;
   }
   .vh__gl {
     position: absolute;
     inset: 0;
+    z-index: 2;
     width: 100%;
     height: 100%;
+    pointer-events: none;
   }
   .vh__nav {
     position: relative;
-    z-index: 3;
+    z-index: 4;
     padding: var(--gutter) var(--gutter) 0;
-    pointer-events: auto;
   }
 
-  /* Side texts, centred on the middle of the screen next to the column */
+  /* ---------- Column ---------- */
+  .vh__viewport {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .vh__list {
+    list-style: none;
+    margin: 0;
+    /* the first cover of a lap sits in the middle of the screen at offset 0 */
+    padding: calc(50svh - var(--pill-h) / 2) 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--gap);
+    will-change: transform;
+  }
+  .vh__pill {
+    position: relative;
+    display: block;
+    width: var(--pill-w);
+    aspect-ratio: 0.75;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #f2f2f2;
+    -webkit-user-drag: none;
+  }
+  .vh__pill img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .vh:not(.has-gl) .vh__pill:hover img {
+      transform: scale(1.05);
+    }
+  }
+  /* WebGL draws the covers; the DOM images keep the layout and the links */
+  .vh.has-gl .vh__pill {
+    background: none;
+  }
+  .vh.has-gl .vh__pill img {
+    opacity: 0;
+  }
+  .vh.has-gl .vh__pill.is-opening img {
+    opacity: 1;
+  }
+
+  /* ---------- Side texts ---------- */
   .vh__left,
   .vh__right {
     position: absolute;
@@ -144,6 +202,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     display: flex;
     flex-direction: column;
     gap: 14px;
+    pointer-events: none;
   }
   .vh__left {
     right: calc(50% + var(--pill-w) / 2 + 56px);
@@ -154,8 +213,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     left: calc(50% + var(--pill-w) / 2 + 56px);
     align-items: flex-start;
   }
-  /* All rows share one grid cell; the active one sits in place and the others
-     wait above/below, so a change rolls through like a split-flap */
+  /* rows share one grid cell; the active one sits in place, the rest wait
+     above or below and roll through */
   .vh__stack {
     display: grid;
     overflow: hidden;
@@ -238,123 +297,15 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     gap: 6px;
     color: var(--text-primary);
   }
-  .vh__hint span {
-    display: inline-block;
-    animation: vh-nudge 1.8s var(--ease-in-out) infinite;
-  }
-  @keyframes vh-nudge {
-    0%,
-    100% {
-      transform: translateY(-2px);
-    }
-    50% {
-      transform: translateY(3px);
-    }
-  }
 
-  /* ---------- Column ---------- */
-  .vh__list {
-    list-style: none;
-    margin: 0;
-    /* first and last cover can both reach the middle of the screen */
-    padding: calc(50vh - var(--pill-h) / 2) 0;
-    padding: calc(50svh - var(--pill-h) / 2) 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 28px;
+  /* texts settle in once the covers have landed */
+  .vh__fade {
+    transition: opacity 0.8s var(--ease-out);
   }
-  .vh__pill {
-    position: relative;
-    display: block;
-    width: var(--pill-w);
-    aspect-ratio: 0.75;
-    border-radius: 999px;
-    overflow: hidden;
-    background: #f2f2f2;
-  }
-  .vh__pill img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.6s var(--ease-out);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .vh:not(.has-gl) .vh__pill:hover img {
-      transform: scale(1.05);
-    }
-  }
-  .vh__pill:active {
-    transform: scale(0.98);
-    transition: transform 0.16s var(--ease-out);
-  }
-  /* WebGL draws the covers; the DOM images keep the layout and the links */
-  .vh.has-gl .vh__pill {
-    background: none;
-  }
-  .vh.has-gl .vh__pill img {
+  :global(html.is-arriving) .vh__fade {
     opacity: 0;
   }
-  .vh.has-gl .vh__pill.is-opening img {
-    opacity: 1;
-  }
-
-  /* ---------- Preloader ---------- */
-  .vh__blob {
-    position: absolute;
-    z-index: 4;
-    left: 50%;
-    top: 50%;
-    width: 52px;
-    height: 52px;
-    margin: -26px 0 0 -26px;
-    background: var(--text-primary);
-    border-radius: 50%;
-    opacity: 0;
-    pointer-events: none;
-    will-change: transform;
-  }
-  /* waits above the screen until the script lets it fall */
-  :global(html.is-intro) .vh__blob {
-    opacity: 1;
-    transform: translateY(-75vh);
-  }
-  /* after landing it breathes like a drop of ink until the covers are ready */
-  .vh__blob.is-idle {
-    animation: vh-blob 1.6s var(--ease-in-out) infinite;
-  }
-  @keyframes vh-blob {
-    0%,
-    100% {
-      border-radius: 48% 52% 55% 45% / 50% 46% 54% 50%;
-      transform: scale(1);
-    }
-    50% {
-      border-radius: 54% 46% 44% 56% / 46% 56% 46% 54%;
-      transform: scale(1.06, 0.95);
-    }
-  }
-  .vh__ripple {
-    position: absolute;
-    z-index: 3;
-    left: 50%;
-    top: 50%;
-    width: 52px;
-    height: 52px;
-    margin: -26px 0 0 -26px;
-    border: 1px solid var(--text-primary);
-    border-radius: 50%;
-    opacity: 0;
-    pointer-events: none;
-  }
-  /* until the covers have poured out, only the blob and the nav show */
-  .vh :is(.vh__left, .vh__right, .vh__intro, .vh__hint) {
-    transition: opacity 0.7s var(--ease-out);
-  }
-  :global(html.is-intro) .vh :is(.vh__left, .vh__right, .vh__intro, .vh__hint) {
-    opacity: 0;
-  }
-  :global(html.is-intro) .vh__pill img {
+  :global(html.is-arriving) .vh__pill img {
     opacity: 0;
   }
 
@@ -366,12 +317,13 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   @media (max-width: 809px) {
     .vh {
       --pill-w: 58vw;
+      --gap: 18px;
     }
     .vh__left,
     .vh__right {
       top: auto;
       transform: none;
-      bottom: 72px;
+      bottom: 64px;
       gap: 8px;
     }
     .vh__left {
@@ -398,70 +350,146 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     .vh__title {
       font-size: 26px;
     }
-    .vh__list {
-      padding-block: calc(42svh - var(--pill-h) / 2) calc(58svh - var(--pill-h) / 2);
-    }
   }
   @media (prefers-reduced-motion: reduce) {
     .vh__roll {
       transition: opacity 0.2s ease;
       transform: none !important;
     }
-    .vh__hint span {
-      animation: none;
-    }
   }
 </style>
 
 <script>
+  const root = document.documentElement;
   const hero = document.querySelector<HTMLElement>('[data-vh]');
-  const stage = document.querySelector<HTMLElement>('[data-vh-stage]');
+  const list = document.querySelector<HTMLElement>('[data-vh-list]');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 
-  const root = document.documentElement;
-  const endIntro = () => {
-    root.classList.remove('is-intro', 'is-scroll-locked');
-    document.dispatchEvent(new CustomEvent('intro:done'));
-  };
+  // Page-level smooth scroll has nothing to do here
+  document.dispatchEvent(new CustomEvent('intro:done'));
+  requestAnimationFrame(() => (window as unknown as { lenis?: { stop(): void } }).lenis?.stop());
 
-  if (hero && stage) {
+  if (hero && list) {
     const pills = [...hero.querySelectorAll<HTMLElement>('[data-media]')];
-    const groups = [...stage.querySelectorAll<HTMLElement>('.vh__stack')];
+    const N = pills.length / 3;
+    const groups = [...hero.querySelectorAll<HTMLElement>('.vh__stack')];
 
-    // ---------- Active project → side texts ----------
+    // ---------- Geometry ----------
+    let step = 1; // distance between two covers
+    let lap = 1; // height of one full set
+    const measure = () => {
+      step = pills[1] ? pills[1].offsetTop - pills[0].offsetTop : 1;
+      lap = pills[N] ? pills[N].offsetTop - pills[0].offsetTop : step * N;
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    document.fonts?.ready.then(measure);
+
+    // ---------- Endless scroll ----------
+    // `target` is where the column is going, `pos` eases towards it every frame.
+    // Input only ever moves `target`; when input stops, `target` snaps to the
+    // nearest cover so the column always comes to rest on a project.
+    let pos = 0;
+    let target = 0;
+    let idleTimer = 0;
+    const settle = () => {
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        target = Math.round(target / step) * step;
+      }, 140);
+    };
+    const nudge = (d: number) => {
+      target += d;
+      settle();
+    };
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const unit = e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? window.innerHeight : 1;
+        nudge((Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX) * unit);
+      },
+      { passive: false },
+    );
+    // touch / pen drag with a flick at the end
+    let dragY: number | null = null;
+    let dragV = 0;
+    let dragMoved = 0;
+    hero.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse') return;
+      dragY = e.clientY;
+      dragV = 0;
+      dragMoved = 0;
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (dragY === null) return;
+      const d = dragY - e.clientY;
+      dragY = e.clientY;
+      dragMoved += Math.abs(d);
+      dragV = d;
+      target += d;
+      pos += d; // follow the finger directly
+    });
+    const endDrag = () => {
+      if (dragY === null) return;
+      dragY = null;
+      nudge(dragV * 14);
+    };
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+    hero.addEventListener(
+      'click',
+      (e) => {
+        if (dragMoved > 8) {
+          e.preventDefault();
+          e.stopPropagation();
+          dragMoved = 0;
+        }
+      },
+      true,
+    );
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowDown', 'PageDown', ' '].includes(e.key)) {
+        e.preventDefault();
+        nudge(step);
+      } else if (['ArrowUp', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        nudge(-step);
+      }
+    });
+
+    // ---------- Side texts ----------
     let active = -1;
     const setActive = (i: number) => {
       if (i === active) return;
+      const prev = active;
       active = i;
+      // roll in the direction of travel, even across the loop seam
+      const forward = prev < 0 || (i - prev + N) % N <= N / 2;
       for (const g of groups) {
         [...g.children].forEach((el, k) => {
           el.classList.toggle('is-active', k === i);
-          el.classList.toggle('is-past', k < i);
+          el.classList.toggle('is-past', k !== i && forward);
         });
       }
     };
 
-    // ---------- Hover ----------
-    let hovered = -1;
-    pills.forEach((p, i) => {
-      p.addEventListener('pointerenter', () => (hovered = i));
-      p.addEventListener('pointerleave', () => hovered === i && (hovered = -1));
-    });
-    const hover = pills.map(() => 0);
-
-    // ---------- Opening a project: cover morphs into the case study ----------
-    pills.forEach((p) =>
+    // ---------- Hover + opening a project ----------
+    let hovered: HTMLElement | null = null;
+    pills.forEach((p) => {
+      p.addEventListener('pointerenter', () => (hovered = p));
+      p.addEventListener('pointerleave', () => hovered === p && (hovered = null));
       p.addEventListener('click', (e) => {
-        if (e.metaKey || e.ctrlKey || e.shiftKey || !('startViewTransition' in document)) return;
+        if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || !('startViewTransition' in document)) return;
         p.classList.add('is-opening');
         p.style.viewTransitionName = 'project-cover';
         try {
           sessionStorage.setItem('vt-card', '1');
         } catch (err) {}
-      }),
-    );
+      });
+    });
     window.addEventListener('pageshow', (e) => {
       if (!(e as PageTransitionEvent).persisted) return;
       for (const p of pills) {
@@ -469,12 +497,13 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         p.style.viewTransitionName = '';
       }
     });
+    const hover = pills.map(() => 0);
 
     // ---------- WebGL ----------
     let gl: ReturnType<typeof setupGL> = null;
     const enableGL = () => {
       if (gl || reduceMotion) return;
-      gl = setupGL(stage.querySelector<HTMLCanvasElement>('[data-gl]')!);
+      gl = setupGL(hero.querySelector<HTMLCanvasElement>('[data-gl]')!);
       if (gl) hero.classList.add('has-gl');
     };
     if (finePointer) enableGL();
@@ -487,134 +516,65 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       else window.addEventListener('load', later, { once: true });
     }
 
-    // ---------- Liquid preloader ----------
-    // 1. A drop of ink falls from the top, stretched by its speed.
-    // 2. It hits the middle of the screen: squash, rebound, two rings spread.
-    // 3. It breathes until the covers on screen have loaded.
-    // 4. It swells into the middle cover; the others slide out from behind it.
-    //    Every cover starts as ink and clears to its image, with a soft ripple.
-    const INTRO_MS = 1200;
-    const STAGGER = 120;
-    const BLOB = 52;
-    let introAt = -1;
-    let introCentre = 0;
-    const blob = stage.querySelector<HTMLElement>('[data-blob]');
-    const rings = [...stage.querySelectorAll<HTMLElement>('[data-ripple]')];
-    if (root.classList.contains('is-intro')) {
-      if (!gl || !blob) endIntro();
+    // ---------- Arrival ----------
+    // Covers start above the screen and stream down into the column, the lower
+    // ones first, each on a long ease-out so they glide to a stop. The speed of
+    // each cover feeds the same edge stretch as scrolling does.
+    const ARRIVE_MS = 1500;
+    const ARRIVE_STAGGER = 70;
+    let arriveAt = -1;
+    const arriving = root.classList.contains('is-arriving');
+    const endArrival = () => {
+      arriveAt = -1;
+      root.classList.remove('is-arriving');
+    };
+    if (arriving) {
+      if (!gl) endArrival();
       else {
-        const vh0 = window.innerHeight;
-        const onScreen = pills.filter((p) => {
-          const r = p.getBoundingClientRect();
-          return r.bottom > 0 && r.top < vh0;
-        });
-        const centreEl = onScreen.reduce(
-          (a, b) => (Math.abs(b.getBoundingClientRect().top + b.offsetHeight / 2 - vh0 / 2) < Math.abs(a.getBoundingClientRect().top + a.offsetHeight / 2 - vh0 / 2) ? b : a),
-          onScreen[0],
-        );
-        introCentre = Math.max(0, pills.indexOf(centreEl));
-        const t0i = performance.now();
-
-        // fall: gravity, so it speeds up (ease-in) and stretches as it goes
-        const fall = blob.animate(
-          [
-            { transform: `translateY(${-0.75 * vh0}px) scale(0.7, 1.45)` },
-            { transform: 'translateY(0) scale(0.78, 1.32)' },
-          ],
-          { duration: 620, delay: 250, easing: 'cubic-bezier(0.55, 0, 1, 0.45)', fill: 'forwards' },
-        );
-        let landed = false;
-        fall.finished.then(() => {
-          // impact: squash flat, then wobble back to round
-          blob.animate(
-            [
-              { transform: 'scale(0.78, 1.32)' },
-              { transform: 'scale(1.6, 0.52)', offset: 0.18 },
-              { transform: 'scale(0.86, 1.14)', offset: 0.45 },
-              { transform: 'scale(1.05, 0.96)', offset: 0.7 },
-              { transform: 'scale(1)' },
-            ],
-            { duration: 620, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'forwards' },
-          ).finished.then(() => {
-            fall.cancel();
-            blob.getAnimations().forEach((a) => a.cancel());
-            blob.style.transform = 'none';
-            blob.classList.add('is-idle');
-            landed = true;
+        const t0 = performance.now();
+        const onScreen = () =>
+          pills.filter((p) => {
+            const r = p.getBoundingClientRect();
+            return r.bottom > 0 && r.top < window.innerHeight;
           });
-          rings.forEach((ring, k) =>
-            ring.animate(
-              [
-                { transform: 'scale(0.6)', opacity: 0.55 },
-                { transform: 'scale(7)', opacity: 0 },
-              ],
-              { duration: 1100, delay: k * 160, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'both' },
-            ),
-          );
-        });
-
-        const giveUp = t0i + 4000;
-        const wait = () => {
-          const now = performance.now();
-          if ((!landed || !gl?.ready(onScreen)) && now < giveUp) {
-            requestAnimationFrame(wait);
+        const go = () => {
+          // start once the covers on screen can be drawn (or after 1.5s anyway)
+          if (!gl?.ready(onScreen()) && performance.now() - t0 < 1500) {
+            requestAnimationFrame(go);
             return;
           }
-          introAt = performance.now();
-          blob.classList.remove('is-idle');
-          // the drop hands over to the middle cover, which starts at its size
-          blob.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out', fill: 'forwards' });
-          const last = Math.max(introCentre, pills.length - 1 - introCentre);
-          window.setTimeout(() => {
-            introAt = -1;
-            endIntro();
-          }, INTRO_MS + 200 + STAGGER * Math.min(last, 3));
+          arriveAt = performance.now();
+          window.setTimeout(endArrival, ARRIVE_MS + ARRIVE_STAGGER * 6);
         };
-        requestAnimationFrame(wait);
+        requestAnimationFrame(go);
       }
-    } else endIntro();
-
-    const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
-    const introPlace = (i: number, r: DOMRect) => {
+    }
+    const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
+    const arrivalOffset = (r: DOMRect): number | null => {
+      if (!arriving) return 0;
       const vh = window.innerHeight;
-      const none = { rect: { left: 0, top: 0, width: 0, height: 0 }, wobble: 0, ink: 1, alpha: 0 };
-      if (introAt < 0) return none;
-      const elapsed = performance.now() - introAt;
-      const cx = r.left + r.width / 2;
-      const ty = r.top + r.height / 2;
-      if (i === introCentre) {
-        // swell from the drop's size into the full cover
-        const t = elapsed / INTRO_MS;
-        const p = easeOutExpo(clamp(t));
-        const s0 = BLOB / r.width;
-        const s = s0 + (1 - s0) * p;
-        const w = r.width * s;
-        const h = r.height * (s0 + (1 - s0) * p);
-        const cy = vh / 2 + (ty - vh / 2) * p;
-        return { rect: { left: cx - w / 2, top: cy - h / 2, width: w, height: h }, wobble: 0.35 * (1 - clamp(t * 1.4)), ink: 1 - clamp((t - 0.15) * 2), alpha: 1, z: 1 };
-      }
-      // the rest slide out from behind the middle one
-      const t = (elapsed - 180 - STAGGER * (Math.abs(i - introCentre) - 1)) / INTRO_MS;
-      if (t <= 0) return none;
-      const p = easeOutExpo(clamp(t));
-      const s = 0.6 + 0.4 * p;
-      const w = r.width * s;
-      const h = r.height * s;
-      const cy = vh / 2 + (ty - vh / 2) * p;
-      return { rect: { left: cx - w / 2, top: cy - h / 2, width: w, height: h }, wobble: 0.25 * (1 - clamp(t * 1.4)), ink: 1 - clamp((t - 0.1) * 2), alpha: clamp(t * 5) };
+      if (arriveAt < 0) return null; // not started: keep hidden
+      // lower covers lead, upper ones follow
+      const order = clamp(1 - (r.top + r.height / 2) / vh, 0, 1.5);
+      const t = clamp((performance.now() - arriveAt - order * ARRIVE_STAGGER * 4) / ARRIVE_MS);
+      return -(vh * 1.15) * (1 - easeOutQuint(t));
     };
 
-    let visible = true;
-    new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(hero);
-
-    let lastY = window.scrollY;
+    // ---------- Frame ----------
+    let lastPos = 0;
     let vel = 0;
+    const prevY = new Map<number, number>();
     const frame = () => {
       requestAnimationFrame(frame);
-      if (!visible) return;
-      const vh = window.innerHeight;
+      // ease towards the target; 0.085 per frame ≈ a soft, weighty glide
+      if (dragY === null) pos += (target - pos) * 0.085;
+      // keep the middle lap in view, wrapping invisibly
+      const wrapped = ((pos % lap) + lap) % lap;
+      list.style.transform = `translate3d(0, ${(-(lap + wrapped)).toFixed(2)}px, 0)`;
+      vel += (pos - lastPos - vel) * 0.25;
+      lastPos = pos;
 
-      // the cover closest to the middle of the screen is the active one
+      const vh = window.innerHeight;
       let best = 0;
       let bestD = Number.POSITIVE_INFINITY;
       for (let i = 0; i < pills.length; i++) {
@@ -624,26 +584,33 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           bestD = d;
           best = i;
         }
+        hover[i] += ((hovered === pills[i] ? 1 : 0) - hover[i]) * 0.12;
       }
-      setActive(best);
+      setActive(Number(pills[best].dataset.index));
 
-      const y = window.scrollY;
-      vel += (y - lastY - vel) * 0.2;
-      lastY = y;
-      for (let i = 0; i < pills.length; i++) hover[i] += ((hovered === i ? 1 : 0) - hover[i]) * 0.12;
-      if (gl) gl.draw(pills, clamp(Math.abs(vel) / 60), hover, root.classList.contains('is-intro') ? introPlace : undefined);
+      if (!gl) return;
+      const speed = clamp(Math.abs(vel) / 45);
+      gl.draw(pills, hover, (i, r) => {
+        const off = arrivalOffset(r);
+        if (off === null) return null;
+        // per-cover speed during arrival, so falling covers stretch too
+        const y = r.top + off;
+        const last = prevY.get(i) ?? y;
+        prevY.set(i, y);
+        const own = arriveAt >= 0 ? clamp(Math.abs(y - last) / 45) : 0;
+        return { top: y, speed: Math.max(speed, own) };
+      });
     };
     requestAnimationFrame(frame);
   }
 
   /* WebGL: one finely subdivided plane per cover, placed over its DOM box.
-     - Pill shape: a rounded-rect distance field with anti-aliased edges.
-     - Edge lens: the closer a cover is to the top or bottom of the screen, the
-       more its vertices are pushed outwards (it stretches towards the edge and
-       flares wider), its colour channels split vertically and it smears along
-       the direction of travel. Scroll speed adds to the effect.
-     - Covers fade in once their texture is ready, and redraws only happen when
-       something actually changed. */
+     - Pill shape from a rounded-rect distance field with anti-aliased edges.
+     - Edge lens: near the top and bottom of the screen a cover stretches
+       towards the edge, flares wider, smears and splits its colour; speed
+       makes all of it stronger.
+     - Covers fade in once their texture is ready; frames where nothing moved
+       are skipped. */
   function setupGL(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: true });
     if (!gl) return null;
@@ -654,30 +621,23 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       uniform vec4 uRect;
       uniform vec2 uView;
       uniform float uSpeed;
-      uniform float uWobble;
-      uniform float uTime;
       varying vec2 vUv;
       varying float vEdge;
       void main() {
         vUv = aPos;
         vec2 p = uRect.xy + aPos * uRect.zw;
-        // liquid: while pouring in, the sheet ripples and runs taller
-        vec2 c = uRect.xy + uRect.zw * 0.5;
-        p.y = c.y + (p.y - c.y) * (1.0 + 0.45 * uWobble);
-        p.x += sin(aPos.y * 6.2832 + uTime * 7.0) * uWobble * uRect.z * 0.07;
-        p.y += sin(aPos.x * 3.1416 + uTime * 5.0) * uWobble * uRect.w * 0.04;
         float cx = uRect.x + uRect.z * 0.5;
-        // -1 at the top of the screen, 0 in the middle, 1 at the bottom
         float ny = (p.y - uView.y * 0.5) / (uView.y * 0.5);
-        // the effect only starts in the outer part of the screen
-        float t = 0.72 - 0.06 * uSpeed;
+        // the effect only lives in the outer band of the screen
+        float t = 0.72 - 0.12 * uSpeed;
         float over = max(0.0, abs(ny) - t);
-        float k = 1.2 + 1.2 * uSpeed;
-        // stretch towards the edge: spacing grows the further out a point is
+        float k = 1.2 + 1.6 * uSpeed;
         p.y += sign(ny) * over * over * k * uView.y * 0.5;
-        // and flare wider near the edge, like a bell
         float e = smoothstep(t, 1.0, abs(ny));
         p.x = cx + (p.x - cx) * (1.0 + 0.2 * e);
+        // moving fast also elongates a cover a little along its travel
+        float c = uRect.y + uRect.w * 0.5;
+        p.y = c + (p.y - c) * (1.0 + 0.12 * uSpeed);
         vEdge = e;
         vec2 clip = p / uView * 2.0 - 1.0;
         gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
@@ -694,9 +654,6 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       uniform float uHover;
       uniform float uAlpha;
       uniform float uSpeed;
-      uniform float uWobble;
-      uniform float uTime;
-      uniform float uInk;
       varying vec2 vUv;
       varying float vEdge;
       vec2 cover(vec2 uv) {
@@ -707,19 +664,15 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         return (uv - 0.5) * (1.0 - 0.06 * uHover) + 0.5;
       }
       void main() {
-        // pill mask, anti-aliased over ~1px
         vec2 size = uRect.zw;
         float r = size.x * 0.5;
         vec2 q = abs(vUv * size - size * 0.5) - (size * 0.5 - r);
         float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
-        // wavy, liquid outline while pouring in
-        d += (sin(vUv.y * 14.0 + uTime * 8.0) + sin(vUv.x * 11.0 - uTime * 6.0)) * uWobble * size.x * 0.035;
         float mask = 1.0 - smoothstep(-1.0, 1.0, d);
         if (mask <= 0.0) discard;
 
         vec2 uv = cover(vUv);
-        float e = clamp(vEdge + uSpeed * 0.35, 0.0, 1.0);
-        // vertical smear and colour split near the edges
+        float e = clamp(vEdge + uSpeed * 0.3, 0.0, 1.0);
         float smear = 0.035 * e;
         float split = 0.018 * e;
         vec3 col = vec3(0.0);
@@ -730,8 +683,6 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           col.b += texture2D(uTex, uv + vec2(0.0, o - split)).b;
         }
         col /= 5.0;
-        // covers come out of the ink drop: they start black and clear up
-        col = mix(col, vec3(0.067), uInk);
         gl_FragColor = vec4(col, 1.0) * uAlpha * mask;
       }`;
     const compile = (type: number, src: string) => {
@@ -747,7 +698,6 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
     gl.useProgram(prog);
 
-    // 16 × 64 grid: the stretch is vertical, so rows matter most
     const SX = 16;
     const SY = 64;
     const verts: number[] = [];
@@ -773,19 +723,17 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     const uHover = u('uHover');
     const uAlpha = u('uAlpha');
     const uImg = u('uImg');
-    const uWobble = u('uWobble');
-    const uInk = u('uInk');
-    const uTime = u('uTime');
-    const t0 = performance.now();
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
+    // one texture per image, shared by the copies of a cover in each lap
     type Tex = { tex: WebGLTexture; w: number; h: number; at: number } | null;
-    const textures = new Map<HTMLElement, Tex>();
+    const textures = new Map<string, Tex>();
     const coarse = window.matchMedia('(pointer: coarse)').matches;
     const load = (el: HTMLElement) => {
-      if (textures.has(el)) return;
-      textures.set(el, null);
+      const src = el.dataset.src!;
+      if (textures.has(src)) return;
+      textures.set(src, null);
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
@@ -795,22 +743,22 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        textures.set(el, { tex, w: img.naturalWidth, h: img.naturalHeight, at: performance.now() });
+        textures.set(src, { tex, w: img.naturalWidth, h: img.naturalHeight, at: performance.now() });
       };
-      const src = el.dataset.src!;
       img.src = coarse ? src.replace(/([?&])w=\d+/, '$1w=600').replace(/([?&])h=\d+/, '$1h=750') : src;
     };
+    const get = (el: HTMLElement) => textures.get(el.dataset.src!);
 
     let lastSig = '';
     return {
-      /** textures of these covers are ready to draw */
       ready(els: HTMLElement[]) {
         return els.every((el) => {
           load(el);
-          return !!textures.get(el);
+          return !!get(el);
         });
       },
-      draw(els: HTMLElement[], speed: number, hover: number[], intro?: (i: number, r: DOMRect) => { rect: { left: number; top: number; width: number; height: number }; wobble: number; ink: number; alpha: number; z?: number } | null) {
+      /** place(i, rect) returns where to draw a cover (top + speed) or null to skip it */
+      draw(els: HTMLElement[], hover: number[], place: (i: number, r: DOMRect) => { top: number; speed: number } | null) {
         const cr = canvas.getBoundingClientRect();
         const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1 : 1.5);
         const W = Math.round(cr.width * dpr);
@@ -820,45 +768,36 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           canvas.height = H;
         }
         const now = performance.now();
-        type Job = { i: number; t: NonNullable<Tex>; r: { left: number; top: number; width: number; height: number }; alpha: number; wobble: number; ink: number; z: number };
+        type Job = { i: number; t: NonNullable<Tex>; x: number; y: number; w: number; h: number; alpha: number; speed: number };
         const jobs: Job[] = [];
-        let sig = `${W},${H},${speed.toFixed(3)};`;
+        let sig = `${W},${H};`;
         els.forEach((el, i) => {
           if (el.classList.contains('is-opening')) return;
           const r = el.getBoundingClientRect();
-          // generous margin: covers stretch beyond their box near the edges
-          if (r.bottom < cr.top - r.height || r.top > cr.bottom + r.height) return;
+          const p = place(i, r);
+          if (!p) return;
+          if (p.top + r.height < -r.height || p.top > cr.height + r.height) return;
           load(el);
-          const t = textures.get(el);
+          const t = get(el);
           if (!t) return;
-          const ix = intro ? intro(i, r) : null;
-          const rr = ix ? ix.rect : r;
-          const wobble = ix ? ix.wobble : 0;
-          const ink = ix ? ix.ink : 0;
-          const alpha = ix ? ix.alpha : clamp((now - t.at) / 500);
-          if (alpha <= 0.001 || rr.width < 1) return;
-          jobs.push({ i, t, r: rr, alpha, wobble, ink, z: ix?.z ?? 0 });
-          sig += `${i}:${rr.left.toFixed(1)},${rr.top.toFixed(1)},${rr.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${wobble.toFixed(3)},${ink.toFixed(3)};`;
+          const alpha = clamp((now - t.at) / 500);
+          jobs.push({ i, t, x: r.left - cr.left, y: p.top - cr.top, w: r.width, h: r.height, alpha, speed: p.speed });
+          sig += `${i}:${r.left.toFixed(1)},${p.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${p.speed.toFixed(3)};`;
         });
-        if (sig === lastSig && !jobs.some((j) => j.wobble > 0.001)) return;
-        // during the intro the middle cover sits on top of the ones sliding out
-        jobs.sort((a, b) => a.z - b.z);
+        if (sig === lastSig) return;
         lastSig = sig;
 
         gl.viewport(0, 0, W, H);
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform2f(uView, cr.width, cr.height);
-        gl.uniform1f(uSpeed, speed);
-        gl.uniform1f(uTime, (now - t0) / 1000);
-        for (const { i, t, r, alpha, wobble, ink } of jobs) {
+        for (const { i, t, x, y, w, h, alpha, speed } of jobs) {
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
-          gl.uniform4f(uRect, r.left - cr.left, r.top - cr.top, r.width, r.height);
+          gl.uniform4f(uRect, x, y, w, h);
           gl.uniform2f(uImg, t.w, t.h);
           gl.uniform1f(uHover, hover[i]);
           gl.uniform1f(uAlpha, alpha);
-          gl.uniform1f(uWobble, wobble);
-          gl.uniform1f(uInk, ink);
+          gl.uniform1f(uSpeed, speed);
           gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         }
       },
