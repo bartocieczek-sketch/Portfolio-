@@ -604,5 +604,6 @@ function followers() {
 // Switched off for now: flip to true to bring the cursor build back
 const BUILD_ON = false;
 if (BUILD_ON && sectionEls.length && !reduceMotion && !preview) init();
-// Followers join once the page has been put together
-window.setTimeout(followers, root.classList.contains('is-returning') ? 300 : 2600);
+// Followers are switched off for now: flip to true to bring them back
+const FOLLOWERS_ON = false;
+if (FOLLOWERS_ON) window.setTimeout(followers, root.classList.contains('is-returning') ? 300 : 2600);
