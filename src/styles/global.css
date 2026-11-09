@@ -385,40 +385,65 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   height: 100%;
   object-fit: cover;
 }
-/* The cover travels from the home column into the case study. The flying
-   box is the whole picture (nearly the pill's shape), so it scales up evenly
-   with no jump; a crop opens from the pill's round ends to the frame the
-   picture is shown in on the case study (--vt-to-clip, set in Base.astro). */
+/* The cover travels between the home pill and the case study frame. The box
+   morphs shape (corners from the pill's round ends to the frame's radius);
+   inside it, both pictures are centred and sized from --vo-* / --vn-* (set
+   by window.__vtSizes in Base.astro) so the photo is always shown at one
+   scale: it grows or shrinks evenly from the middle, with no jump. The
+   arriving picture sits on top; the leaving one fills around it. */
 ::view-transition-image-pair(project-cover) {
-  animation: vt-clip 0.85s var(--ease-cover) both;
+  overflow: hidden;
+  animation: vt-round 0.85s var(--ease-cover) both;
 }
-/* the new picture sits on top of the old one, so the old one never fades:
-   if the new one is still decoding, the old one shows instead of white */
+::view-transition-old(project-cover),
+::view-transition-new(project-cover) {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  object-fit: fill;
+  animation-duration: 0.85s;
+  animation-timing-function: var(--ease-cover);
+  animation-fill-mode: both;
+}
 ::view-transition-old(project-cover) {
-  animation: none;
+  width: var(--vo-w1, 100%);
+  height: var(--vo-h1, 100%);
+  animation-name: vt-old-size;
 }
 ::view-transition-new(project-cover) {
-  animation: none;
+  width: var(--vn-w1, 100%);
+  height: var(--vn-h1, 100%);
+  animation-name: vt-new-size;
 }
-@keyframes vt-clip {
+@keyframes vt-old-size {
   from {
-    clip-path: inset(0 round var(--vt-pill-r, 999px));
+    width: var(--vo-w0, 100%);
+    height: var(--vo-h0, 100%);
+  }
+}
+@keyframes vt-new-size {
+  from {
+    width: var(--vn-w0, 100%);
+    height: var(--vn-h0, 100%);
+  }
+}
+@keyframes vt-round {
+  from {
+    border-radius: var(--vt-pill-r, 999px);
   }
   to {
-    clip-path: var(--vt-to-clip, inset(0 round var(--radius)));
+    border-radius: var(--radius);
   }
 }
-
-/* Back home: the same in reverse; the frame's crop closes into the pill */
 html:active-view-transition-type(cover-back)::view-transition-image-pair(project-cover) {
-  animation: vt-clip-back 0.85s var(--ease-cover) both;
+  animation: vt-round-back 0.85s var(--ease-cover) both;
 }
-@keyframes vt-clip-back {
+@keyframes vt-round-back {
   from {
-    clip-path: var(--vt-from-clip, inset(0 round var(--radius)));
+    border-radius: var(--radius);
   }
   to {
-    clip-path: inset(0 round var(--vt-pill-r, 999px));
+    border-radius: var(--vt-pill-r, 999px);
   }
 }
 html:active-view-transition-type(home)::view-transition-group(root) {

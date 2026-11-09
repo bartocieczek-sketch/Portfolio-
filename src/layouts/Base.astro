@@ -38,6 +38,32 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
     <script is:inline>
       // Page transitions: tell the CSS whether we're going back or forward
       // so the slide runs in the matching direction.
+      // The cover flight between a home pill and a case study frame of another
+      // shape. Both pictures inside the flying box are sized so the photo is
+      // shown at the same scale in each, centred, at every moment: the frame's
+      // (wider, shorter) picture lies over the middle of the pill's, and they
+      // grow or shrink together, so the photo scales evenly with no jump.
+      // pill / frame: {w, h} of each box; forward: pill → frame.
+      window.__vtSizes = function (pill, frame, forward) {
+        var ar = 0.8; // the cover photo is cropped 4:5 everywhere
+        var dp = Math.max(pill.w, pill.h * ar); // photo width shown in the pill
+        var df = Math.max(frame.w, frame.h * ar); // ... and in the frame
+        var k = df / dp;
+        var pillFrom = [pill.w, pill.h], pillTo = [pill.w * k, pill.h * k];
+        var frameFrom = [frame.w / k, frame.h / k], frameTo = [frame.w, frame.h];
+        // old = what leaves, new = what arrives
+        var o = forward ? [pillFrom, pillTo] : [frameTo, frameFrom];
+        var n = forward ? [frameFrom, frameTo] : [pillTo, pillFrom];
+        var st = document.documentElement.style;
+        st.setProperty('--vo-w0', o[0][0] + 'px');
+        st.setProperty('--vo-h0', o[0][1] + 'px');
+        st.setProperty('--vo-w1', o[1][0] + 'px');
+        st.setProperty('--vo-h1', o[1][1] + 'px');
+        st.setProperty('--vn-w0', n[0][0] + 'px');
+        st.setProperty('--vn-h0', n[0][1] + 'px');
+        st.setProperty('--vn-w1', n[1][0] + 'px');
+        st.setProperty('--vn-h1', n[1][1] + 'px');
+      };
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
         try {
@@ -86,17 +112,11 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
               var pr = sessionStorage.getItem('vt-pill-r');
               if (pr) document.documentElement.style.setProperty('--vt-pill-r', pr + 'px');
             } catch (err) {}
-            // the flying picture ends cropped by its frame on this page
-            var frame = cover.parentElement;
-            if (frame && frame.hasAttribute('data-cover-frame')) {
-              var b = cover.getBoundingClientRect();
-              var f = frame.getBoundingClientRect();
-              var fr = parseFloat(getComputedStyle(frame).borderTopLeftRadius) || 20;
-              document.documentElement.style.setProperty(
-                '--vt-to-clip',
-                'inset(' + (f.top - b.top) + 'px ' + (b.right - f.right) + 'px ' + (b.bottom - f.bottom) + 'px ' + (f.left - b.left) + 'px round ' + fr + 'px)',
-              );
-            }
+            try {
+              var pill = JSON.parse(sessionStorage.getItem('vt-pill') || 'null');
+              var f = cover.getBoundingClientRect();
+              if (pill) window.__vtSizes(pill, { w: f.width, h: f.height }, true);
+            } catch (err) {}
             // the rest of the case study settles in around the landed cover
             document.documentElement.classList.add('from-card');
             e.viewTransition.finished.finally(function () {

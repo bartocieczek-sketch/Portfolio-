@@ -159,7 +159,7 @@ const LAPS = 3;
       // corners ease from the case cover's radius into this pill's exact round
       // ends (px to px, so the rounding is even all the way)
       html.style.setProperty('--vt-from-radius', (d.r || 20) + 'px');
-      if (d.clip) html.style.setProperty('--vt-from-clip', d.clip);
+      if (d.frame && window.__vtSizes) window.__vtSizes({ w: p.offsetWidth, h: p.offsetHeight }, d.frame, false);
       html.style.setProperty('--vt-pill-r', p.offsetWidth / 2 + 'px');
     } catch (e) {}
   })();
@@ -598,6 +598,7 @@ const LAPS = 3;
             p.style.viewTransitionName = 'project-cover';
             try {
               sessionStorage.setItem('vt-pill-r', String(p.offsetWidth / 2));
+              sessionStorage.setItem('vt-pill', JSON.stringify({ w: p.offsetWidth, h: p.offsetHeight }));
               sessionStorage.setItem('vt-card', '1');
               // remember where it was, so coming back lands in the same spot
               sessionStorage.setItem('vh-from', JSON.stringify({ pos, i }));
@@ -690,8 +691,9 @@ const LAPS = 3;
           p.style.viewTransitionName = 'project-cover';
           root.classList.add('is-cover-back');
           root.style.setProperty('--vt-from-radius', `${(back as { r?: number }).r || 20}px`);
-          const clip = (back as { clip?: string }).clip;
-          if (clip) root.style.setProperty('--vt-from-clip', clip);
+          const frame = (back as { frame?: { w: number; h: number } }).frame;
+          const sizes = (window as unknown as { __vtSizes?: (a: object, b: object, f: boolean) => void }).__vtSizes;
+          if (frame && sizes) sizes({ w: p.offsetWidth, h: p.offsetHeight }, frame, false);
           root.style.setProperty('--vt-pill-r', `${p.offsetWidth / 2}px`);
           handBack();
         }
