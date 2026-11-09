@@ -2,7 +2,6 @@
 import { PortableText } from 'astro-portabletext';
 import { stegaClean } from '@sanity/client/stega';
 import Base from '../layouts/Base.astro';
-import Nav from '../components/Nav.astro';
 import Media from '../components/Media.astro';
 import Footer from '../components/Footer.astro';
 import { PROJECT_ORDER_QUERY, PROJECT_QUERY, SETTINGS_QUERY, srcset, urlFor } from '../lib/sanity';
@@ -32,6 +31,9 @@ const gallery: any[] = (project.gallery ?? []).filter(
 // First graphic: the card cover in the same 4:5 crop as the home carousel,
 // so the thumbnail can morph straight into it
 const coverSrc = project.cover?.asset ? urlFor(project.cover).width(1000).height(1250).fit('crop').quality(82).url() : undefined;
+// the cover fills the first screen here, so it gets the full picture
+const heroSrc = project.cover?.asset ? urlFor(project.cover).width(2400).quality(82).url() : undefined;
+const heroSet = project.cover?.asset ? srcset(project.cover, [1200, 1800, 2400]) : undefined;
 
 // each picture keeps its own shape in the strip (all share one height)
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
@@ -57,74 +59,67 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
 <Base title={`${stegaClean(project.title)} – ${settings?.name ?? 'Bart Ocieczek'}`} description={description} image={project.cover}>
   <main class="case">
-    <!-- First screen: the project's name on top, its pictures side by side in
-         one line below. Scrolling down moves the line sideways (pinned). -->
-    <section class="case__pin" data-pin>
-      <div class="case__stage">
-        <div class="case__nav">
-          <Nav callUrl={settings?.callUrl} socials={settings?.socials} role={settings?.role} />
-        </div>
+    <!-- Pictures fill the page edge to edge, one after another. The story
+         lives in a panel that slides in from the right: open on arrival,
+         tucked away once you scroll, back with the handle on the edge. -->
+    <a class="case__back-btn" href={href(Astro.locals, '/')} aria-label="Back to work">
+      {coverSrc && (
+        <span class="case__mini" data-vt-mini>
+          <img src={coverSrc} alt="" width="1000" height="1250" decoding="async" />
+        </span>
+      )}
+      <span class="case__back-arrow" aria-hidden="true">←</span>
+      <span class="t-label-small">Work</span>
+    </a>
 
-        <header class="case__top">
-          <div class="case__name">
-            <p class="t-label-small muted">
-              Case study {index >= 0 && `— ${number(index + 1)}/${number(list.length)}`}
-            </p>
-            <h1 class="case__title">{project.title}</h1>
-          </div>
-          <div class="case__facts">
-            {project.yearLabel && <span class="t-label-small muted">{project.yearLabel}</span>}
-            {project.services && <span class="case__services">{project.services}</span>}
-          </div>
-          {coverSrc && (
-            <a class="case__mini" href={href(Astro.locals, '/')} data-vt-mini aria-label="Back to work">
-              <img src={coverSrc} alt="" width="1000" height="1250" decoding="async" />
-            </a>
-          )}
-        </header>
-
-        <div class="case__strip" data-strip>
-          <div class="case__track" data-track>
-            {coverSrc && (
-              <div class="case__slot case__cover" data-vt-cover style="--ar:0.8">
-                <img src={coverSrc} alt="" width="1000" height="1250" fetchpriority="high" decoding="async" />
-              </div>
-            )}
-            {gallery.map((item, i) => (
-              <div class="case__slot" style={`--ar:${ratio(item).toFixed(4)}`}>
-                <Media item={item} eager={i < 4} />
-              </div>
-            ))}
-          </div>
+    <section class="case__media">
+      {coverSrc && (
+        <div class="case__cover" data-vt-cover>
+          <img src={heroSrc} srcset={heroSet} sizes="100vw" alt="" fetchpriority="high" decoding="async" />
         </div>
+      )}
+      <div class="case__gallery">
+        {gallery.map((item, i) => <Media item={item} eager={i < 2} />)}
       </div>
     </section>
 
-    <section class="case__info">
-      {intro.length > 0 && (
-        <div class="case__intro t-compact" data-split>
-          <PortableText value={intro} />
+    <aside class="case__panel is-open" data-panel aria-label="About the project">
+      <button class="case__handle" type="button" data-panel-toggle aria-expanded="true" aria-label="Project info">
+        <span></span>
+      </button>
+      <div class="case__panel-in">
+        <div class="case__panel-top">
+          <p class="t-label-small muted">
+            Case study {index >= 0 && `— ${number(index + 1)}/${number(list.length)}`}
+          </p>
+          <h1 class="case__title">{project.title}</h1>
+          {intro.length > 0 && (
+            <div class="case__intro">
+              <PortableText value={intro} />
+            </div>
+          )}
+          <p class="case__hint t-label-small">[ Scroll to explore ]</p>
         </div>
-      )}
-      <aside class="case__side">
+
         {meta.length > 0 && (
-          <dl class="case__meta" data-reveal>
+          <dl class="case__meta">
             {meta.map(([k, v]) => (
               <div>
                 <dt class="t-label-small">{k}</dt>
-                <dd class="t-label">{v}</dd>
+                <dd>{v}</dd>
               </div>
             ))}
           </dl>
         )}
-        {project.liveUrl && (
-          <a class="line-button is-closed" href={project.liveUrl} target="_blank" rel="noopener" data-reveal>
-            <span>Visit live ↗</span>
-          </a>
-        )}
-        <a href={href(Astro.locals, '/')} class="u-link t-label-small case__back">← Back to work</a>
-      </aside>
-    </section>
+
+        <div class="case__panel-foot">
+          <span class="t-label-small">{project.yearLabel}</span>
+          {project.liveUrl && (
+            <a class="case__live t-label-small" href={project.liveUrl} target="_blank" rel="noopener">Live site ↗</a>
+          )}
+        </div>
+      </div>
+    </aside>
 
     {next && (
       <a class="next" href={href(Astro.locals, `/${next.slug}`)} data-build>
@@ -157,174 +152,184 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     background: var(--surface-dark);
   }
 
-  /* ---------- First screen: name on top, pictures in one line ---------- */
-  /* --travel (set by the script) is how far the line moves sideways; the
-     section is that much taller than the screen and the stage stays pinned */
-  .case__pin {
-    position: relative;
-    height: calc(100svh + var(--travel, 0px));
-  }
-  .case__stage {
-    position: sticky;
-    top: 0;
-    height: 100svh;
+  /* ---------- Pictures, edge to edge ---------- */
+  .case__media {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-  }
-  .case__nav {
-    padding: var(--gutter) var(--gutter) 0;
-  }
-  .case__top {
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 32px;
-    padding: clamp(24px, 5vh, 56px) var(--gutter) clamp(20px, 3.4vh, 36px);
-  }
-  .case__name {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    min-width: 0;
-  }
-  .case__title {
-    font-family: var(--font-head);
-    font-weight: 500;
-    font-size: clamp(44px, 6.4vw, 112px);
-    line-height: 0.92;
-    letter-spacing: -0.045em;
-    color: var(--text-primary);
-  }
-  .case__facts {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
     gap: 8px;
-    text-align: right;
-    padding-bottom: 6px;
-    margin-right: 84px;
+    padding: 8px;
   }
-  .case__services {
-    font-size: 17px;
-    letter-spacing: -0.01em;
-    color: var(--text-primary);
-  }
-  /* The home pill, at the end of the title row. It shows up once the big
-     cover has moved away, so there's always something on screen to fly home. */
-  .case__mini {
-    position: absolute;
-    right: var(--gutter);
-    bottom: clamp(20px, 3.4vh, 36px);
-    width: 64px;
-    aspect-ratio: 0.75;
-    border-radius: 999px;
+  .case__cover {
+    height: calc(100svh - 16px);
     overflow: hidden;
     background: #f2f2f2;
-    opacity: 0;
-    transform: translateY(8px) scale(0.92);
-    pointer-events: none;
-    transition: opacity 0.35s var(--ease-out), transform 0.45s var(--ease-out);
-  }
-  .case__mini img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .case__mini.is-shown {
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
-  }
-  .case__mini:active {
-    transform: scale(0.96);
-    transition-duration: 0.16s;
-  }
-
-  /* the line: every picture is as tall as the space left, its width follows
-     its own proportions */
-  .case__strip {
-    flex: 1;
-    min-height: 0;
-    padding: 0 0 var(--gutter);
-  }
-  .case__track {
-    display: flex;
-    gap: 12px;
-    height: 100%;
-    padding: 0 var(--gutter);
-    width: max-content;
-    will-change: transform;
-  }
-  .case__slot {
-    position: relative;
-    flex: none;
-    height: 100%;
-    aspect-ratio: var(--ar, 0.8);
     border-radius: var(--radius);
-    overflow: hidden;
-    background: #f2f2f2;
-  }
-  .case__slot > :global(.media) {
-    width: 100%;
-    height: 100%;
-    aspect-ratio: auto;
-    /* always shown: the line itself handles how pictures come in */
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-  .case__slot :global(.media img),
-  .case__slot :global(.media video) {
-    height: 100% !important;
-    min-height: 0;
-    object-fit: cover;
-  }
-  /* no vertical drift inside pictures that move sideways */
-  .case__slot :global([data-parallax].has-parallax > *) {
-    transform: none !important;
   }
   .case__cover img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-
-  /* ---------- About the project ---------- */
-  .case__info {
+  .case__gallery {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: 64px;
-    padding: clamp(80px, 12vh, 140px) var(--gutter) 0;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-flow: row dense;
+    gap: 8px;
+  }
+  .case__gallery :global(.media--full) {
+    grid-column: 1 / -1;
+  }
+
+  /* ---------- Back to work (top left) ---------- */
+  .case__back-btn {
+    position: fixed;
+    z-index: 20;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 16px 0 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--text-primary);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 6px 24px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s var(--ease-out);
+  }
+  .case__back-btn:active {
+    transform: scale(0.97);
+  }
+  /* the home pill, small: if the big cover is off screen, this is what flies
+     back into the column */
+  .case__mini {
+    width: 24px;
+    height: 32px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #f2f2f2;
+    flex: none;
+  }
+  .case__mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .case__back-arrow {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  /* ---------- The panel ---------- */
+  .case__panel {
+    position: fixed;
+    z-index: 15;
+    top: 8px;
+    right: 8px;
+    bottom: 8px;
+    width: min(440px, 32vw);
+    transform: translate3d(calc(100% + 8px), 0, 0);
+    transition: transform 0.75s var(--ease-cover);
+  }
+  .case__panel.is-open {
+    transform: none;
+  }
+  .case__panel-in {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 36px 32px 28px;
+    background: #f4f4f2;
+    border-radius: var(--radius);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .case__panel-in::-webkit-scrollbar {
+    display: none;
+  }
+  /* the handle rides on the panel's left edge, so it stays on the screen
+     edge when the panel is tucked away */
+  .case__handle {
+    position: absolute;
+    top: 50%;
+    left: -36px;
+    width: 28px;
+    height: 76px;
+    margin-top: -38px;
+    border: 0;
+    padding: 0;
+    border-radius: 10px;
+    background: #f4f4f2;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: transform 0.2s var(--ease-out), background-color 0.2s ease;
+  }
+  .case__handle span {
+    width: 2px;
+    height: 22px;
+    border-radius: 2px;
+    background: var(--text-primary);
+    transition: transform 0.45s var(--ease-cover);
+  }
+  .case__panel:not(.is-open) .case__handle span {
+    transform: scaleY(0.6);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .case__handle:hover {
+      background: #fff;
+    }
+    .case__handle:hover span {
+      transform: scaleY(1.2);
+    }
+  }
+  .case__handle:active {
+    transform: scale(0.95);
+  }
+  .case__panel-top {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .case__title {
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: clamp(32px, 2.6vw, 44px);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    color: var(--text-primary);
+    margin-bottom: 6px;
   }
   .case__intro {
     display: flex;
     flex-direction: column;
-    gap: 18px;
-    max-width: 760px;
+    gap: 14px;
+    font-size: 16px;
+    line-height: 1.42;
+    letter-spacing: -0.01em;
   }
   .case__intro :global(p) {
     color: var(--text-secondary);
   }
   .case__intro :global(p:first-child) {
     color: var(--text-primary);
-    font-size: clamp(20px, 1.6vw, 26px);
-    line-height: 1.3;
-    letter-spacing: -0.015em;
   }
-  .case__side {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
+  .case__hint {
+    color: var(--text-secondary);
+    margin-top: 6px;
   }
   .case__meta {
-    margin: 0;
+    margin: auto 0 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px 16px;
-    padding-top: 24px;
-    border-top: 1px solid var(--line);
+    gap: 18px 16px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
   }
   .case__meta dt {
     margin-bottom: 6px;
@@ -332,16 +337,35 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   .case__meta dd {
     margin: 0;
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 1.35;
   }
-  .case__back {
-    align-self: flex-start;
+  .case__panel-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
     color: var(--text-secondary);
   }
-  @media (hover: hover) and (pointer: fine) {
-    .case__back:hover {
-      color: var(--text-primary);
-    }
+  .case__live {
+    color: var(--text-primary);
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 2px;
+  }
+
+  /* the panel's contents settle in just after it slides out */
+  .case__panel-in > * {
+    transition: opacity 0.5s var(--ease-out), transform 0.7s var(--ease-out);
+  }
+  .case__panel:not(.is-open) .case__panel-in > * {
+    opacity: 0;
+    transform: translateX(24px);
+    transition-duration: 0.25s;
+  }
+  .case__panel.is-open .case__panel-in > :nth-child(2) {
+    transition-delay: 0.08s;
+  }
+  .case__panel.is-open .case__panel-in > :nth-child(3) {
+    transition-delay: 0.14s;
   }
 
   /* ---------- Next project ---------- */
@@ -388,41 +412,22 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
   /* Arriving from a home cover: the cover morphs into place (view transition);
      the story and the rest of the gallery rise in after it, one by one */
-  :global(html.from-card) :is(.case__name, .case__facts) > * {
-    animation: case-rise 0.9s var(--ease-out) both;
-  }
-  :global(html.from-card) .case__name > :nth-child(1) {
-    animation-delay: 0.4s;
-  }
-  :global(html.from-card) .case__name > :nth-child(2) {
-    animation-delay: 0.47s;
-  }
-  :global(html.from-card) .case__facts > * {
-    animation-delay: 0.56s;
-  }
-  /* The project's other pictures wait until the cover has landed (Base.astro
-     adds .cover-landed when the flight ends), then slide in one after another
-     from the right, along the line */
-  :global(html.from-card .case__track > .case__slot:not(.case__cover)) {
+  /* Arriving from a home cover: the panel waits off screen until the cover
+     has landed, then slides in (see the script) */
+  :global(html.from-card .case__gallery > *) {
     opacity: 0;
-    transform: translateX(80px);
+    transform: translateY(48px);
     transition: none;
   }
-  :global(html.from-card.cover-landed .case__track > .case__slot:not(.case__cover)) {
+  :global(html.from-card.cover-landed .case__gallery > *) {
     opacity: 1;
     transform: none;
     transition:
       opacity 0.6s var(--ease-out),
       transform 1s var(--ease-out);
   }
-  :global(html.from-card.cover-landed .case__track > :nth-child(3)) {
-    transition-delay: 0.07s;
-  }
-  :global(html.from-card.cover-landed .case__track > :nth-child(4)) {
-    transition-delay: 0.14s;
-  }
-  :global(html.from-card.cover-landed .case__track > :nth-child(n + 5)) {
-    transition-delay: 0.21s;
+  :global(html.from-card) .case__back-btn {
+    animation: case-rise 0.7s 0.5s var(--ease-out) both;
   }
   @keyframes case-rise {
     from {
@@ -431,8 +436,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    :global(html.from-card) :is(.case__name, .case__facts) > *,
-    :global(html.from-card .case__track > *) {
+    .case__panel,
+    .case__panel-in > *,
+    :global(html.from-card .case__gallery > *) {
       animation: none;
       transform: none;
       transition: opacity 0.3s ease;
@@ -440,46 +446,29 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
 
   @media (max-width: 1099px) {
-    .case__info {
-      grid-template-columns: 1fr;
-      gap: 48px;
+    .case__panel {
+      width: min(440px, 46vw);
     }
   }
-  /* phones: no pinning, the line scrolls sideways with the finger */
   @media (max-width: 809px) {
-    .case__pin {
-      height: auto;
+    .case__panel {
+      left: 8px;
+      width: auto;
+      top: auto;
+      max-height: 78svh;
     }
-    .case__stage {
-      position: relative;
-      height: auto;
+    .case__panel-in {
+      padding: 28px 22px 22px;
     }
-    .case__top {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 16px;
+    .case__handle {
+      top: -14px;
+      left: auto;
+      right: 18px;
+      margin-top: 0;
+      transform: translateY(-100%);
     }
-    .case__facts {
-      align-items: flex-start;
-      text-align: left;
-      margin-right: 0;
-    }
-    .case__strip {
-      flex: none;
-      height: 62svh;
-      overflow-x: auto;
-      overscroll-behavior-x: contain;
-      scroll-snap-type: x mandatory;
-      scrollbar-width: none;
-    }
-    .case__strip::-webkit-scrollbar {
-      display: none;
-    }
-    .case__slot {
-      scroll-snap-align: center;
-    }
-    .case__info {
-      padding-top: 64px;
+    .case__gallery {
+      grid-template-columns: 1fr;
     }
     .next {
       padding: 96px var(--gutter) 80px;
@@ -500,52 +489,65 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   const mini = document.querySelector<HTMLElement>('[data-vt-mini]');
   const isHome = (url: string) => /^\/(preview\/?)?$/.test(new URL(url).pathname);
 
-  // ---------- The line moves sideways while the page scrolls ----------
-  const pin = document.querySelector<HTMLElement>('[data-pin]');
-  const strip = document.querySelector<HTMLElement>('[data-strip]');
-  const track = document.querySelector<HTMLElement>('[data-track]');
-  if (pin && strip && track) {
-    const wide = window.matchMedia('(min-width: 810px)');
-    let travel = 0;
-    const measure = () => {
-      travel = wide.matches ? Math.max(0, track.scrollWidth - strip.clientWidth) : 0;
-      pin.style.setProperty('--travel', `${travel}px`);
-      update();
+  // ---------- The story panel ----------
+  // Open when the page arrives (after the cover has landed when coming from
+  // home), tucked away on the first real scroll, back with the handle or "i".
+  const panel = document.querySelector<HTMLElement>('[data-panel]');
+  const toggle = panel?.querySelector<HTMLButtonElement>('[data-panel-toggle]');
+  if (panel && toggle) {
+    let touched = false;
+    const set = (open: boolean) => {
+      panel.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
     };
-    let queued = false;
-    const update = () => {
-      queued = false;
-      if (!travel) {
-        track.style.transform = '';
-        return;
-      }
-      const p = Math.min(1, Math.max(0, (window.scrollY - pin.offsetTop) / travel));
-      track.style.transform = `translate3d(${(-p * travel).toFixed(1)}px, 0, 0)`;
-    };
+    toggle.addEventListener('click', () => {
+      set(!panel.classList.contains('is-open'));
+      touched = true;
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') set(false);
+      if (e.key === 'i' && !(e.target as HTMLElement).closest('input, textarea')) set(!panel.classList.contains('is-open'));
+    });
+    // coming from a home cover: start tucked away, slide in once it has landed
+    let fromCard = document.documentElement.classList.contains('from-card');
+    try {
+      fromCard ||= !!sessionStorage.getItem('vt-card');
+    } catch (err) {}
+    if (fromCard) {
+      set(false);
+      let opened = false;
+      const open = () => {
+        if (opened || touched) return;
+        opened = true;
+        set(true);
+      };
+      new MutationObserver((_, mo) => {
+        if (document.documentElement.classList.contains('cover-landed')) {
+          mo.disconnect();
+          open();
+        }
+      }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      window.setTimeout(open, 1800);
+    }
+    // the first scroll down tucks it away (once; after that it's the user's)
     window.addEventListener(
       'scroll',
       () => {
-        if (queued) return;
-        queued = true;
-        requestAnimationFrame(update);
+        if (touched || window.scrollY < 60) return;
+        touched = true;
+        set(false);
       },
       { passive: true },
     );
-    window.addEventListener('resize', measure);
-    wide.addEventListener('change', measure);
-    // pictures that load late can change nothing (fixed ratios), but fonts can
-    document.fonts?.ready.then(measure);
-    new ResizeObserver(measure).observe(strip);
-    measure();
   }
 
-  // the mini pill appears once less than a third of the cover is visible
+  // which picture flies home: the cover while a third of it is visible,
+  // otherwise the small pill in the back button
   let coverShowing = true;
   if (cover && mini) {
     new IntersectionObserver(
       ([e]) => {
         coverShowing = e.intersectionRatio > 0.33;
-        mini.classList.toggle('is-shown', !coverShowing);
       },
       { threshold: [0, 0.33, 0.5, 1] },
     ).observe(cover);
