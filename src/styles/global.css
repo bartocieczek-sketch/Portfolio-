@@ -391,9 +391,10 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   overflow: hidden;
   animation: vt-round 0.9s var(--ease-in-out) both;
 }
-/* the two pictures are framed identically, so a slow dissolve is invisible */
+/* the new picture sits on top of the old one, so the old one never fades:
+   if the new one is still decoding, the old one shows instead of white */
 ::view-transition-old(project-cover) {
-  animation: vt-fade-out 0.5s var(--ease-out) both;
+  animation: none;
 }
 ::view-transition-new(project-cover) {
   animation: none;
@@ -424,7 +425,7 @@ html:active-view-transition-type(home)::view-transition-group(root) {
   animation: none;
 }
 html:active-view-transition-type(home)::view-transition-old(root) {
-  animation: vt-fade-out 0.45s var(--ease-out) both;
+  animation: none;
 }
 html:active-view-transition-type(home)::view-transition-new(root) {
   animation: vt-fade-in 0.45s var(--ease-out) both;
@@ -432,13 +433,13 @@ html:active-view-transition-type(home)::view-transition-new(root) {
 html:active-view-transition-type(cover-back)::view-transition-group(root) {
   animation: none;
 }
-/* The pages never show through each other: the old one clears first, the
-   new one comes in just after, and the travelling cover stays on top */
+/* The old page stays fully visible underneath while the new one fades in
+   over it, so the screen never dips to white; the cover stays on top */
 html:active-view-transition-type(cover-back)::view-transition-old(root) {
-  animation: vt-fade-out 0.25s var(--ease-out) both;
+  animation: none;
 }
 html:active-view-transition-type(cover-back)::view-transition-new(root) {
-  animation: vt-fade-in 0.45s 0.2s var(--ease-out) both;
+  animation: vt-fade-in 0.4s var(--ease-out) both;
 }
 
 /* After the WebGL flight the cover is already in place on both pages, so the
@@ -465,10 +466,10 @@ html:active-view-transition-type(card)::view-transition-group(root) {
   animation: none;
 }
 html:active-view-transition-type(card)::view-transition-old(root) {
-  animation: vt-fade-out 0.25s var(--ease-out) both;
+  animation: none;
 }
 html:active-view-transition-type(card)::view-transition-new(root) {
-  animation: vt-fade-in 0.45s 0.2s var(--ease-out) both;
+  animation: vt-fade-in 0.4s var(--ease-out) both;
   mix-blend-mode: normal;
 }
 

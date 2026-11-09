@@ -58,7 +58,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
             <img src={coverSrc} alt="" width="1000" height="1250" fetchpriority="high" decoding="async" />
           </div>
         )}
-        {gallery.map((item, i) => <Media item={item} eager={i < 2} />)}
+        {gallery.map((item, i) => <Media item={item} eager={i < 4} />)}
       </div>
 
       <aside class="case__side">
@@ -313,8 +313,12 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     animation-delay: 0.69s;
   }
   /* gallery items are rendered by Media.astro, so these selectors are global */
+  /* photos never fade from white: they are visible from the first frame
+     (also in the transition snapshot) and only glide up into place */
   :global(html.from-card .case__gallery > :not(.case__cover)) {
-    animation: case-rise 1s var(--ease-out) both;
+    opacity: 1;
+    transition: none;
+    animation: case-slide 1s var(--ease-out) both;
     animation-delay: 0.6s;
   }
   :global(html.from-card .case__gallery > :nth-child(3)) {
@@ -322,6 +326,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   :global(html.from-card .case__gallery > :nth-child(n + 4)) {
     animation-delay: 0.76s;
+  }
+  @keyframes case-slide {
+    from {
+      transform: translateY(40px);
+    }
   }
   @keyframes case-rise {
     from {
