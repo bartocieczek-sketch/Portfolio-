@@ -727,9 +727,9 @@ const LAPS = 3;
     const prevY = new Map<number, number>();
     const frame = () => {
       requestAnimationFrame(frame);
-      // ease towards the target; 0.085 per frame ≈ a soft, weighty glide
+      // ease towards the target; 0.055 per frame ≈ a long, buttery glide
       if (centring) centring(performance.now());
-      else if (dragY === null) pos += (target - pos) * 0.085;
+      else if (dragY === null) pos += (target - pos) * 0.055;
       // keep the middle lap in view, wrapping invisibly
       const wrapped = ((pos % lap) + lap) % lap;
       list.style.transform = `translate3d(0, ${(-(lap + wrapped)).toFixed(2)}px, 0)`;
