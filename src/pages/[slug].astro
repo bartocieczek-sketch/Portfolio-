@@ -531,7 +531,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     let touched = false;
     let open = false;
     // x: how far right of its open place the panel is (0 = open)
-    const closedX = () => panel.offsetWidth + 16;
+    // closed: the panel is off screen with just its handle showing at the
+    // edge of the page (left of any scrollbar)
+    const closedX = () => document.documentElement.clientWidth + 2 - panel.offsetLeft;
     let x = closedX();
     let v = 0; // px per second
     let target = x;
