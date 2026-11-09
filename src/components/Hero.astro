@@ -412,7 +412,10 @@ const LAPS = 3;
     // so every input glides to a stop wherever it ends (no snapping).
     let pos = 0;
     let target = 0;
+    // while a project is opening, the column ignores input
+    let opening = false;
     const nudge = (d: number) => {
+      if (opening) return;
       target += d;
     };
     window.addEventListener(
@@ -492,20 +495,70 @@ const LAPS = 3;
     pills.forEach((p) => {
       p.addEventListener('pointerenter', () => (hovered = p));
       p.addEventListener('pointerleave', () => hovered === p && (hovered = null));
+      // get the case study ready while the pointer is on its cover
+      p.addEventListener('pointerenter', () => warm(p.href));
       p.addEventListener('click', (e) => {
         if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || !('startViewTransition' in document)) return;
-        p.classList.add('is-opening');
-        p.style.viewTransitionName = 'project-cover';
-        try {
-          sessionStorage.setItem('vt-card', '1');
-        } catch (err) {}
+        e.preventDefault();
+        if (opening) return;
+        opening = true;
+        warm(p.href);
+        // 1. glide the clicked cover to the middle, where it is undistorted
+        const r = p.getBoundingClientRect();
+        const delta = r.top + r.height / 2 - window.innerHeight / 2;
+        const from = pos;
+        const to = pos + delta;
+        const dur = Math.abs(delta) < 4 ? 0 : clamp(Math.abs(delta) / 900, 0.35, 0.6) * 1000;
+        const t0 = performance.now();
+        centring = (now: number) => {
+          const k = dur ? clamp((now - t0) / dur) : 1;
+          const e2 = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2;
+          pos = target = from + (to - from) * e2;
+          if (k < 1) return;
+          centring = null;
+          // 2. hand the cover to the view transition: the DOM image takes
+          //    over from WebGL with exactly the same framing (hover zoom too)
+          const i = pills.indexOf(p);
+          const img = p.querySelector('img');
+          if (img) img.style.transform = `scale(${(1 / (1 - 0.06 * hover[i])).toFixed(4)})`;
+          p.classList.add('is-opening');
+          p.style.viewTransitionName = 'project-cover';
+          try {
+            sessionStorage.setItem('vt-card', '1');
+          } catch (err) {}
+          // 3. go
+          window.location.href = p.href;
+        };
       });
     });
+
+    let centring: ((now: number) => void) | null = null;
+    const warmed = new Set<string>();
+    const canPrerender = (HTMLScriptElement as unknown as { supports?: (t: string) => boolean }).supports?.('speculationrules');
+    function warm(url: string) {
+      if (warmed.has(url)) return;
+      warmed.add(url);
+      if (canPrerender) {
+        const sr = document.createElement('script');
+        sr.type = 'speculationrules';
+        sr.textContent = JSON.stringify({ prerender: [{ source: 'list', urls: [url] }] });
+        document.head.append(sr);
+      } else {
+        const l = document.createElement('link');
+        l.rel = 'prefetch';
+        l.href = url;
+        document.head.append(l);
+      }
+    }
     window.addEventListener('pageshow', (e) => {
       if (!(e as PageTransitionEvent).persisted) return;
+      opening = false;
+      centring = null;
       for (const p of pills) {
         p.classList.remove('is-opening');
         p.style.viewTransitionName = '';
+        const img = p.querySelector('img');
+        if (img) img.style.transform = '';
       }
     });
     const hover = pills.map(() => 0);
@@ -581,7 +634,8 @@ const LAPS = 3;
     const frame = () => {
       requestAnimationFrame(frame);
       // ease towards the target; 0.085 per frame ≈ a soft, weighty glide
-      if (dragY === null) pos += (target - pos) * 0.085;
+      if (centring) centring(performance.now());
+      else if (dragY === null) pos += (target - pos) * 0.085;
       // keep the middle lap in view, wrapping invisibly
       const wrapped = ((pos % lap) + lap) % lap;
       list.style.transform = `translate3d(0, ${(-(lap + wrapped)).toFixed(2)}px, 0)`;

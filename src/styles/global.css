@@ -391,8 +391,9 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   overflow: hidden;
   animation: vt-round 0.9s var(--ease-in-out) both;
 }
+/* the two pictures are framed identically, so a slow dissolve is invisible */
 ::view-transition-old(project-cover) {
-  animation: vt-fade-out 0.25s ease both;
+  animation: vt-fade-out 0.5s var(--ease-out) both;
 }
 ::view-transition-new(project-cover) {
   animation: none;
@@ -424,13 +425,17 @@ html:active-view-transition-type(card-back)::view-transition-old(root) {
 html:active-view-transition-type(card-back)::view-transition-new(root) {
   animation: vt-fade-in 0.5s var(--ease-out) both;
 }
-html:active-view-transition-type(card)::view-transition-old(root) {
-  animation: vt-fade-out 0.45s ease both;
-}
-/* the case study's own content rises in after the cover (see [slug].astro),
-   so its page appears at once underneath the travelling cover */
-html:active-view-transition-type(card)::view-transition-new(root) {
+/* home and case study dissolve into each other (both white) while the cover
+   travels; the case study's own content then rises in (see [slug].astro) */
+html:active-view-transition-type(card)::view-transition-group(root) {
   animation: none;
+}
+html:active-view-transition-type(card)::view-transition-old(root) {
+  animation: vt-fade-out 0.4s var(--ease-out) both;
+}
+html:active-view-transition-type(card)::view-transition-new(root) {
+  animation: vt-fade-in 0.4s var(--ease-out) both;
+  mix-blend-mode: normal;
 }
 
 @media (prefers-reduced-motion: reduce) {
