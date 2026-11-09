@@ -344,13 +344,20 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       sessionStorage.removeItem('vt-back');
       if (!to || !isHome(to) || window.innerWidth < 810 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const vh = window.innerHeight;
-      const boxes = [...document.querySelectorAll<HTMLElement>('[data-vt-cover], .case__gallery .media--image')].filter((el) => {
+      const all = [...document.querySelectorAll<HTMLElement>('[data-vt-cover], .case__gallery .media--image')].filter((el) => el.querySelector('img'));
+      if (!all.length) return;
+      const seen = (el: HTMLElement) => {
         const r = el.getBoundingClientRect();
-        const seen = Math.min(r.bottom, vh) - Math.max(r.top, 0);
-        return seen > r.height * 0.4 && el.querySelector('img');
-      });
-      if (!boxes.length) return;
-      const box = boxes[Math.floor(Math.random() * boxes.length)];
+        return (Math.min(r.bottom, vh) - Math.max(r.top, 0)) / r.height;
+      };
+      // a random picture that's well in view; if only videos are on screen,
+      // the picture nearest the middle of the screen
+      const inView = all.filter((el) => seen(el) > 0.3);
+      const dist = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return Math.abs(r.top + r.height / 2 - vh / 2);
+      };
+      const box = inView.length ? inView[Math.floor(Math.random() * inView.length)] : all.sort((a, b) => dist(a) - dist(b))[0];
       const img = box.querySelector('img')!;
       // the exact file already on screen, so it's cached and shows at once on
       // the home page (the pill crops it to 3:4 with object-fit / WebGL)
