@@ -109,6 +109,43 @@ const LAPS = 3;
   </div>
 </section>
 
+<script is:inline>
+  // Back from a case study (see [slug].astro): the picture that flies home
+  // becomes this project's cover, and the column starts on that project, so
+  // the view transition lands it straight into place.
+  (function () {
+    try {
+      var raw = sessionStorage.getItem('vt-back');
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      if (window.innerWidth < 810 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var list = document.querySelector('[data-vh-list]');
+      var pills = [].slice.call(list.querySelectorAll('[data-media]'));
+      var N = pills.length / 3;
+      var idx = -1;
+      for (var i = 0; i < N; i++) {
+        if (pills[N + i].getAttribute('href').replace(/\/$/, '').split('/').pop() === d.slug) idx = i;
+      }
+      if (idx < 0) return;
+      var step = pills[1].offsetTop - pills[0].offsetTop;
+      var lap = pills[N].offsetTop - pills[0].offsetTop;
+      window.__vhStart = idx * step;
+      list.style.transform = 'translate3d(0,' + -(lap + idx * step) + 'px,0)';
+      for (var k = 0; k < 3; k++) {
+        var q = pills[k * N + idx];
+        q.setAttribute('data-src', d.src);
+        var im = q.querySelector('img');
+        im.loading = 'eager';
+        im.src = d.src;
+      }
+      var p = pills[N + idx];
+      p.classList.add('is-opening');
+      p.style.viewTransitionName = 'project-cover';
+      document.documentElement.classList.add('is-cover-back');
+    } catch (e) {}
+  })();
+</script>
+
 <style>
   /* Home doesn't scroll as a page: the column scrolls inside the screen */
   :global(html.is-endless),
@@ -410,8 +447,10 @@ const LAPS = 3;
     // ---------- Endless scroll ----------
     // `target` is where the column is going, `pos` eases towards it every frame,
     // so every input glides to a stop wherever it ends (no snapping).
-    let pos = 0;
-    let target = 0;
+    // coming back from a case study, the inline script below already placed
+    // the column on that project
+    let pos = (window as unknown as { __vhStart?: number }).__vhStart ?? 0;
+    let target = pos;
     // while a project is opening, the column ignores input
     let opening = false;
     const nudge = (d: number) => {
@@ -503,6 +542,10 @@ const LAPS = 3;
         if (opening) return;
         opening = true;
         warm(p.href);
+        const domImg = p.querySelector('img');
+        if (domImg) domImg.loading = 'eager';
+        // ready the DOM picture now so the hand-over can't show an empty frame
+        const decoded = domImg ? domImg.decode().catch(() => {}) : Promise.resolve();
         // 1. glide the clicked cover to the middle, where it is undistorted
         const r = p.getBoundingClientRect();
         const delta = r.top + r.height / 2 - window.innerHeight / 2;
@@ -516,23 +559,53 @@ const LAPS = 3;
           pos = target = from + (to - from) * e2;
           if (k < 1) return;
           centring = null;
-          // 2. hand the cover to the view transition: the DOM image takes
-          //    over from WebGL with exactly the same framing (hover zoom too)
-          const i = pills.indexOf(p);
-          const img = p.querySelector('img');
-          if (img) img.style.transform = `scale(${(1 / (1 - 0.06 * hover[i])).toFixed(4)})`;
-          p.classList.add('is-opening');
-          p.style.viewTransitionName = 'project-cover';
-          try {
-            sessionStorage.setItem('vt-card', '1');
-          } catch (err) {}
-          // 3. go
-          window.location.href = p.href;
+          // 2. hand the cover to the view transition: the (decoded) DOM image
+          //    takes over from WebGL in the same frame, framed identically
+          decoded.then(() => {
+            const i = pills.indexOf(p);
+            if (domImg) domImg.style.transform = `scale(${(1 / (1 - 0.06 * hover[i])).toFixed(4)})`;
+            p.classList.add('is-opening');
+            p.style.viewTransitionName = 'project-cover';
+            try {
+              sessionStorage.setItem('vt-card', '1');
+            } catch (err) {}
+            // 3. go (after this frame has painted the DOM picture)
+            requestAnimationFrame(() => (window.location.href = p.href));
+          });
         };
       });
     });
 
     let centring: ((now: number) => void) | null = null;
+
+    // ---------- Back from a case study ----------
+    // Once the picture has landed (Base.astro fires 'cover-back:done'), WebGL
+    // takes the cover over again as soon as its new texture is ready.
+    const handBack = () => {
+      try {
+        sessionStorage.removeItem('vt-back');
+      } catch (err) {}
+      const p = pills.find((x) => x.classList.contains('is-opening'));
+      if (!p) return;
+      const release = () => {
+        if (gl && !gl.ready([p])) {
+          requestAnimationFrame(release);
+          return;
+        }
+        p.classList.remove('is-opening');
+        p.style.viewTransitionName = '';
+        root.classList.remove('is-cover-back');
+      };
+      let done = false;
+      const go = () => {
+        if (done) return;
+        done = true;
+        release();
+      };
+      document.addEventListener('cover-back:done', go, { once: true });
+      window.setTimeout(go, 1800);
+    };
+    if (root.classList.contains('is-cover-back')) handBack();
     const warmed = new Set<string>();
     const canPrerender = (HTMLScriptElement as unknown as { supports?: (t: string) => boolean }).supports?.('speculationrules');
     function warm(url: string) {
@@ -560,6 +633,28 @@ const LAPS = 3;
         const img = p.querySelector('img');
         if (img) img.style.transform = '';
       }
+      // restored from the back/forward cache: swap in the returning picture on
+      // the copy of that project nearest the middle
+      try {
+        const raw = sessionStorage.getItem('vt-back');
+        if (raw && !reduceMotion && window.innerWidth >= 810) {
+          const d = JSON.parse(raw) as { slug: string; src: string };
+          const vh = window.innerHeight;
+          const mine = pills.filter((x) => x.getAttribute('href')?.replace(/\/$/, '').split('/').pop() === d.slug);
+          const near = mine.sort((a, b) => Math.abs(a.getBoundingClientRect().top + a.offsetHeight / 2 - vh / 2) - Math.abs(b.getBoundingClientRect().top + b.offsetHeight / 2 - vh / 2))[0];
+          if (near) {
+            for (const x of mine) {
+              x.dataset.src = d.src;
+              const im = x.querySelector('img');
+              if (im) im.src = d.src;
+            }
+            near.classList.add('is-opening');
+            near.style.viewTransitionName = 'project-cover';
+            root.classList.add('is-cover-back');
+            handBack();
+          }
+        }
+      } catch (err) {}
     });
     const hover = pills.map(() => 0);
 

@@ -333,19 +333,30 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 </style>
 
 <script>
-  // Heading back home: leave the cover's on-screen box for the home page,
-  // which flies it back into its card (only if the cover is still in view).
-  const cover = document.querySelector<HTMLElement>('[data-vt-cover]');
+  // Heading back home: one of the pictures on screen (picked at random) flies
+  // to the home page and becomes this project's cover there, cropped to the
+  // home column's 3:4 pill (see Hero.astro).
   const slug = location.pathname.replace(/\/$/, '').split('/').pop();
   const isHome = (url: string) => /^\/(preview\/?)?$/.test(new URL(url).pathname);
   window.addEventListener('pageswap', (e) => {
     const to = (e as unknown as { activation?: { entry?: { url?: string } } }).activation?.entry?.url;
     try {
-      sessionStorage.removeItem('vt-return');
-      if (!cover || !to || !isHome(to)) return;
-      const r = cover.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > window.innerHeight) return;
-      sessionStorage.setItem('vt-return', JSON.stringify({ slug, rect: { left: r.left, top: r.top, width: r.width, height: r.height } }));
+      sessionStorage.removeItem('vt-back');
+      if (!to || !isHome(to) || window.innerWidth < 810 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const vh = window.innerHeight;
+      const boxes = [...document.querySelectorAll<HTMLElement>('[data-vt-cover], .case__gallery .media--image')].filter((el) => {
+        const r = el.getBoundingClientRect();
+        const seen = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+        return seen > r.height * 0.4 && el.querySelector('img');
+      });
+      if (!boxes.length) return;
+      const box = boxes[Math.floor(Math.random() * boxes.length)];
+      const img = box.querySelector('img')!;
+      // the exact file already on screen, so it's cached and shows at once on
+      // the home page (the pill crops it to 3:4 with object-fit / WebGL)
+      const src = img.currentSrc || img.src;
+      box.style.viewTransitionName = 'project-cover';
+      sessionStorage.setItem('vt-back', JSON.stringify({ slug, src }));
     } catch (err) {}
   });
 </script>

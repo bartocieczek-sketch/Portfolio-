@@ -41,6 +41,17 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
         try {
+          // back home from a case study: a picture from the project flies into
+          // its cover in the column (set up by the home hero, see Hero.astro)
+          if (document.documentElement.classList.contains('is-cover-back')) {
+            e.viewTransition.types.add('cover-back');
+            e.viewTransition.finished.finally(function () {
+              document.dispatchEvent(new CustomEvent('cover-back:done'));
+            });
+            return;
+          }
+        } catch (err) {}
+        try {
           // set by the home hero before first paint when a cover is flying back
           if (document.documentElement.classList.contains('is-returning')) {
             e.viewTransition.types.add('card-back');

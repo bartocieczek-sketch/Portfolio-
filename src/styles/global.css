@@ -407,6 +407,29 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 
+/* Back home: a picture from the project flies into its cover in the column,
+   its rounded corners easing into the pill's round ends */
+html:active-view-transition-type(cover-back)::view-transition-image-pair(project-cover) {
+  animation: vt-round-back 0.9s var(--ease-in-out) both;
+}
+@keyframes vt-round-back {
+  from {
+    border-radius: var(--radius);
+  }
+  to {
+    border-radius: 999px;
+  }
+}
+html:active-view-transition-type(cover-back)::view-transition-group(root) {
+  animation: none;
+}
+html:active-view-transition-type(cover-back)::view-transition-old(root) {
+  animation: vt-fade-out 0.45s var(--ease-out) both;
+}
+html:active-view-transition-type(cover-back)::view-transition-new(root) {
+  animation: vt-fade-in 0.45s var(--ease-out) both;
+}
+
 /* After the WebGL flight the cover is already in place on both pages, so the
    case study simply fades in over the home page around it */
 html:active-view-transition-type(card-gl)::view-transition-group(root),
