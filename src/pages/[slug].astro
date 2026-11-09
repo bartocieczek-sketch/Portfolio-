@@ -101,24 +101,22 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
                 <PortableText value={intro} />
               </div>
             )}
+            {project.liveUrl && (
+              <a class="case__live" href={project.liveUrl} target="_blank" rel="noopener">Live site ↗</a>
+            )}
           </div>
 
           {meta.length > 0 && (
             <dl class="case__meta">
               {meta.map(([k, v]) => (
                 <div>
-                  <dt class="t-label-small">{k}</dt>
+                  <dt>{k}</dt>
                   <dd>{v}</dd>
                 </div>
               ))}
             </dl>
           )}
 
-          <div class="case__panel-foot">
-            {project.liveUrl && (
-              <a class="case__live t-label-small" href={project.liveUrl} target="_blank" rel="noopener">Live site ↗</a>
-            )}
-          </div>
         </div>
       </aside>
       <div class="case__gallery">
@@ -348,24 +346,31 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     border-top: 1px solid rgba(0, 0, 0, 0.08);
   }
   .case__meta dt {
-    margin-bottom: 6px;
+    margin-bottom: 4px;
+    font-size: 13px;
+    line-height: 1.35;
     color: var(--text-secondary);
   }
   .case__meta dd {
     margin: 0;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.35;
-  }
-  .case__panel-foot {
-    display: flex;
-    justify-content: flex-end;
-    align-items: flex-end;
-    color: var(--text-secondary);
+    letter-spacing: -0.01em;
   }
   .case__live {
+    align-self: flex-start;
+    margin-top: 4px;
+    font-size: 15px;
+    letter-spacing: -0.01em;
     color: var(--text-primary);
     border-bottom: 1px solid currentColor;
-    padding-bottom: 2px;
+    padding-bottom: 1px;
+    transition: opacity 0.2s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .case__live:hover {
+      opacity: 0.6;
+    }
   }
 
   /* the panel's contents settle in just after it slides out */
