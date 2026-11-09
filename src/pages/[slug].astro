@@ -75,14 +75,23 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     </a>
 
     <section class="case__row">
+      <!-- First screen: the main visual (whole, 4:5) and the next two pictures
+           stacked beside it, filling the width up to the story panel -->
+      <div class="case__top">
       {coverSrc && (
         <div class="case__cover" data-vt-cover data-focus-x={focusX} data-focus-y={focusY} style={`--focus:${(focusX * 100).toFixed(1)}% ${(focusY * 100).toFixed(1)}%`}>
           <!-- the home pill's own picture (already in the cache) carries the
                flight; the full-size one, same crop, sharpens it once decoded -->
           <img class="case__cover-lo" src={coverSrc} alt="" width="1000" height="1250" decoding="sync" />
-          <img class="case__cover-hi" src={heroSrc} srcset={heroSet} sizes="100vw" alt="" fetchpriority="high" decoding="async" data-cover-hi />
+          <img class="case__cover-hi" src={heroSrc} srcset={heroSet} sizes="(max-width: 809px) 100vw, 50vw" alt="" fetchpriority="high" decoding="async" data-cover-hi />
         </div>
       )}
+      {gallery.length > 0 && (
+        <div class="case__stack">
+          {gallery.slice(0, 2).map((item) => <Media item={item} eager />)}
+        </div>
+      )}
+      </div>
       <aside class="case__panel is-out" data-panel aria-label="About the project">
         <div class="case__panel-in">
           <div class="case__panel-top">
@@ -118,7 +127,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         </div>
       </aside>
       <div class="case__gallery">
-        {gallery.map((item, i) => <Media item={item} eager={i < 2} />)}
+        {gallery.slice(2).map((item, i) => <Media item={item} eager={i < 2} />)}
       </div>
     </section>
 
@@ -163,7 +172,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--panel-w);
     grid-template-areas:
-      'cover panel'
+      'top panel'
       'gallery panel';
     column-gap: 16px;
     row-gap: 8px;
@@ -178,14 +187,39 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   /* the main visual in its own 4:5 shape, as big as the screen allows: the
      whole picture is visible (nothing cropped away), and the home pill only
      has to grow, not change shape, on the way in */
+  .case__top {
+    grid-area: top;
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
   .case__cover {
-    grid-area: cover;
-    justify-self: center;
     position: relative;
-    width: min(100%, calc((100svh - 48px) * 0.8));
+    flex: none;
+    /* as tall as the screen allows, but always leaving room beside it */
+    width: min(64%, calc((100svh - 48px) * 0.8));
     aspect-ratio: 4 / 5;
     overflow: hidden;
     border-radius: var(--radius);
+  }
+  /* the next two pictures, one above the other, as tall as the cover */
+  .case__stack {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .case__stack > :global(.media) {
+    flex: 1;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+  .case__stack :global(.media img),
+  .case__stack :global(.media video) {
+    height: 100% !important;
+    min-height: 0;
+    object-fit: cover;
   }
   .case__gallery {
     grid-area: gallery;
@@ -392,17 +426,25 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
      the story and the rest of the gallery rise in after it, one by one */
   /* Arriving from a home cover: the panel waits off screen until the cover
      has landed, then slides in (see the script) */
-  :global(html.from-card .case__gallery > *) {
+  :global(html.from-card .case__gallery > *),
+  :global(html.from-card .case__stack > *) {
     opacity: 0;
     transform: translateY(48px);
     transition: none;
   }
+  :global(html.from-card .case__stack > *) {
+    transform: translateX(48px);
+  }
+  :global(html.from-card.cover-landed .case__stack > *),
   :global(html.from-card.cover-landed .case__gallery > *) {
     opacity: 1;
     transform: none;
     transition:
       opacity 0.6s var(--ease-out),
       transform 1s var(--ease-out);
+  }
+  :global(html.from-card.cover-landed .case__stack > :nth-child(2)) {
+    transition-delay: 0.08s;
   }
   :global(html.from-card) .case__back-btn {
     animation: case-rise 0.7s 0.5s var(--ease-out) both;
@@ -416,7 +458,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   @media (prefers-reduced-motion: reduce) {
     .case__panel,
     .case__panel-in > *,
-    :global(html.from-card .case__gallery > *) {
+    :global(html.from-card .case__gallery > *),
+    :global(html.from-card .case__stack > *) {
       animation: none;
       transform: none;
       transition: opacity 0.3s ease;
@@ -430,15 +473,24 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   @media (max-width: 809px) {
     /* phones: the main picture is 4:3, not the whole screen */
+    .case__top {
+      flex-direction: column;
+    }
     .case__cover {
       width: 100%;
       aspect-ratio: 4 / 3;
+    }
+    .case__stack {
+      flex-direction: row;
+    }
+    .case__stack > :global(.media) {
+      aspect-ratio: 0.82;
     }
     /* phones: one column — picture, story, then the rest of the pictures */
     .case__row {
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
-        'cover'
+        'top'
         'panel'
         'gallery';
       padding: 12px;
