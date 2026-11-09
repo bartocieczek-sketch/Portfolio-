@@ -433,13 +433,22 @@ html:active-view-transition-type(home)::view-transition-new(root) {
 html:active-view-transition-type(cover-back)::view-transition-group(root) {
   animation: none;
 }
-/* The old page stays fully visible underneath while the new one fades in
-   over it, so the screen never dips to white; the cover stays on top */
-html:active-view-transition-type(cover-back)::view-transition-old(root) {
-  animation: none;
+/* A true crossfade (plus-lighter): the two pages add up to full brightness
+   at every moment, so nothing dips to white and nothing ghosts at half
+   strength; the cover stays on top */
+html:active-view-transition-type(cover-back)::view-transition-image-pair(root),
+html:active-view-transition-type(card)::view-transition-image-pair(root) {
+  isolation: isolate;
 }
-html:active-view-transition-type(cover-back)::view-transition-new(root) {
+html:active-view-transition-type(cover-back)::view-transition-old(root),
+html:active-view-transition-type(card)::view-transition-old(root) {
+  animation: vt-fade-out 0.4s var(--ease-out) both;
+  mix-blend-mode: plus-lighter;
+}
+html:active-view-transition-type(cover-back)::view-transition-new(root),
+html:active-view-transition-type(card)::view-transition-new(root) {
   animation: vt-fade-in 0.4s var(--ease-out) both;
+  mix-blend-mode: plus-lighter;
 }
 
 /* After the WebGL flight the cover is already in place on both pages, so the
@@ -465,13 +474,7 @@ html:active-view-transition-type(card-back)::view-transition-new(root) {
 html:active-view-transition-type(card)::view-transition-group(root) {
   animation: none;
 }
-html:active-view-transition-type(card)::view-transition-old(root) {
-  animation: none;
-}
-html:active-view-transition-type(card)::view-transition-new(root) {
-  animation: vt-fade-in 0.4s var(--ease-out) both;
-  mix-blend-mode: normal;
-}
+
 
 @media (prefers-reduced-motion: reduce) {
   /* Keep a short crossfade, drop the movement */

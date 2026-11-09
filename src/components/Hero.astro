@@ -226,13 +226,16 @@ const LAPS = 3;
     }
   }
   /* WebGL draws the covers; the DOM images keep the layout and the links */
-  /* each DOM picture stays until WebGL has actually drawn that cover, so a
-     cover is never blank or half-faded while its texture loads */
-  .vh.has-gl .vh__pill.gl-on {
+  .vh.has-gl .vh__pill {
     background: none;
   }
-  .vh.has-gl .vh__pill.gl-on img {
+  .vh.has-gl .vh__pill img {
     opacity: 0;
+  }
+  /* coming back to home (no falling arrival): each DOM picture stays until
+     WebGL has drawn that cover, so no cover is ever blank while it loads */
+  :global(html:not(.is-arriving)) .vh.has-gl .vh__pill:not(.gl-on) img {
+    opacity: 1;
   }
   .vh.has-gl .vh__pill.is-opening img {
     opacity: 1;
