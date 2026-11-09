@@ -66,15 +66,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
 <Base title={`${stegaClean(project.title)} – ${settings?.name ?? 'Bart Ocieczek'}`} description={description} image={project.cover}>
   <main class="case">
-    <!-- Pictures fill the page edge to edge, one after another. The story
-         lives in a panel that slides in from the right: open on arrival,
-         tucked away once you scroll, back with the handle on the edge. -->
+    <!-- Two columns: the pictures on the left, the story on the right in a
+         panel that stays put (sticky) while the pictures scroll. The cover
+         grows up to where the panel starts; the panel slides in once. -->
     <a class="case__back-btn" href={href(Astro.locals, '/')} aria-label="Back to work">
       <span class="case__back-arrow" aria-hidden="true">←</span>
       <span class="t-label-small">Work</span>
     </a>
 
-    <section class="case__media">
+    <section class="case__row">
       {coverSrc && (
         <div class="case__cover" data-vt-cover data-focus-x={focusX} data-focus-y={focusY} style={`--focus:${(focusX * 100).toFixed(1)}% ${(focusY * 100).toFixed(1)}%`}>
           <!-- the home pill's own picture (already in the cache) carries the
@@ -83,48 +83,46 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
           <img class="case__cover-hi" src={heroSrc} srcset={heroSet} sizes="100vw" alt="" fetchpriority="high" decoding="async" data-cover-hi />
         </div>
       )}
+      <aside class="case__panel is-out" data-panel aria-label="About the project">
+        <div class="case__panel-in">
+          <div class="case__panel-top">
+            <p class="t-label-small muted">
+              Case study {index >= 0 && `— ${number(index + 1)}/${number(list.length)}`}
+            </p>
+            <h1 class="case__title">{project.title}</h1>
+            {intro.length > 0 && (
+              <div class="case__intro">
+                <PortableText value={intro} />
+              </div>
+            )}
+            <p class="case__hint t-label-small">[ Scroll to explore ]</p>
+          </div>
+
+          {meta.length > 0 && (
+            <dl class="case__meta">
+              {meta.map(([k, v]) => (
+                <div>
+                  <dt class="t-label-small">{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          <div class="case__panel-foot">
+            <span class="t-label-small">{project.yearLabel}</span>
+            {project.liveUrl && (
+              <a class="case__live t-label-small" href={project.liveUrl} target="_blank" rel="noopener">Live site ↗</a>
+            )}
+          </div>
+        </div>
+      </aside>
       <div class="case__gallery">
         {gallery.map((item, i) => <Media item={item} eager={i < 2} />)}
       </div>
     </section>
 
-    <aside class="case__panel" data-panel aria-label="About the project">
-      <button class="case__handle" type="button" data-panel-toggle aria-expanded="false" aria-label="Project info">
-        <span></span>
-      </button>
-      <div class="case__panel-in">
-        <div class="case__panel-top">
-          <p class="t-label-small muted">
-            Case study {index >= 0 && `— ${number(index + 1)}/${number(list.length)}`}
-          </p>
-          <h1 class="case__title">{project.title}</h1>
-          {intro.length > 0 && (
-            <div class="case__intro">
-              <PortableText value={intro} />
-            </div>
-          )}
-          <p class="case__hint t-label-small">[ Scroll to explore ]</p>
-        </div>
 
-        {meta.length > 0 && (
-          <dl class="case__meta">
-            {meta.map(([k, v]) => (
-              <div>
-                <dt class="t-label-small">{k}</dt>
-                <dd>{v}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-
-        <div class="case__panel-foot">
-          <span class="t-label-small">{project.yearLabel}</span>
-          {project.liveUrl && (
-            <a class="case__live t-label-small" href={project.liveUrl} target="_blank" rel="noopener">Live site ↗</a>
-          )}
-        </div>
-      </div>
-    </aside>
 
     {next && (
       <a class="next" href={href(Astro.locals, `/${next.slug}`)} data-build>
@@ -157,23 +155,35 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     background: var(--surface-dark);
   }
 
-  /* ---------- Pictures, edge to edge ---------- */
-  .case__media {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px;
+  /* ---------- Pictures left, story right ---------- */
+  .case {
+    --panel-w: min(440px, 32vw);
+  }
+  .case__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--panel-w);
+    grid-template-areas:
+      'cover panel'
+      'gallery panel';
+    column-gap: 16px;
+    row-gap: 8px;
+    align-items: start;
+    padding: 24px;
+    /* the panel waits off to the right before it slides in */
+    overflow-x: clip;
   }
   /* no fill behind the picture: if it isn't painted yet when the cover
      starts flying, the frame is see-through (the pill's photo underneath
      shows) instead of a pale block over the photo */
   .case__cover {
-    height: calc(100svh - 16px);
+    grid-area: cover;
+    position: relative;
+    height: calc(100svh - 48px);
     overflow: hidden;
     border-radius: var(--radius);
   }
-  .case__cover {
-    position: relative;
+  .case__gallery {
+    grid-area: gallery;
   }
   .case__cover img {
     position: absolute;
@@ -229,30 +239,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
   /* ---------- The panel ---------- */
   .case__panel {
-    position: fixed;
-    z-index: 15;
+    grid-area: panel;
+    position: sticky;
+    z-index: 5;
     top: 24px;
-    right: 24px;
-    bottom: 24px;
-    width: min(440px, 32vw);
-    transform: translate3d(calc(100% + 16px), 0, 0);
-    transform-origin: 100% 50%;
-    will-change: transform;
-    touch-action: pan-y;
+    height: calc(100svh - 48px);
+    transition: transform 0.8s var(--ease-cover);
   }
-  .case__panel.is-dragging {
-    cursor: grabbing;
-    user-select: none;
-  }
-  .case__panel.is-dragging .case__handle {
-    cursor: grabbing;
-  }
-  /* pulled out by hand: its contents are there under the finger */
-  .case__panel.is-dragging .case__panel-in > * {
-    opacity: 1;
-    transform: none;
-    transition-duration: 0.2s;
-    transition-delay: 0s;
+  .case__panel.is-out {
+    transform: translate3d(calc(100% + 40px), 0, 0);
   }
   .case__panel-in {
     height: 100%;
@@ -268,51 +263,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   .case__panel-in::-webkit-scrollbar {
     display: none;
-  }
-  /* the handle rides on the panel's left edge, so it stays on the screen
-     edge when the panel is tucked away */
-  .case__handle {
-    position: absolute;
-    top: 50%;
-    left: -36px;
-    width: 28px;
-    height: 76px;
-    margin-top: -38px;
-    border: 0;
-    padding: 0;
-    border-radius: 10px;
-    background: #f4f4f2;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-    cursor: grab;
-    touch-action: none;
-    display: grid;
-    place-items: center;
-    transition: transform 0.2s var(--ease-out), background-color 0.2s ease;
-  }
-  .case__handle span {
-    width: 2px;
-    height: 22px;
-    border-radius: 2px;
-    background: var(--text-primary);
-    transition: transform 0.45s var(--ease-cover);
-  }
-  /* the grip leans with the drag speed (--grip, -1..1) */
-  .case__handle span {
-    rotate: calc(var(--grip, 0) * 14deg);
-  }
-  .case__panel:not(.is-open) .case__handle span {
-    transform: scaleY(0.6);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .case__handle:hover {
-      background: #fff;
-    }
-    .case__handle:hover span {
-      transform: scaleY(1.2);
-    }
-  }
-  .case__handle:active {
-    transform: scale(0.95);
   }
   .case__panel-top {
     display: flex;
@@ -379,15 +329,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__panel-in > * {
     transition: opacity 0.5s var(--ease-out), transform 0.7s var(--ease-out);
   }
-  .case__panel:not(.is-open) .case__panel-in > * {
+  .case__panel.is-out .case__panel-in > * {
     opacity: 0;
     transform: translateX(24px);
     transition-duration: 0.25s;
   }
-  .case__panel.is-open .case__panel-in > :nth-child(2) {
+  .case__panel:not(.is-out) .case__panel-in > :nth-child(2) {
     transition-delay: 0.08s;
   }
-  .case__panel.is-open .case__panel-in > :nth-child(3) {
+  .case__panel:not(.is-out) .case__panel-in > :nth-child(3) {
     transition-delay: 0.14s;
   }
 
@@ -469,8 +419,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
 
   @media (max-width: 1099px) {
-    .case__panel {
-      width: min(440px, 46vw);
+    .case {
+      --panel-w: min(400px, 40vw);
     }
   }
   @media (max-width: 809px) {
@@ -479,21 +429,23 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       height: auto;
       aspect-ratio: 4 / 3;
     }
+    /* phones: one column — picture, story, then the rest of the pictures */
+    .case__row {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        'cover'
+        'panel'
+        'gallery';
+      padding: 12px;
+      row-gap: 12px;
+    }
     .case__panel {
-      left: 24px;
-      width: auto;
-      top: auto;
-      max-height: 78svh;
+      position: static;
+      height: auto;
+      transform: none !important;
     }
     .case__panel-in {
       padding: 28px 22px 22px;
-    }
-    .case__handle {
-      top: -14px;
-      left: auto;
-      right: 18px;
-      margin-top: 0;
-      transform: translateY(-100%);
     }
     .case__gallery {
       grid-template-columns: 1fr;
@@ -528,183 +480,19 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     : Promise.resolve();
 
   // ---------- The story panel ----------
-  // Always slides in: after the cover has landed and turned sharp (from home),
-  // or just after the page shows (direct visit). Tucked away on the first
-  // scroll, back with the handle or "i". It can be dragged by its handle or
-  // its body: it follows the finger, stretches like rubber past its limits
-  // (more the further it's pulled), and springs to open or closed on release,
-  // carrying the speed it was let go with.
+  // Always there (it can't be closed): it slides in once, after the cover has
+  // landed and turned sharp (from home) or just after the page shows, and
+  // slides out again only when leaving for home.
   const panel = document.querySelector<HTMLElement>('[data-panel]');
-  const toggle = panel?.querySelector<HTMLButtonElement>('[data-panel-toggle]');
   let setPanel: (open: boolean) => void = () => {};
   const startPanel = () => {
-    if (!panel || !toggle) return;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let touched = false;
-    let open = false;
-    // x: how far right of its open place the panel is (0 = open)
-    // closed: the panel is off screen with just its handle showing at the
-    // edge of the page (left of any scrollbar)
-    const closedX = () => document.documentElement.clientWidth + 2 - panel.offsetLeft;
-    let x = closedX();
-    let v = 0; // px per second
-    let target = x;
-    let raf = 0;
-    let dragging = false;
-
-    // rubber: the further past the limit, the less it gives (never stops)
-    const rubber = (d: number, c: number) => (1 - 1 / ((d * 0.55) / c + 1)) * c;
-    const render = () => {
-      const W = panel.offsetWidth;
-      const max = closedX();
-      let tx = x;
-      let sx = 1;
-      if (x < 0) {
-        // pulled out further than open: it stretches from its right edge
-        const over = -x;
-        tx = -over * 0.55;
-        sx = 1 + (over * 0.45) / W;
-      } else if (x > max) tx = max + (x - max) * 0.3;
-      panel.style.transform = `translate3d(${tx.toFixed(2)}px,0,0) scaleX(${sx.toFixed(4)})`;
-      // the grip leans with the speed, so a fling feels physical
-      panel.style.setProperty('--grip', `${Math.max(-1, Math.min(1, v / 2400)).toFixed(3)}`);
-    };
-    // damped spring towards target; the release speed carries into it
-    let last = 0;
-    const step = (now: number) => {
-      const dt = Math.min(1 / 30, (now - last) / 1000 || 1 / 60);
-      last = now;
-      const k = 210; // stiffness
-      const c = 24; // damping (a touch under critical: one soft overshoot)
-      v += (-k * (x - target) - c * v) * dt;
-      x += v * dt;
-      render();
-      if (Math.abs(x - target) < 0.4 && Math.abs(v) < 6) {
-        x = target;
-        v = 0;
-        render();
-        raf = 0;
-        return;
-      }
-      raf = requestAnimationFrame(step);
-    };
-    const springTo = (t: number) => {
-      target = t;
-      if (reduce) {
-        x = t;
-        v = 0;
-        render();
-        return;
-      }
-      if (!raf) {
-        last = performance.now();
-        raf = requestAnimationFrame(step);
-      }
-    };
-    const set = (o: boolean) => {
-      open = o;
-      panel.classList.toggle('is-open', o);
-      toggle.setAttribute('aria-expanded', String(o));
-      springTo(o ? 0 : closedX());
-    };
-    setPanel = set;
-    render();
-    panel.classList.add('is-js');
-
-    // ---- drag ----
-    let startX = 0;
-    let startPanelX = 0;
-    let moved = 0;
-    let lastPX = 0;
-    let lastT = 0;
-    let pid = -1;
-    panel.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0) return;
-      // links and text in the panel stay clickable/selectable with a mouse
-      if (e.pointerType === 'mouse' && e.target !== toggle && !toggle.contains(e.target as Node) && (e.target as HTMLElement).closest('a, dd, dt, p, h1')) return;
-      pid = e.pointerId;
-      startX = lastPX = e.clientX;
-      lastT = performance.now();
-      startPanelX = x;
-      moved = 0;
-      if (raf) cancelAnimationFrame(raf);
-      raf = 0;
-    });
-    window.addEventListener('pointermove', (e) => {
-      if (e.pointerId !== pid) return;
-      const dx = e.clientX - startX;
-      moved = Math.max(moved, Math.abs(dx));
-      if (!dragging && moved > 5) {
-        dragging = true;
-        touched = true;
-        panel.classList.add('is-dragging');
-        try {
-          panel.setPointerCapture(pid);
-        } catch (err) {}
-      }
-      if (!dragging) return;
-      const now = performance.now();
-      const dt = Math.max(1, now - lastT);
-      // smoothed finger speed (px/s)
-      v = v * 0.6 + ((e.clientX - lastPX) / dt) * 1000 * 0.4;
-      lastPX = e.clientX;
-      lastT = now;
-      const raw = startPanelX + dx;
-      const max = closedX();
-      // past the open place: rubber (stretch grows with the pull, but slower)
-      if (raw < 0) x = -rubber(-raw, 160);
-      else if (raw > max) x = max + rubber(raw - max, 80);
-      else x = raw;
-      render();
-    });
-    const end = (e: PointerEvent) => {
-      if (e.pointerId !== pid) return;
-      pid = -1;
-      if (!dragging) {
-        // a press without a pull: let the spring finish what it was doing
-        springTo(target);
-        return;
-      }
-      dragging = false;
-      panel.classList.remove('is-dragging');
-      // a fling decides; otherwise wherever it is closer to
-      const max = closedX();
-      const flingOpen = v < -450;
-      const flingClose = v > 450;
-      set(flingOpen ? true : flingClose ? false : x < max / 2);
-    };
-    window.addEventListener('pointerup', end);
-    window.addEventListener('pointercancel', end);
-
-    toggle.addEventListener('click', (e) => {
-      // the end of a drag isn't a click
-      if (moved > 5) {
-        e.preventDefault();
-        moved = 0;
-        return;
-      }
-      touched = true;
-      set(!open);
-    });
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') set(false);
-      if (e.key === 'i' && !(e.target as HTMLElement).closest('input, textarea')) {
-        touched = true;
-        set(!open);
-      }
-    });
-    window.addEventListener('resize', () => {
-      if (!open && !dragging) {
-        x = target = closedX();
-        render();
-      }
-    });
-
+    if (!panel) return;
+    setPanel = (open: boolean) => panel.classList.toggle('is-out', !open);
     let opened = false;
     const openOnce = () => {
-      if (opened || touched || window.scrollY > 60) return;
+      if (opened) return;
       opened = true;
-      set(true);
+      setPanel(true);
     };
     const root = document.documentElement;
     // decide after the page has been revealed (Base.astro marks a cover
@@ -722,20 +510,10 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
           resolve();
         }).observe(root, { attributes: true, attributeFilter: ['class'] });
       });
-      Promise.all([landed, heroReady]).then(() => window.setTimeout(openOnce, fromCard ? 120 : 350));
+      Promise.all([landed, heroReady]).then(() => window.setTimeout(openOnce, fromCard ? 120 : 250));
       // never wait forever (slow network)
       window.setTimeout(openOnce, 3500);
     });
-    // the first scroll down tucks it away (once; after that it's the user's)
-    window.addEventListener(
-      'scroll',
-      () => {
-        if (touched || dragging || window.scrollY < 60) return;
-        touched = true;
-        set(false);
-      },
-      { passive: true },
-    );
   };
   // a page prerendered on hover runs this early: wait until it's really shown
   if ((document as unknown as { prerendering?: boolean }).prerendering) {
