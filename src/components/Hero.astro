@@ -56,9 +56,6 @@ const total = pad(projects.length);
           </span>
         ))}
       </span>
-      <span class="vh__stack vh__cta t-label">
-        {projects.map(() => <span class="vh__roll" data-roll>View case →</span>)}
-      </span>
     </div>
 
     <div class="vh__intro">
@@ -180,9 +177,6 @@ const total = pad(projects.length);
     line-height: 1.3;
     letter-spacing: -0.01em;
     color: var(--text-primary);
-  }
-  .vh__cta {
-    margin-top: 10px;
   }
 
   .vh__intro {
@@ -322,8 +316,7 @@ const total = pad(projects.length);
     .vh__right .vh__roll {
       justify-self: end;
     }
-    .vh__tags,
-    .vh__cta {
+    .vh__tags {
       display: none;
     }
     .vh__title {
@@ -370,16 +363,7 @@ const total = pad(projects.length);
           el.classList.toggle('is-past', k < i);
         });
       }
-      const cta = stage.querySelector<HTMLElement>('.vh__cta');
-      if (cta) cta.dataset.href = pills[i]?.getAttribute('href') ?? '';
     };
-    // "View case" opens the project in the middle
-    stage.querySelector<HTMLElement>('.vh__cta')?.addEventListener('click', (e) => {
-      const to = (e.currentTarget as HTMLElement).dataset.href;
-      if (to) pills[active]?.click();
-    });
-    stage.querySelector<HTMLElement>('.vh__cta')?.style.setProperty('pointer-events', 'auto');
-    stage.querySelector<HTMLElement>('.vh__cta')?.style.setProperty('cursor', 'pointer');
 
     // ---------- Hover ----------
     let hovered = -1;
