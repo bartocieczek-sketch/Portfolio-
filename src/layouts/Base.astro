@@ -50,6 +50,11 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
             });
             return;
           }
+          // any other way back to the home column: a calm dissolve, never a slide
+          if (document.querySelector('[data-vh]')) {
+            e.viewTransition.types.add('home');
+            return;
+          }
         } catch (err) {}
         try {
           // set by the home hero before first paint when a cover is flying back

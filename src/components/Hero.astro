@@ -118,7 +118,7 @@ const LAPS = 3;
       var raw = sessionStorage.getItem('vt-back');
       if (!raw) return;
       var d = JSON.parse(raw);
-      if (window.innerWidth < 810 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       var list = document.querySelector('[data-vh-list]');
       var pills = [].slice.call(list.querySelectorAll('[data-media]'));
       var N = pills.length / 3;
@@ -637,7 +637,7 @@ const LAPS = 3;
       // the copy of that project nearest the middle
       try {
         const raw = sessionStorage.getItem('vt-back');
-        if (raw && !reduceMotion && window.innerWidth >= 810) {
+        if (raw && !reduceMotion) {
           const d = JSON.parse(raw) as { slug: string; src: string };
           const vh = window.innerHeight;
           const mine = pills.filter((x) => x.getAttribute('href')?.replace(/\/$/, '').split('/').pop() === d.slug);

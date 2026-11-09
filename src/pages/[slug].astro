@@ -342,9 +342,13 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     const to = (e as unknown as { activation?: { entry?: { url?: string } } }).activation?.entry?.url;
     try {
       sessionStorage.removeItem('vt-back');
-      if (!to || !isHome(to) || window.innerWidth < 810 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (!to || !isHome(to) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const vh = window.innerHeight;
-      const all = [...document.querySelectorAll<HTMLElement>('[data-vt-cover], .case__gallery .media--image')].filter((el) => el.querySelector('img'));
+      // only pictures that have actually loaded (lazy ones further down may not have)
+      const all = [...document.querySelectorAll<HTMLElement>('[data-vt-cover], .case__gallery .media--image')].filter((el) => {
+        const im = el.querySelector('img');
+        return !!im && im.complete && im.naturalWidth > 0;
+      });
       if (!all.length) return;
       const seen = (el: HTMLElement) => {
         const r = el.getBoundingClientRect();
