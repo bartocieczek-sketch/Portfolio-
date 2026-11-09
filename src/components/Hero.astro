@@ -48,6 +48,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   <!-- Pinned layer over the scrolling column: WebGL, nav and the side texts -->
   <div class="vh__stage" data-vh-stage>
     <canvas class="vh__gl" aria-hidden="true" data-gl></canvas>
+    <span class="vh__ripple" aria-hidden="true" data-ripple></span>
+    <span class="vh__ripple" aria-hidden="true" data-ripple></span>
     <span class="vh__blob" aria-hidden="true" data-blob></span>
 
     <div class="vh__nav">
@@ -307,28 +309,43 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     height: 52px;
     margin: -26px 0 0 -26px;
     background: var(--text-primary);
-    border-radius: 48% 52% 55% 45% / 50% 46% 54% 50%;
+    border-radius: 50%;
     opacity: 0;
     pointer-events: none;
+    will-change: transform;
   }
+  /* waits above the screen until the script lets it fall */
   :global(html.is-intro) .vh__blob {
     opacity: 1;
+    transform: translateY(-75vh);
+  }
+  /* after landing it breathes like a drop of ink until the covers are ready */
+  .vh__blob.is-idle {
     animation: vh-blob 1.6s var(--ease-in-out) infinite;
   }
   @keyframes vh-blob {
     0%,
     100% {
       border-radius: 48% 52% 55% 45% / 50% 46% 54% 50%;
-      transform: scale(1) rotate(0deg);
+      transform: scale(1);
     }
-    33% {
-      border-radius: 56% 44% 42% 58% / 44% 56% 46% 56%;
-      transform: scale(1.08, 0.94) rotate(40deg);
+    50% {
+      border-radius: 54% 46% 44% 56% / 46% 56% 46% 54%;
+      transform: scale(1.06, 0.95);
     }
-    66% {
-      border-radius: 42% 58% 50% 50% / 58% 42% 58% 42%;
-      transform: scale(0.94, 1.07) rotate(80deg);
-    }
+  }
+  .vh__ripple {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    top: 50%;
+    width: 52px;
+    height: 52px;
+    margin: -26px 0 0 -26px;
+    border: 1px solid var(--text-primary);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
   }
   /* until the covers have poured out, only the blob and the nav show */
   .vh :is(.vh__left, .vh__right, .vh__intro, .vh__hint) {
@@ -471,43 +488,87 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     }
 
     // ---------- Liquid preloader ----------
-    // The blob pulses until the covers on screen have loaded; then they pour
-    // out of it, the middle one first, rippling and running tall as they move,
-    // and settle into the column. Text comes in after.
-    const INTRO_MS = 1300;
-    const STAGGER = 110;
+    // 1. A drop of ink falls from the top, stretched by its speed.
+    // 2. It hits the middle of the screen: squash, rebound, two rings spread.
+    // 3. It breathes until the covers on screen have loaded.
+    // 4. It swells into the middle cover; the others slide out from behind it.
+    //    Every cover starts as ink and clears to its image, with a soft ripple.
+    const INTRO_MS = 1200;
+    const STAGGER = 120;
+    const BLOB = 52;
     let introAt = -1;
     let introCentre = 0;
+    const blob = stage.querySelector<HTMLElement>('[data-blob]');
+    const rings = [...stage.querySelectorAll<HTMLElement>('[data-ripple]')];
     if (root.classList.contains('is-intro')) {
-      if (!gl) endIntro();
+      if (!gl || !blob) endIntro();
       else {
         const vh0 = window.innerHeight;
         const onScreen = pills.filter((p) => {
           const r = p.getBoundingClientRect();
           return r.bottom > 0 && r.top < vh0;
         });
-        const minUntil = performance.now() + 600;
-        const giveUp = performance.now() + 2500;
+        const centreEl = onScreen.reduce(
+          (a, b) => (Math.abs(b.getBoundingClientRect().top + b.offsetHeight / 2 - vh0 / 2) < Math.abs(a.getBoundingClientRect().top + a.offsetHeight / 2 - vh0 / 2) ? b : a),
+          onScreen[0],
+        );
+        introCentre = Math.max(0, pills.indexOf(centreEl));
+        const t0i = performance.now();
+
+        // fall: gravity, so it speeds up (ease-in) and stretches as it goes
+        const fall = blob.animate(
+          [
+            { transform: `translateY(${-0.75 * vh0}px) scale(0.7, 1.45)` },
+            { transform: 'translateY(0) scale(0.78, 1.32)' },
+          ],
+          { duration: 620, delay: 250, easing: 'cubic-bezier(0.55, 0, 1, 0.45)', fill: 'forwards' },
+        );
+        let landed = false;
+        fall.finished.then(() => {
+          // impact: squash flat, then wobble back to round
+          blob.animate(
+            [
+              { transform: 'scale(0.78, 1.32)' },
+              { transform: 'scale(1.6, 0.52)', offset: 0.18 },
+              { transform: 'scale(0.86, 1.14)', offset: 0.45 },
+              { transform: 'scale(1.05, 0.96)', offset: 0.7 },
+              { transform: 'scale(1)' },
+            ],
+            { duration: 620, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'forwards' },
+          ).finished.then(() => {
+            fall.cancel();
+            blob.getAnimations().forEach((a) => a.cancel());
+            blob.style.transform = 'none';
+            blob.classList.add('is-idle');
+            landed = true;
+          });
+          rings.forEach((ring, k) =>
+            ring.animate(
+              [
+                { transform: 'scale(0.6)', opacity: 0.55 },
+                { transform: 'scale(7)', opacity: 0 },
+              ],
+              { duration: 1100, delay: k * 160, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'both' },
+            ),
+          );
+        });
+
+        const giveUp = t0i + 4000;
         const wait = () => {
           const now = performance.now();
-          if ((!gl?.ready(onScreen) || now < minUntil) && now < giveUp) {
+          if ((!landed || !gl?.ready(onScreen)) && now < giveUp) {
             requestAnimationFrame(wait);
             return;
           }
           introAt = performance.now();
-          introCentre = pills.indexOf(onScreen.reduce((a, b) => (Math.abs(b.getBoundingClientRect().top + b.offsetHeight / 2 - vh0 / 2) < Math.abs(a.getBoundingClientRect().top + a.offsetHeight / 2 - vh0 / 2) ? b : a), onScreen[0]));
-          stage.querySelector('[data-blob]')?.animate(
-            [
-              { transform: 'scale(1)', opacity: 1 },
-              { transform: 'scale(0.4)', opacity: 0 },
-            ],
-            { duration: 350, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'forwards' },
-          );
+          blob.classList.remove('is-idle');
+          // the drop hands over to the middle cover, which starts at its size
+          blob.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out', fill: 'forwards' });
           const last = Math.max(introCentre, pills.length - 1 - introCentre);
           window.setTimeout(() => {
             introAt = -1;
             endIntro();
-          }, INTRO_MS + STAGGER * Math.min(last, 3));
+          }, INTRO_MS + 200 + STAGGER * Math.min(last, 3));
         };
         requestAnimationFrame(wait);
       }
@@ -516,17 +577,31 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
     const introPlace = (i: number, r: DOMRect) => {
       const vh = window.innerHeight;
-      if (introAt < 0) {
-        // still loading: covers wait inside the blob
-        return { rect: { left: r.left + r.width / 2, top: vh / 2, width: 0, height: 0 }, wobble: 1 };
+      const none = { rect: { left: 0, top: 0, width: 0, height: 0 }, wobble: 0, ink: 1, alpha: 0 };
+      if (introAt < 0) return none;
+      const elapsed = performance.now() - introAt;
+      const cx = r.left + r.width / 2;
+      const ty = r.top + r.height / 2;
+      if (i === introCentre) {
+        // swell from the drop's size into the full cover
+        const t = elapsed / INTRO_MS;
+        const p = easeOutExpo(clamp(t));
+        const s0 = BLOB / r.width;
+        const s = s0 + (1 - s0) * p;
+        const w = r.width * s;
+        const h = r.height * (s0 + (1 - s0) * p);
+        const cy = vh / 2 + (ty - vh / 2) * p;
+        return { rect: { left: cx - w / 2, top: cy - h / 2, width: w, height: h }, wobble: 0.35 * (1 - clamp(t * 1.4)), ink: 1 - clamp((t - 0.15) * 2), alpha: 1, z: 1 };
       }
-      const t = (performance.now() - introAt - STAGGER * Math.abs(i - introCentre)) / INTRO_MS;
+      // the rest slide out from behind the middle one
+      const t = (elapsed - 180 - STAGGER * (Math.abs(i - introCentre) - 1)) / INTRO_MS;
+      if (t <= 0) return none;
       const p = easeOutExpo(clamp(t));
-      const s = 0.18 + 0.82 * p;
-      const cy = vh / 2 + (r.top + r.height / 2 - vh / 2) * p;
+      const s = 0.6 + 0.4 * p;
       const w = r.width * s;
       const h = r.height * s;
-      return { rect: { left: r.left + r.width / 2 - w / 2, top: cy - h / 2, width: w, height: h }, wobble: 1 - clamp(t * 1.15) };
+      const cy = vh / 2 + (ty - vh / 2) * p;
+      return { rect: { left: cx - w / 2, top: cy - h / 2, width: w, height: h }, wobble: 0.25 * (1 - clamp(t * 1.4)), ink: 1 - clamp((t - 0.1) * 2), alpha: clamp(t * 5) };
     };
 
     let visible = true;
@@ -621,6 +696,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       uniform float uSpeed;
       uniform float uWobble;
       uniform float uTime;
+      uniform float uInk;
       varying vec2 vUv;
       varying float vEdge;
       vec2 cover(vec2 uv) {
@@ -654,6 +730,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           col.b += texture2D(uTex, uv + vec2(0.0, o - split)).b;
         }
         col /= 5.0;
+        // covers come out of the ink drop: they start black and clear up
+        col = mix(col, vec3(0.067), uInk);
         gl_FragColor = vec4(col, 1.0) * uAlpha * mask;
       }`;
     const compile = (type: number, src: string) => {
@@ -696,6 +774,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     const uAlpha = u('uAlpha');
     const uImg = u('uImg');
     const uWobble = u('uWobble');
+    const uInk = u('uInk');
     const uTime = u('uTime');
     const t0 = performance.now();
     gl.enable(gl.BLEND);
@@ -731,7 +810,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           return !!textures.get(el);
         });
       },
-      draw(els: HTMLElement[], speed: number, hover: number[], intro?: (i: number, r: DOMRect) => { rect: { left: number; top: number; width: number; height: number }; wobble: number } | null) {
+      draw(els: HTMLElement[], speed: number, hover: number[], intro?: (i: number, r: DOMRect) => { rect: { left: number; top: number; width: number; height: number }; wobble: number; ink: number; alpha: number; z?: number } | null) {
         const cr = canvas.getBoundingClientRect();
         const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1 : 1.5);
         const W = Math.round(cr.width * dpr);
@@ -741,7 +820,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           canvas.height = H;
         }
         const now = performance.now();
-        type Job = { i: number; t: NonNullable<Tex>; r: { left: number; top: number; width: number; height: number }; alpha: number; wobble: number };
+        type Job = { i: number; t: NonNullable<Tex>; r: { left: number; top: number; width: number; height: number }; alpha: number; wobble: number; ink: number; z: number };
         const jobs: Job[] = [];
         let sig = `${W},${H},${speed.toFixed(3)};`;
         els.forEach((el, i) => {
@@ -755,11 +834,15 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           const ix = intro ? intro(i, r) : null;
           const rr = ix ? ix.rect : r;
           const wobble = ix ? ix.wobble : 0;
-          const alpha = ix ? 1 : clamp((now - t.at) / 500);
-          jobs.push({ i, t, r: rr, alpha, wobble });
-          sig += `${i}:${rr.left.toFixed(1)},${rr.top.toFixed(1)},${rr.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${wobble.toFixed(3)};`;
+          const ink = ix ? ix.ink : 0;
+          const alpha = ix ? ix.alpha : clamp((now - t.at) / 500);
+          if (alpha <= 0.001 || rr.width < 1) return;
+          jobs.push({ i, t, r: rr, alpha, wobble, ink, z: ix?.z ?? 0 });
+          sig += `${i}:${rr.left.toFixed(1)},${rr.top.toFixed(1)},${rr.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${wobble.toFixed(3)},${ink.toFixed(3)};`;
         });
         if (sig === lastSig && !jobs.some((j) => j.wobble > 0.001)) return;
+        // during the intro the middle cover sits on top of the ones sliding out
+        jobs.sort((a, b) => a.z - b.z);
         lastSig = sig;
 
         gl.viewport(0, 0, W, H);
@@ -768,13 +851,14 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         gl.uniform2f(uView, cr.width, cr.height);
         gl.uniform1f(uSpeed, speed);
         gl.uniform1f(uTime, (now - t0) / 1000);
-        for (const { i, t, r, alpha, wobble } of jobs) {
+        for (const { i, t, r, alpha, wobble, ink } of jobs) {
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
           gl.uniform4f(uRect, r.left - cr.left, r.top - cr.top, r.width, r.height);
           gl.uniform2f(uImg, t.w, t.h);
           gl.uniform1f(uHover, hover[i]);
           gl.uniform1f(uAlpha, alpha);
           gl.uniform1f(uWobble, wobble);
+          gl.uniform1f(uInk, ink);
           gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         }
       },
