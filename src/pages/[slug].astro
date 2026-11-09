@@ -63,6 +63,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
       <aside class="case__side">
         <div class="case__head">
+          {coverSrc && (
+            <a class="case__mini" href={href(Astro.locals, '/')} data-vt-mini aria-label="Back to work">
+              <img src={coverSrc} alt="" width="1000" height="1250" decoding="async" />
+            </a>
+          )}
           <p class="t-label-small muted" data-split>
             Case study {index >= 0 && `— ${number(index + 1)}/${number(list.length)}`}
           </p>
@@ -168,9 +173,40 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     gap: 36px;
   }
   .case__head {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 14px;
+  }
+  /* The home pill, kept in the story column. It shows up once the big cover
+     has scrolled away, so there's always something on screen to fly home. */
+  .case__mini {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 64px;
+    aspect-ratio: 0.75;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #f2f2f2;
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+    pointer-events: none;
+    transition: opacity 0.35s var(--ease-out), transform 0.45s var(--ease-out);
+  }
+  .case__mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .case__mini.is-shown {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .case__mini:active {
+    transform: scale(0.96);
+    transition-duration: 0.16s;
   }
   .case__title {
     font-family: var(--font-head);
@@ -333,18 +369,35 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 </style>
 
 <script>
-  // Heading back home: the cover flies back into the pill it came from
-  // (Hero.astro puts the column back where it was when the project was opened).
+  // Heading back home, something on screen always flies into the pill the
+  // project was opened from (Hero.astro restores the column):
+  // - the big cover, when it's still in view (corners round off into the pill)
+  // - otherwise the small pill in the story column (pill to pill, no reshape)
   const slug = location.pathname.replace(/\/$/, '').split('/').pop();
   const cover = document.querySelector<HTMLElement>('[data-vt-cover]');
+  const mini = document.querySelector<HTMLElement>('[data-vt-mini]');
   const isHome = (url: string) => /^\/(preview\/?)?$/.test(new URL(url).pathname);
+
+  // the mini pill appears once less than a third of the cover is visible
+  let coverShowing = true;
+  if (cover && mini) {
+    new IntersectionObserver(
+      ([e]) => {
+        coverShowing = e.intersectionRatio > 0.33;
+        mini.classList.toggle('is-shown', !coverShowing);
+      },
+      { threshold: [0, 0.33, 0.5, 1] },
+    ).observe(cover);
+  }
+
   window.addEventListener('pageswap', (e) => {
     const to = (e as unknown as { activation?: { entry?: { url?: string } } }).activation?.entry?.url;
     try {
       sessionStorage.removeItem('vt-back');
       if (!cover || !to || !isHome(to) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      cover.style.viewTransitionName = 'project-cover';
-      sessionStorage.setItem('vt-back', JSON.stringify({ slug }));
+      const usePill = !coverShowing && !!mini;
+      (usePill ? mini! : cover).style.viewTransitionName = 'project-cover';
+      sessionStorage.setItem('vt-back', JSON.stringify({ slug, pill: usePill }));
     } catch (err) {}
   });
 </script>

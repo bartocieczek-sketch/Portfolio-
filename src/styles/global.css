@@ -414,7 +414,7 @@ html:active-view-transition-type(cover-back)::view-transition-image-pair(project
 }
 @keyframes vt-round-back {
   from {
-    border-radius: var(--radius);
+    border-radius: var(--vt-from-radius, var(--radius));
   }
   to {
     border-radius: 999px;

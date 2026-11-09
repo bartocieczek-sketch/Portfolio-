@@ -147,6 +147,8 @@ const LAPS = 3;
       p.classList.add('is-opening');
       p.style.viewTransitionName = 'project-cover';
       document.documentElement.classList.add('is-cover-back');
+      // a pill from the story column keeps its shape; the big cover rounds off
+      document.documentElement.style.setProperty('--vt-from-radius', d.pill ? '999px' : '20px');
     } catch (e) {}
   })();
 </script>
@@ -645,12 +647,13 @@ const LAPS = 3;
       try {
         const raw = sessionStorage.getItem('vt-back');
         const from = JSON.parse(sessionStorage.getItem('vh-from') || 'null') as { i: number } | null;
-        const back = raw ? (JSON.parse(raw) as { slug: string }) : null;
+        const back = raw ? (JSON.parse(raw) as { slug: string; pill?: boolean }) : null;
         const p = from ? pills[from.i] : null;
         if (back && p && !reduceMotion && p.getAttribute('href')?.replace(/\/$/, '').split('/').pop() === back.slug) {
           p.classList.add('is-opening');
           p.style.viewTransitionName = 'project-cover';
           root.classList.add('is-cover-back');
+          root.style.setProperty('--vt-from-radius', back.pill ? '999px' : '20px');
           handBack();
         }
       } catch (err) {}
