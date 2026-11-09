@@ -90,8 +90,10 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
             document.documentElement.classList.add('from-card');
             e.viewTransition.finished.finally(function () {
               cover.style.viewTransitionName = '';
+              // the cover is in place: now the rest of the pictures come in
+              document.documentElement.classList.add('cover-landed');
               setTimeout(function () {
-                document.documentElement.classList.remove('from-card');
+                document.documentElement.classList.remove('from-card', 'cover-landed');
               }, 1600);
             });
           }
