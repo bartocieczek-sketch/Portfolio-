@@ -228,12 +228,24 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     right: 8px;
     bottom: 8px;
     width: min(440px, 32vw);
-    transform: translate3d(calc(100% + 8px), 0, 0);
-    transition: transform 0.8s var(--ease-cover);
+    transform: translate3d(calc(100% + 16px), 0, 0);
+    transform-origin: 100% 50%;
     will-change: transform;
+    touch-action: pan-y;
   }
-  .case__panel.is-open {
+  .case__panel.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+  .case__panel.is-dragging .case__handle {
+    cursor: grabbing;
+  }
+  /* pulled out by hand: its contents are there under the finger */
+  .case__panel.is-dragging .case__panel-in > * {
+    opacity: 1;
     transform: none;
+    transition-duration: 0.2s;
+    transition-delay: 0s;
   }
   .case__panel-in {
     height: 100%;
@@ -264,7 +276,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     border-radius: 10px;
     background: #f4f4f2;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
+    cursor: grab;
+    touch-action: none;
     display: grid;
     place-items: center;
     transition: transform 0.2s var(--ease-out), background-color 0.2s ease;
@@ -275,6 +288,10 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     border-radius: 2px;
     background: var(--text-primary);
     transition: transform 0.45s var(--ease-cover);
+  }
+  /* the grip leans with the drag speed (--grip, -1..1) */
+  .case__handle span {
+    rotate: calc(var(--grip, 0) * 14deg);
   }
   .case__panel:not(.is-open) .case__handle span {
     transform: scaleY(0.6);
@@ -501,52 +518,205 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   // ---------- The story panel ----------
   // Always slides in: after the cover has landed and turned sharp (from home),
   // or just after the page shows (direct visit). Tucked away on the first
-  // scroll, back with the handle or "i".
+  // scroll, back with the handle or "i". It can be dragged by its handle or
+  // its body: it follows the finger, stretches like rubber past its limits
+  // (more the further it's pulled), and springs to open or closed on release,
+  // carrying the speed it was let go with.
   const panel = document.querySelector<HTMLElement>('[data-panel]');
   const toggle = panel?.querySelector<HTMLButtonElement>('[data-panel-toggle]');
+  let setPanel: (open: boolean) => void = () => {};
   const startPanel = () => {
     if (!panel || !toggle) return;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let touched = false;
-    const set = (open: boolean) => {
-      panel.classList.toggle('is-open', open);
-      toggle.setAttribute('aria-expanded', String(open));
+    let open = false;
+    // x: how far right of its open place the panel is (0 = open)
+    const closedX = () => panel.offsetWidth + 16;
+    let x = closedX();
+    let v = 0; // px per second
+    let target = x;
+    let raf = 0;
+    let dragging = false;
+
+    // rubber: the further past the limit, the less it gives (never stops)
+    const rubber = (d: number, c: number) => (1 - 1 / ((d * 0.55) / c + 1)) * c;
+    const render = () => {
+      const W = panel.offsetWidth;
+      const max = closedX();
+      let tx = x;
+      let sx = 1;
+      if (x < 0) {
+        // pulled out further than open: it stretches from its right edge
+        const over = -x;
+        tx = -over * 0.55;
+        sx = 1 + (over * 0.45) / W;
+      } else if (x > max) tx = max + (x - max) * 0.3;
+      panel.style.transform = `translate3d(${tx.toFixed(2)}px,0,0) scaleX(${sx.toFixed(4)})`;
+      // the grip leans with the speed, so a fling feels physical
+      panel.style.setProperty('--grip', `${Math.max(-1, Math.min(1, v / 2400)).toFixed(3)}`);
     };
-    toggle.addEventListener('click', () => {
-      set(!panel.classList.contains('is-open'));
+    // damped spring towards target; the release speed carries into it
+    let last = 0;
+    const step = (now: number) => {
+      const dt = Math.min(1 / 30, (now - last) / 1000 || 1 / 60);
+      last = now;
+      const k = 210; // stiffness
+      const c = 24; // damping (a touch under critical: one soft overshoot)
+      v += (-k * (x - target) - c * v) * dt;
+      x += v * dt;
+      render();
+      if (Math.abs(x - target) < 0.4 && Math.abs(v) < 6) {
+        x = target;
+        v = 0;
+        render();
+        raf = 0;
+        return;
+      }
+      raf = requestAnimationFrame(step);
+    };
+    const springTo = (t: number) => {
+      target = t;
+      if (reduce) {
+        x = t;
+        v = 0;
+        render();
+        return;
+      }
+      if (!raf) {
+        last = performance.now();
+        raf = requestAnimationFrame(step);
+      }
+    };
+    const set = (o: boolean) => {
+      open = o;
+      panel.classList.toggle('is-open', o);
+      toggle.setAttribute('aria-expanded', String(o));
+      springTo(o ? 0 : closedX());
+    };
+    setPanel = set;
+    render();
+    panel.classList.add('is-js');
+
+    // ---- drag ----
+    let startX = 0;
+    let startPanelX = 0;
+    let moved = 0;
+    let lastPX = 0;
+    let lastT = 0;
+    let pid = -1;
+    panel.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      // links and text in the panel stay clickable/selectable with a mouse
+      if (e.pointerType === 'mouse' && e.target !== toggle && !toggle.contains(e.target as Node) && (e.target as HTMLElement).closest('a, dd, dt, p, h1')) return;
+      pid = e.pointerId;
+      startX = lastPX = e.clientX;
+      lastT = performance.now();
+      startPanelX = x;
+      moved = 0;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== pid) return;
+      const dx = e.clientX - startX;
+      moved = Math.max(moved, Math.abs(dx));
+      if (!dragging && moved > 5) {
+        dragging = true;
+        touched = true;
+        panel.classList.add('is-dragging');
+        try {
+          panel.setPointerCapture(pid);
+        } catch (err) {}
+      }
+      if (!dragging) return;
+      const now = performance.now();
+      const dt = Math.max(1, now - lastT);
+      // smoothed finger speed (px/s)
+      v = v * 0.6 + ((e.clientX - lastPX) / dt) * 1000 * 0.4;
+      lastPX = e.clientX;
+      lastT = now;
+      const raw = startPanelX + dx;
+      const max = closedX();
+      // past the open place: rubber (stretch grows with the pull, but slower)
+      if (raw < 0) x = -rubber(-raw, 160);
+      else if (raw > max) x = max + rubber(raw - max, 80);
+      else x = raw;
+      render();
+    });
+    const end = (e: PointerEvent) => {
+      if (e.pointerId !== pid) return;
+      pid = -1;
+      if (!dragging) {
+        // a press without a pull: let the spring finish what it was doing
+        springTo(target);
+        return;
+      }
+      dragging = false;
+      panel.classList.remove('is-dragging');
+      // a fling decides; otherwise wherever it is closer to
+      const max = closedX();
+      const flingOpen = v < -450;
+      const flingClose = v > 450;
+      set(flingOpen ? true : flingClose ? false : x < max / 2);
+    };
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+
+    toggle.addEventListener('click', (e) => {
+      // the end of a drag isn't a click
+      if (moved > 5) {
+        e.preventDefault();
+        moved = 0;
+        return;
+      }
       touched = true;
+      set(!open);
     });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') set(false);
-      if (e.key === 'i' && !(e.target as HTMLElement).closest('input, textarea')) set(!panel.classList.contains('is-open'));
+      if (e.key === 'i' && !(e.target as HTMLElement).closest('input, textarea')) {
+        touched = true;
+        set(!open);
+      }
     });
+    window.addEventListener('resize', () => {
+      if (!open && !dragging) {
+        x = target = closedX();
+        render();
+      }
+    });
+
     let opened = false;
-    const open = () => {
+    const openOnce = () => {
       if (opened || touched || window.scrollY > 60) return;
       opened = true;
       set(true);
     };
     const root = document.documentElement;
-    let fromCard = root.classList.contains('from-card');
-    try {
-      fromCard ||= !!sessionStorage.getItem('vt-card');
-    } catch (err) {}
-    // the cover has landed: at once on a direct visit, else when the flight ends
-    const landed = new Promise<void>((resolve) => {
-      if (!fromCard || root.classList.contains('cover-landed')) return resolve();
-      new MutationObserver((_, mo) => {
-        if (!root.classList.contains('cover-landed')) return;
-        mo.disconnect();
-        resolve();
-      }).observe(root, { attributes: true, attributeFilter: ['class'] });
+    // decide after the page has been revealed (Base.astro marks a cover
+    // flight with .from-card in 'pagereveal', which runs before this frame)
+    requestAnimationFrame(() => {
+      let fromCard = root.classList.contains('from-card');
+      try {
+        fromCard ||= !!sessionStorage.getItem('vt-card');
+      } catch (err) {}
+      const landed = new Promise<void>((resolve) => {
+        if (!fromCard || root.classList.contains('cover-landed')) return resolve();
+        new MutationObserver((_, mo) => {
+          if (!root.classList.contains('cover-landed')) return;
+          mo.disconnect();
+          resolve();
+        }).observe(root, { attributes: true, attributeFilter: ['class'] });
+      });
+      Promise.all([landed, heroReady]).then(() => window.setTimeout(openOnce, fromCard ? 120 : 350));
+      // never wait forever (slow network)
+      window.setTimeout(openOnce, 3500);
     });
-    Promise.all([landed, heroReady]).then(() => window.setTimeout(open, fromCard ? 120 : 350));
-    // never wait forever (slow network)
-    window.setTimeout(open, 3500);
     // the first scroll down tucks it away (once; after that it's the user's)
     window.addEventListener(
       'scroll',
       () => {
-        if (touched || window.scrollY < 60) return;
+        if (touched || dragging || window.scrollY < 60) return;
         touched = true;
         set(false);
       },
@@ -590,7 +760,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       e.preventDefault();
       if (leaving) return;
       leaving = true;
-      panel?.classList.remove('is-open');
+      setPanel(false);
       const y = window.scrollY;
       if (y < 4 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
         coverShowing = true;
