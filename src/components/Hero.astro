@@ -734,8 +734,9 @@ const LAPS = 3;
             return r.bottom > 0 && r.top < window.innerHeight;
           });
         const go = () => {
-          // start once the covers on screen can be drawn (or after 1.5s anyway)
-          if (!gl?.ready(onScreen()) && performance.now() - t0 < 1500) {
+          // start only once every cover on screen has its picture (3s at most),
+          // so none of them pops in or loads while falling
+          if (!gl?.ready(onScreen()) && performance.now() - t0 < 3000) {
             requestAnimationFrame(go);
             return;
           }
@@ -746,20 +747,21 @@ const LAPS = 3;
       }
     }
     const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
-    const arrivalOffset = (r: DOMRect): number | null => {
-      if (!arriving) return 0;
+    /** where a cover is in its fall: offset from its place, and k = 0..1 landed */
+    const arrival = (r: DOMRect): { off: number; k: number } | null => {
+      if (!arriving) return { off: 0, k: 1 };
       const vh = window.innerHeight;
       if (arriveAt < 0) return null; // not started: keep hidden
       // lower covers lead, upper ones follow
       const order = clamp(1 - (r.top + r.height / 2) / vh, 0, 1.5);
       const t = clamp((performance.now() - arriveAt - order * ARRIVE_STAGGER * 4) / ARRIVE_MS);
-      return -(vh * 1.15) * (1 - easeOutQuint(t));
+      const k = easeOutQuint(t);
+      return { off: -(vh * 1.15) * (1 - k), k };
     };
 
     // ---------- Frame ----------
     let lastPos = 0;
     let vel = 0;
-    const prevY = new Map<number, number>();
     const frame = () => {
       requestAnimationFrame(frame);
       // ease towards the target; 0.055 per frame ≈ a long, buttery glide
@@ -789,14 +791,11 @@ const LAPS = 3;
       if (!gl) return;
       const speed = clamp(Math.abs(vel) / 45);
       gl.draw(pills, hover, (i, r) => {
-        const off = arrivalOffset(r);
-        if (off === null) return null;
-        // per-cover speed during arrival, so falling covers stretch too
-        const y = r.top + off;
-        const last = prevY.get(i) ?? y;
-        prevY.set(i, y);
-        const own = arriveAt >= 0 ? clamp(Math.abs(y - last) / 45) : 0;
-        return { top: y, speed: Math.max(speed, own) };
+        const a = arrival(r);
+        if (!a) return null;
+        // falling covers stay clean: no stretch, smear or colour split while
+        // they come in; the edge lens eases in only as each one settles
+        return { top: r.top + a.off, speed: a.k < 1 ? 0 : speed, lens: a.k * a.k * a.k };
       });
     };
     requestAnimationFrame(frame);
@@ -819,6 +818,7 @@ const LAPS = 3;
       uniform vec4 uRect;
       uniform vec2 uView;
       uniform float uSpeed;
+      uniform float uLens;
       varying vec2 vUv;
       varying float vEdge;
       void main() {
@@ -828,10 +828,10 @@ const LAPS = 3;
         float ny = (p.y - uView.y * 0.5) / (uView.y * 0.5);
         // the effect only lives in the outer band of the screen
         float t = 0.72 - 0.12 * uSpeed;
-        float over = max(0.0, abs(ny) - t);
+        float over = max(0.0, abs(ny) - t) * uLens;
         float k = 1.2 + 1.6 * uSpeed;
         p.y += sign(ny) * over * over * k * uView.y * 0.5;
-        float e = smoothstep(t, 1.0, abs(ny));
+        float e = smoothstep(t, 1.0, abs(ny)) * uLens;
         p.x = cx + (p.x - cx) * (1.0 + 0.2 * e);
         // moving fast also elongates a cover a little along its travel
         float c = uRect.y + uRect.w * 0.5;
@@ -920,6 +920,7 @@ const LAPS = 3;
     const uSpeed = u('uSpeed');
     const uHover = u('uHover');
     const uAlpha = u('uAlpha');
+    const uLens = u('uLens');
     const uImg = u('uImg');
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -948,6 +949,8 @@ const LAPS = 3;
     const get = (el: HTMLElement) => textures.get(el.dataset.src!);
 
     let lastSig = '';
+    // when covers were first put on screen (textures loaded by then show whole)
+    let shownSince = -1;
     return {
       ready(els: HTMLElement[]) {
         return els.every((el) => {
@@ -956,7 +959,7 @@ const LAPS = 3;
         });
       },
       /** place(i, rect) returns where to draw a cover (top + speed) or null to skip it */
-      draw(els: HTMLElement[], hover: number[], place: (i: number, r: DOMRect) => { top: number; speed: number } | null) {
+      draw(els: HTMLElement[], hover: number[], place: (i: number, r: DOMRect) => { top: number; speed: number; lens: number } | null) {
         const cr = canvas.getBoundingClientRect();
         const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1 : 1.5);
         const W = Math.round(cr.width * dpr);
@@ -965,7 +968,9 @@ const LAPS = 3;
           canvas.width = W;
           canvas.height = H;
         }
-        type Job = { i: number; t: NonNullable<Tex>; x: number; y: number; w: number; h: number; alpha: number; speed: number };
+        const now = performance.now();
+        const since = shownSince < 0 ? now : shownSince;
+        type Job = { i: number; t: NonNullable<Tex>; x: number; y: number; w: number; h: number; alpha: number; speed: number; lens: number };
         const jobs: Job[] = [];
         let sig = `${W},${H};`;
         els.forEach((el, i) => {
@@ -977,12 +982,13 @@ const LAPS = 3;
           load(el);
           const t = get(el);
           if (!t) return;
-          // no fade-in: the DOM picture underneath is identical, so WebGL simply
-          // takes over (a fade would show the cover washed out over white)
-          const alpha = 1;
-          jobs.push({ i, t, x: r.left - cr.left, y: p.top - cr.top, w: r.width, h: r.height, alpha, speed: p.speed });
-          sig += `${i}:${r.left.toFixed(1)},${p.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${p.speed.toFixed(3)};`;
+          // covers ready before they're first shown appear whole; one whose
+          // picture arrives later fades in over its slot
+          const alpha = t.at <= since ? 1 : clamp((now - t.at) / 450);
+          jobs.push({ i, t, x: r.left - cr.left, y: p.top - cr.top, w: r.width, h: r.height, alpha, speed: p.speed, lens: p.lens });
+          sig += `${i}:${r.left.toFixed(1)},${p.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${p.speed.toFixed(3)},${p.lens.toFixed(3)};`;
         });
+        if (jobs.length && shownSince < 0) shownSince = now;
         if (sig === lastSig) return;
         lastSig = sig;
 
@@ -990,17 +996,18 @@ const LAPS = 3;
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform2f(uView, cr.width, cr.height);
-        for (const { i, t, x, y, w, h, alpha, speed } of jobs) {
+        for (const { i, t, x, y, w, h, alpha, speed, lens } of jobs) {
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
           gl.uniform4f(uRect, x, y, w, h);
           gl.uniform2f(uImg, t.w, t.h);
           gl.uniform1f(uHover, hover[i]);
           gl.uniform1f(uAlpha, alpha);
           gl.uniform1f(uSpeed, speed);
+          gl.uniform1f(uLens, lens);
           gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         }
-        // the covers just drawn hide their DOM pictures in this same frame
-        for (const { i } of jobs) els[i].classList.add('gl-on');
+        // covers drawn whole hide their DOM pictures in this same frame
+        for (const { i, alpha } of jobs) if (alpha >= 1) els[i].classList.add('gl-on');
       },
     };
   }
