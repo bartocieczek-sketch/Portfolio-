@@ -298,12 +298,32 @@ const LAPS = 3;
     color: var(--text-primary);
   }
 
-  /* texts settle in once the covers have landed */
-  .vh__fade {
-    transition: opacity 0.8s var(--ease-out);
+  /* Texts come in once the covers have landed: the side rows roll up into
+     place one after another, the corner texts rise in */
+  .vh.is-entering .vh__title .vh__roll {
+    transition-duration: 0.9s;
   }
-  :global(html.is-arriving) .vh__fade {
+  .vh.is-entering .vh__year .vh__roll {
+    transition-duration: 0.9s;
+    transition-delay: 90ms;
+  }
+  .vh.is-entering .vh__tags .vh__roll {
+    transition-duration: 0.9s;
+    transition-delay: 170ms;
+  }
+  .vh__intro > *,
+  .vh__hint {
+    transition: opacity 0.8s var(--ease-out), transform 0.9s var(--ease-out);
+  }
+  .vh__intro > :nth-child(2) {
+    transition-delay: 80ms;
+  }
+  .vh__hint {
+    transition-delay: 160ms;
+  }
+  :global(html.is-arriving) :is(.vh__intro > *, .vh__hint) {
     opacity: 0;
+    transform: translateY(16px);
   }
   :global(html.is-arriving) .vh__pill img {
     opacity: 0;
@@ -388,21 +408,12 @@ const LAPS = 3;
     document.fonts?.ready.then(measure);
 
     // ---------- Endless scroll ----------
-    // `target` is where the column is going, `pos` eases towards it every frame.
-    // Input only ever moves `target`; when input stops, `target` snaps to the
-    // nearest cover so the column always comes to rest on a project.
+    // `target` is where the column is going, `pos` eases towards it every frame,
+    // so every input glides to a stop wherever it ends (no snapping).
     let pos = 0;
     let target = 0;
-    let idleTimer = 0;
-    const settle = () => {
-      window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(() => {
-        target = Math.round(target / step) * step;
-      }, 140);
-    };
     const nudge = (d: number) => {
       target += d;
-      settle();
     };
     window.addEventListener(
       'wheel',
@@ -527,7 +538,9 @@ const LAPS = 3;
     const endArrival = () => {
       arriving = false;
       arriveAt = -1;
+      hero.classList.add('is-entering');
       root.classList.remove('is-arriving');
+      window.setTimeout(() => hero.classList.remove('is-entering'), 1300);
     };
     if (arriving) {
       if (!gl) endArrival();
@@ -587,7 +600,8 @@ const LAPS = 3;
         }
         hover[i] += ((hovered === pills[i] ? 1 : 0) - hover[i]) * 0.12;
       }
-      setActive(Number(pills[best].dataset.index));
+      // the side texts wait below their line until the covers have landed
+      if (!arriving) setActive(Number(pills[best].dataset.index));
 
       if (!gl) return;
       const speed = clamp(Math.abs(vel) / 45);
