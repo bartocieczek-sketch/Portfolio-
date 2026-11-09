@@ -14,7 +14,6 @@ interface Props {
   settings: any;
 }
 const { home, settings } = Astro.props;
-const pad = (n: number) => String(n).padStart(2, '0');
 
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((p: any) => ({
@@ -24,7 +23,6 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   href: href(Astro.locals, `/${p.slug}`),
   src: urlFor(p.cover).width(1000).height(1250).fit('crop').quality(82).url(),
 }));
-const total = pad(projects.length);
 ---
 
 <section class="vh" data-vh>
@@ -37,9 +35,6 @@ const total = pad(projects.length);
     </div>
 
     <div class="vh__left" aria-hidden="true">
-      <span class="vh__stack vh__num t-label-small">
-        {projects.map((_: unknown, i: number) => <span class="vh__roll" data-roll>{pad(i + 1)} / {total}</span>)}
-      </span>
       <span class="vh__stack vh__title">
         {projects.map((p: any) => <span class="vh__roll" data-roll>{p.title}</span>)}
       </span>
