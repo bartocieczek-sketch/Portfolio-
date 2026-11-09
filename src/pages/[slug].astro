@@ -95,16 +95,12 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       <aside class="case__panel is-out" data-panel aria-label="About the project">
         <div class="case__panel-in">
           <div class="case__panel-top">
-            <p class="t-label-small muted">
-              Case study {index >= 0 && `— ${number(index + 1)}/${number(list.length)}`}
-            </p>
             <h1 class="case__title">{project.title}</h1>
             {intro.length > 0 && (
               <div class="case__intro">
                 <PortableText value={intro} />
               </div>
             )}
-            <p class="case__hint t-label-small">[ Scroll to explore ]</p>
           </div>
 
           {meta.length > 0 && (
@@ -119,7 +115,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
           )}
 
           <div class="case__panel-foot">
-            <span class="t-label-small">{project.yearLabel}</span>
             {project.liveUrl && (
               <a class="case__live t-label-small" href={project.liveUrl} target="_blank" rel="noopener">Live site ↗</a>
             )}
@@ -363,7 +358,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   .case__panel-foot {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: flex-end;
     color: var(--text-secondary);
   }
