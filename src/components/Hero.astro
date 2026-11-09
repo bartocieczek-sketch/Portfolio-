@@ -479,7 +479,11 @@ const LAPS = 3;
     let target = pos;
     // while a project is opening, the column ignores input
     let opening = false;
+    // any input pauses the idle drift (see Frame) for a while
+    let lastInput = performance.now();
+    const touchInput = () => (lastInput = performance.now());
     const nudge = (d: number) => {
+      touchInput();
       if (opening) return;
       target += d;
     };
@@ -504,6 +508,7 @@ const LAPS = 3;
     });
     window.addEventListener('pointermove', (e) => {
       if (dragY === null) return;
+      touchInput();
       const d = dragY - e.clientY;
       dragY = e.clientY;
       dragMoved += Math.abs(d);
@@ -765,8 +770,27 @@ const LAPS = 3;
     // ---------- Frame ----------
     let lastPos = 0;
     let vel = 0;
+    // Idle drift: left alone, the column creeps along by itself, very slowly.
+    // It eases in after a few quiet seconds and eases out at once on any
+    // input, or while a cover is under the pointer (so it holds still to be
+    // clicked).
+    const DRIFT = 16; // px per second
+    const IDLE_AFTER = 2500; // ms without input
+    let drift = 0;
+    let lastT = performance.now();
     const frame = () => {
       requestAnimationFrame(frame);
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - lastT) / 1000);
+      lastT = now;
+      const idle =
+        !reduceMotion && !arriving && !opening && !centring && dragY === null && !hovered && !document.hidden && now - lastInput > IDLE_AFTER;
+      // ease in slowly, ease out quickly
+      drift += ((idle ? DRIFT : 0) - drift) * (idle ? 0.02 : 0.15);
+      if (Math.abs(drift) > 0.01) {
+        target += drift * dt;
+        pos += drift * dt;
+      }
       // ease towards the target; 0.055 per frame ≈ a long, buttery glide
       if (centring) centring(performance.now());
       else if (dragY === null) pos += (target - pos) * 0.055;
