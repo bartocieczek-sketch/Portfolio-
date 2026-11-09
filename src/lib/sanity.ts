@@ -46,7 +46,7 @@ export const PROJECT_QUERY = `*[_type == "project" && slug.current == $slug][0]{
 
 /** Case studies in the order they appear on the home page (for "Next project") */
 export const PROJECT_ORDER_QUERY = `*[_id == "homePage"][0].projects[]->{
-  title, cardTitle, "slug": slug.current, cover{${imageFields}}
+  title, cardTitle, "slug": slug.current, year, cardTags, cover{${imageFields}}
 }`;
 
 export async function fetchSettings() {

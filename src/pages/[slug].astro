@@ -133,25 +133,34 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
 
 
+    <!-- Next project, the way it looks on home: title, the pill, year and
+         tags. Clicking it flies the pill into that project's cover. -->
     {next && (
-      <a class="next" href={href(Astro.locals, `/${next.slug}`)} data-build>
-        <div class="next__head">
-          <span class="t-label-small" data-split>Next project</span>
-          <span class="t-label-small" aria-hidden="true">→</span>
-        </div>
-        <p class="next__title" data-split>{next.cardTitle || next.title}</p>
-        {next.cover?.asset && (
-          <div class="next__media" data-parallax data-build-item>
-            <img
-              src={urlFor(next.cover).width(1800).height(900).fit('crop').quality(80).url()}
-              srcset={srcset(next.cover, [800, 1400, 2000])}
-              sizes="100vw"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
+      <a class="next" href={href(Astro.locals, `/${next.slug}`)} data-next>
+        <span class="next__label t-label-small">Next project</span>
+        <div class="next__row">
+          <p class="next__title">{next.cardTitle || next.title}</p>
+          {next.cover?.asset && (
+            <span class="next__pill" data-next-pill>
+              <img
+                src={urlFor(next.cover).width(1000).height(1250).fit('crop').quality(82).url()}
+                width="1000"
+                height="1250"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+            </span>
+          )}
+          <div class="next__meta">
+            {next.year && <span class="t-label-small muted">{next.year}</span>}
+            {next.cardTags?.length > 0 && (
+              <span class="next__tags">
+                {next.cardTags.slice(0, 3).map((t: string) => <span>{t.replace(/,\s*$/, '')}</span>)}
+              </span>
+            )}
           </div>
-        )}
+        </div>
       </a>
     )}
 
@@ -380,46 +389,71 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     transition-delay: 0.14s;
   }
 
-  /* ---------- Next project ---------- */
+  /* ---------- Next project (a home row) ---------- */
   .next {
+    --pill-w: clamp(220px, 19vw, 340px);
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    padding: 160px var(--gutter) 120px;
+    align-items: center;
+    gap: 40px;
+    padding: 140px var(--gutter) 140px;
+    color: var(--text-primary);
   }
-  .next__head {
-    display: flex;
-    justify-content: space-between;
-    border-top: 1px solid var(--line);
-    padding-top: 16px;
+  .next__label {
+    color: var(--text-secondary);
+  }
+  .next__row {
+    position: relative;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr var(--pill-w) 1fr;
+    align-items: center;
+    column-gap: 56px;
   }
   .next__title {
-    font-family: var(--font-display);
-    font-size: clamp(64px, 11vw, 200px);
-    line-height: 0.86;
-    text-transform: uppercase;
-    color: var(--text-primary);
-    transition: color 0.3s ease;
+    justify-self: end;
+    text-align: right;
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: clamp(30px, 3.2vw, 52px);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
   }
-  .next__media {
+  .next__pill {
     position: relative;
-    aspect-ratio: 2 / 1;
-    background: #f2f2f2;
-    border-radius: var(--radius);
+    display: block;
+    width: var(--pill-w);
+    aspect-ratio: 0.75;
+    border-radius: 999px;
     overflow: hidden;
-    isolation: isolate;
+    background: #f2f2f2;
   }
-  .next__media img {
-    position: absolute;
-    inset: 0;
+  .next__pill img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.6s var(--ease-out);
+  }
+  .next__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .next__tags {
+    display: flex;
+    flex-direction: column;
+    font-size: 15px;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
   }
   @media (hover: hover) and (pointer: fine) {
-    .next:hover .next__title {
-      color: var(--text-highlight);
+    .next:hover .next__pill img {
+      transform: scale(1.06);
     }
+  }
+  .next:active .next__pill {
+    transform: scale(0.98);
+    transition: transform 0.16s var(--ease-out);
   }
 
   /* Arriving from a home cover: the cover morphs into place (view transition);
@@ -445,6 +479,30 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   :global(html.from-card.cover-landed .case__stack > :nth-child(2)) {
     transition-delay: 0.08s;
+  }
+  /* Leaving for home: the same moves in reverse, quicker — the side
+     pictures slide back out to the right, the panel after them */
+  .case.is-leaving .case__stack > :global(*) {
+    opacity: 0;
+    transform: translateX(48px);
+    transition:
+      opacity 0.3s var(--ease-out),
+      transform 0.4s var(--ease-in-out);
+  }
+  .case.is-leaving .case__stack > :global(:nth-child(1)) {
+    transition-delay: 0.05s;
+  }
+  .case.is-leaving .case__panel {
+    transform: translate3d(calc(100% + 40px), 0, 0);
+    transition: transform 0.45s var(--ease-in-out) 0.06s;
+  }
+  .case.is-leaving .case__panel-in > * {
+    opacity: 0;
+    transition: opacity 0.25s var(--ease-out);
+  }
+  .case.is-leaving .case__back-btn {
+    opacity: 0;
+    transition: opacity 0.25s var(--ease-out);
   }
   :global(html.from-card) .case__back-btn {
     animation: case-rise 0.7s 0.5s var(--ease-out) both;
@@ -508,10 +566,30 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       grid-template-columns: 1fr;
     }
     .next {
+      --pill-w: 58vw;
       padding: 96px var(--gutter) 80px;
+      gap: 24px;
     }
-    .next__media {
-      aspect-ratio: 4 / 3;
+    .next__row {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      row-gap: 20px;
+    }
+    .next__title {
+      justify-self: center;
+      text-align: center;
+      order: 2;
+    }
+    .next__pill {
+      order: 1;
+    }
+    .next__meta {
+      order: 3;
+      align-items: center;
+      text-align: center;
+    }
+    .next__tags {
+      align-items: center;
     }
   }
 </style>
@@ -611,9 +689,17 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       leaving = true;
       // the story panel stays where it is; only the pictures travel
       const y = window.scrollY;
-      if (y < 4 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // at the top: the side pictures and the panel go back out the way they
+      // came in, then the cover flies home
+      const main = document.querySelector<HTMLElement>('.case');
+      const goHome = () => {
         coverShowing = true;
-        leave(a.href);
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches || !main) return leave(a.href);
+        main.classList.add('is-leaving');
+        window.setTimeout(() => leave(a.href), 430);
+      };
+      if (y < 4 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        goHome();
         return;
       }
       // Glide up to the main picture: the page is moving on screen, so a
@@ -622,10 +708,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       // 0.45–0.9s, then the cover flies home the moment it has settled.
       const dur = Math.min(0.9, Math.max(0.45, 0.25 + Math.sqrt(y) * 0.012));
       const easeInOut = (t: number) => (t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2);
-      const done = () => {
-        coverShowing = true;
-        leave(a.href);
-      };
+      const done = goHome;
       const l = lenis();
       if (l) l.scrollTo(0, { duration: dur, easing: easeInOut, force: true, lock: true, onComplete: done });
       else {
@@ -634,8 +717,31 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       }
     });
   });
+  // ---------- Next project: its pill flies into that project's cover ----------
+  const nextLink = document.querySelector<HTMLAnchorElement>('[data-next]');
+  const nextPill = nextLink?.querySelector<HTMLElement>('[data-next-pill]');
+  nextLink?.addEventListener('click', (e) => {
+    if (!nextPill || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const img = nextPill.querySelector('img');
+    if (!img?.complete) return; // not loaded yet: a plain page change
+    e.preventDefault();
+    const pc = (window as unknown as { __pillCover(p: HTMLElement, on: boolean): { w: number; h: number } | null }).__pillCover;
+    const box = pc(nextPill, true);
+    try {
+      sessionStorage.setItem('vt-card', '1');
+      sessionStorage.setItem('vt-pill', JSON.stringify(box));
+      sessionStorage.setItem('vt-pill-shape', JSON.stringify({ r: nextPill.offsetWidth / 2, clip: box ? (box.w - nextPill.offsetWidth) / 2 : 0 }));
+    } catch (err) {}
+    requestAnimationFrame(() => {
+      location.href = nextLink.href;
+    });
+  });
+
   // back from the bfcache onto this page: allow leaving again
   window.addEventListener('pageshow', () => {
+    document.querySelector('.case')?.classList.remove('is-leaving');
+    if (nextPill) (window as unknown as { __pillCover(p: HTMLElement, on: boolean): unknown }).__pillCover(nextPill, false);
     leaving = false;
   });
 
