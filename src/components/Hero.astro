@@ -226,10 +226,12 @@ const LAPS = 3;
     }
   }
   /* WebGL draws the covers; the DOM images keep the layout and the links */
-  .vh.has-gl .vh__pill {
+  /* each DOM picture stays until WebGL has actually drawn that cover, so a
+     cover is never blank or half-faded while its texture loads */
+  .vh.has-gl .vh__pill.gl-on {
     background: none;
   }
-  .vh.has-gl .vh__pill img {
+  .vh.has-gl .vh__pill.gl-on img {
     opacity: 0;
   }
   .vh.has-gl .vh__pill.is-opening img {
@@ -941,7 +943,6 @@ const LAPS = 3;
           canvas.width = W;
           canvas.height = H;
         }
-        const now = performance.now();
         type Job = { i: number; t: NonNullable<Tex>; x: number; y: number; w: number; h: number; alpha: number; speed: number };
         const jobs: Job[] = [];
         let sig = `${W},${H};`;
@@ -954,7 +955,9 @@ const LAPS = 3;
           load(el);
           const t = get(el);
           if (!t) return;
-          const alpha = clamp((now - t.at) / 500);
+          // no fade-in: the DOM picture underneath is identical, so WebGL simply
+          // takes over (a fade would show the cover washed out over white)
+          const alpha = 1;
           jobs.push({ i, t, x: r.left - cr.left, y: p.top - cr.top, w: r.width, h: r.height, alpha, speed: p.speed });
           sig += `${i}:${r.left.toFixed(1)},${p.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${p.speed.toFixed(3)};`;
         });
@@ -974,6 +977,8 @@ const LAPS = 3;
           gl.uniform1f(uSpeed, speed);
           gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         }
+        // the covers just drawn hide their DOM pictures in this same frame
+        for (const { i } of jobs) els[i].classList.add('gl-on');
       },
     };
   }
