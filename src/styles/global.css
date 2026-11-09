@@ -393,7 +393,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
    arriving picture sits on top; the leaving one fills around it. */
 ::view-transition-image-pair(project-cover) {
   overflow: hidden;
-  animation: vt-round 0.85s var(--ease-cover) both;
+  animation: vt-pill-open 0.85s var(--ease-cover) both;
 }
 ::view-transition-old(project-cover),
 ::view-transition-new(project-cover) {
@@ -427,23 +427,25 @@ html:active-view-transition-type(back)::view-transition-new(root) {
     height: var(--vn-h0, 100%);
   }
 }
-@keyframes vt-round {
+/* The flying box starts as the home pill's whole photo; the clip shows just
+   the pill (its sides and round ends) and opens to the frame's corners */
+@keyframes vt-pill-open {
   from {
-    border-radius: var(--vt-pill-r, 999px);
+    clip-path: inset(0 var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));
   }
   to {
-    border-radius: var(--radius);
+    clip-path: inset(0 0 round var(--radius));
   }
 }
 html:active-view-transition-type(cover-back)::view-transition-image-pair(project-cover) {
-  animation: vt-round-back 0.85s var(--ease-cover) both;
+  animation: vt-pill-close 0.85s var(--ease-cover) both;
 }
-@keyframes vt-round-back {
+@keyframes vt-pill-close {
   from {
-    border-radius: var(--radius);
+    clip-path: inset(0 0 round var(--radius));
   }
   to {
-    border-radius: var(--vt-pill-r, 999px);
+    clip-path: inset(0 var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));
   }
 }
 html:active-view-transition-type(home)::view-transition-group(root) {
