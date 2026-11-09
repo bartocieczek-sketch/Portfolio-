@@ -758,12 +758,9 @@ const LAPS = 3;
       return { off: -(vh * 1.15) * (1 - k), k };
     };
 
-    // a cover lengthens with speed by at most a third of the gap at each end
-    const maxElong = () => {
-      const h = pills[0]?.offsetHeight || 1;
-      const gap = Math.max(0, step - h);
-      return (gap * 0.66) / h;
-    };
+    // covers keep their length while moving (only the edge lens and the smear
+    // react to speed), so the gap between neighbours never shrinks
+    const maxElong = () => 0;
 
     // ---------- Frame ----------
     let lastPos = 0;
