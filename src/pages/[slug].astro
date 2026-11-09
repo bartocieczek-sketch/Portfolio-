@@ -224,9 +224,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__panel {
     position: fixed;
     z-index: 15;
-    top: 8px;
-    right: 8px;
-    bottom: 8px;
+    top: 24px;
+    right: 24px;
+    bottom: 24px;
     width: min(440px, 32vw);
     transform: translate3d(calc(100% + 16px), 0, 0);
     transform-origin: 100% 50%;
@@ -468,7 +468,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   @media (max-width: 809px) {
     .case__panel {
-      left: 8px;
+      left: 24px;
       width: auto;
       top: auto;
       max-height: 78svh;
