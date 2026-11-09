@@ -100,7 +100,7 @@ const LAPS = 3;
               aria-label={lap === 1 ? `${p.title} case study` : undefined}
               draggable="false"
             >
-              <img src={p.src} alt="" width="1000" height="1250" loading={lap === 1 && i < 2 ? 'eager' : 'lazy'} decoding="async" draggable="false" />
+              <img src={p.src} alt="" width="1000" height="1250" loading="eager" decoding="async" draggable="false" />
             </a>
           </li>
         )),
@@ -143,12 +143,20 @@ const LAPS = 3;
       var wrapped = ((pos % lap) + lap) % lap;
       window.__vhStart = pos;
       list.style.transform = 'translate3d(0,' + -(lap + wrapped) + 'px,0)';
-      p.querySelector('img').loading = 'eager';
       p.classList.add('is-opening');
       p.style.viewTransitionName = 'project-cover';
-      document.documentElement.classList.add('is-cover-back');
-      // a pill from the story column keeps its shape; the big cover rounds off
-      document.documentElement.style.setProperty('--vt-from-radius', d.pill ? '999px' : '20px');
+      var html = document.documentElement;
+      html.classList.add('is-cover-back');
+      // corners ease from the case cover's radius into this pill's exact round
+      // ends (px to px, so the rounding is even all the way)
+      html.style.setProperty('--vt-from-radius', (d.r || 20) + 'px');
+      html.style.setProperty('--vt-pill-r', p.offsetWidth / 2 + 'px');
+      // the side texts are already showing this project in the first frame
+      var hero = document.querySelector('[data-vh]');
+      hero.classList.add('is-instant');
+      [].forEach.call(hero.querySelectorAll('.vh__stack'), function (g) {
+        if (g.children[idx]) g.children[idx].classList.add('is-active');
+      });
     } catch (e) {}
   })();
 </script>
@@ -274,6 +282,9 @@ const LAPS = 3;
     transform: translateY(105%);
     opacity: 0;
     transition: transform 0.6s var(--ease-out), opacity 0.4s ease;
+  }
+  .vh.is-instant .vh__roll {
+    transition: none;
   }
   .vh__roll.is-past {
     transform: translateY(-105%);
@@ -527,6 +538,9 @@ const LAPS = 3;
 
     // ---------- Side texts ----------
     let active = -1;
+    if (hero.classList.contains('is-instant')) {
+      requestAnimationFrame(() => requestAnimationFrame(() => hero.classList.remove('is-instant')));
+    }
     const setActive = (i: number) => {
       if (i === active) return;
       const prev = active;
@@ -579,6 +593,7 @@ const LAPS = 3;
             p.classList.add('is-opening');
             p.style.viewTransitionName = 'project-cover';
             try {
+              sessionStorage.setItem('vt-pill-r', String(p.offsetWidth / 2));
               sessionStorage.setItem('vt-card', '1');
               // remember where it was, so coming back lands in the same spot
               sessionStorage.setItem('vh-from', JSON.stringify({ pos, i }));
@@ -649,6 +664,9 @@ const LAPS = 3;
       if (!(e as PageTransitionEvent).persisted) return;
       opening = false;
       centring = null;
+      // nothing is hovered any more: WebGL must take the cover back unzoomed
+      hovered = null;
+      hover.fill(0);
       for (const p of pills) {
         p.classList.remove('is-opening');
         p.style.viewTransitionName = '';
@@ -666,7 +684,8 @@ const LAPS = 3;
           p.classList.add('is-opening');
           p.style.viewTransitionName = 'project-cover';
           root.classList.add('is-cover-back');
-          root.style.setProperty('--vt-from-radius', back.pill ? '999px' : '20px');
+          root.style.setProperty('--vt-from-radius', `${(back as { r?: number }).r || 20}px`);
+          root.style.setProperty('--vt-pill-r', `${p.offsetWidth / 2}px`);
           handBack();
         }
       } catch (err) {}

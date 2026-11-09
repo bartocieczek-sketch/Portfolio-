@@ -27,6 +27,7 @@
   --radius: 20px;
   /* Motion tokens */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entrances, hovers */
+  --ease-cover: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* things travelling across the screen */
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);      /* long, cinematic reveals */
 }
@@ -373,14 +374,14 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 /* Card → case study: the cover moves and scales from the thumbnail's spot to
    its place on the new page while the pages crossfade underneath. */
 ::view-transition-group(project-cover) {
-  animation-duration: 0.9s;
-  animation-timing-function: var(--ease-in-out);
+  animation-duration: 0.85s;
+  animation-timing-function: var(--ease-cover);
   z-index: 10;
 }
 ::view-transition-old(project-cover),
 ::view-transition-new(project-cover) {
-  animation-duration: 0.9s;
-  animation-timing-function: var(--ease-in-out);
+  animation-duration: 0.85s;
+  animation-timing-function: var(--ease-cover);
   height: 100%;
   object-fit: cover;
 }
@@ -389,7 +390,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
    the image stays sharp the whole way (the old picture hands over at once). */
 ::view-transition-image-pair(project-cover) {
   overflow: hidden;
-  animation: vt-round 0.9s var(--ease-in-out) both;
+  animation: vt-round 0.85s var(--ease-cover) both;
 }
 /* the new picture sits on top of the old one, so the old one never fades:
    if the new one is still decoding, the old one shows instead of white */
@@ -401,7 +402,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 }
 @keyframes vt-round {
   from {
-    border-radius: 999px;
+    border-radius: var(--vt-pill-r, 999px);
   }
   to {
     border-radius: var(--radius);
@@ -411,14 +412,14 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 /* Back home: a picture from the project flies into its cover in the column,
    its rounded corners easing into the pill's round ends */
 html:active-view-transition-type(cover-back)::view-transition-image-pair(project-cover) {
-  animation: vt-round-back 0.9s var(--ease-in-out) both;
+  animation: vt-round-back 0.85s var(--ease-cover) both;
 }
 @keyframes vt-round-back {
   from {
     border-radius: var(--vt-from-radius, var(--radius));
   }
   to {
-    border-radius: 999px;
+    border-radius: var(--vt-pill-r, 999px);
   }
 }
 html:active-view-transition-type(home)::view-transition-group(root) {

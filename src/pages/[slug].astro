@@ -399,14 +399,34 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     ).observe(cover);
   }
 
+  // Came here from the home column? Going "back to work" is then a real
+  // history step: the browser restores home exactly as it was left (column,
+  // loaded covers, WebGL) instead of building it again.
+  const nav = (window as unknown as { navigation?: { entries(): { url: string | null }[]; currentEntry?: { index: number } } }).navigation;
+  document.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => {
+    if (!isHome(a.href)) return;
+    a.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+      const i = nav?.currentEntry?.index ?? -1;
+      const prev = i > 0 ? nav!.entries()[i - 1] : null;
+      if (prev?.url && isHome(prev.url) && new URL(prev.url).origin === location.origin) {
+        e.preventDefault();
+        history.back();
+      }
+    });
+  });
+
   window.addEventListener('pageswap', (e) => {
     const to = (e as unknown as { activation?: { entry?: { url?: string } } }).activation?.entry?.url;
     try {
       sessionStorage.removeItem('vt-back');
       if (!cover || !to || !isHome(to) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const usePill = !coverShowing && !!mini;
-      (usePill ? mini! : cover).style.viewTransitionName = 'project-cover';
-      sessionStorage.setItem('vt-back', JSON.stringify({ slug, pill: usePill }));
+      const el = usePill ? mini! : cover;
+      el.style.viewTransitionName = 'project-cover';
+      // its corner radius, so the flight rounds off evenly into the home pill
+      const r = usePill ? mini!.offsetWidth / 2 : parseFloat(getComputedStyle(cover).borderTopLeftRadius) || 20;
+      sessionStorage.setItem('vt-back', JSON.stringify({ slug, pill: usePill, r }));
     } catch (err) {}
   });
 </script>

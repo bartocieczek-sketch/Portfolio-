@@ -82,6 +82,10 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
           if (cover) {
             e.viewTransition.types.add('card');
             cover.style.viewTransitionName = 'project-cover';
+            try {
+              var pr = sessionStorage.getItem('vt-pill-r');
+              if (pr) document.documentElement.style.setProperty('--vt-pill-r', pr + 'px');
+            } catch (err) {}
             // the rest of the case study settles in around the landed cover
             document.documentElement.classList.add('from-card');
             e.viewTransition.finished.finally(function () {
