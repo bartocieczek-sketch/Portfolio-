@@ -28,11 +28,10 @@
   /* Motion tokens */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entrances, hovers */
   --ease-cover: cubic-bezier(0.32, 0.72, 0, 1);
-  /* shared-element morph (cover pill <-> case frame): Material 3's
-     "emphasized" curve, made for container transforms — a short, soft start
-     (no jump), most of the travel early, then a long glide into place */
-  --ease-morph: cubic-bezier(0.2, 0, 0, 1);
-  --dur-morph: 0.7s;
+  /* shared-element morph (cover pill <-> case frame): easeInOutCubic, so the
+     picture starts gently, travels, and settles without a jump at either end */
+  --ease-morph: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-morph: 0.9s;
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* things travelling across the screen */
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);      /* long, cinematic reveals */
 }
@@ -474,12 +473,12 @@ html:active-view-transition-type(card)::view-transition-image-pair(root) {
 }
 html:active-view-transition-type(cover-back)::view-transition-old(root),
 html:active-view-transition-type(card)::view-transition-old(root) {
-  animation: vt-fade-out 0.4s var(--ease-morph) both;
+  animation: vt-fade-out 0.55s var(--ease-morph) both;
   mix-blend-mode: plus-lighter;
 }
 html:active-view-transition-type(cover-back)::view-transition-new(root),
 html:active-view-transition-type(card)::view-transition-new(root) {
-  animation: vt-fade-in 0.4s var(--ease-morph) both;
+  animation: vt-fade-in 0.55s var(--ease-morph) both;
   mix-blend-mode: plus-lighter;
 }
 
