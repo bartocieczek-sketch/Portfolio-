@@ -152,6 +152,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     aspect-ratio: 0.8;
     overflow: hidden;
     background: #f2f2f2;
+    border-radius: var(--radius);
   }
   .case__cover img {
     width: 100%;
@@ -241,6 +242,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     position: relative;
     aspect-ratio: 2 / 1;
     background: #f2f2f2;
+    border-radius: var(--radius);
+    overflow: hidden;
+    isolation: isolate;
   }
   .next__media img {
     position: absolute;
@@ -252,6 +256,45 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   @media (hover: hover) and (pointer: fine) {
     .next:hover .next__title {
       color: var(--text-highlight);
+    }
+  }
+
+  /* Arriving from a home cover: the cover morphs into place (view transition);
+     the story and the rest of the gallery rise in after it, one by one */
+  :global(html.from-card) .case__side > * {
+    animation: case-rise 0.9s var(--ease-out) both;
+  }
+  :global(html.from-card) .case__side > :nth-child(1) {
+    animation-delay: 0.45s;
+  }
+  :global(html.from-card) .case__side > :nth-child(2) {
+    animation-delay: 0.53s;
+  }
+  :global(html.from-card) .case__side > :nth-child(3) {
+    animation-delay: 0.61s;
+  }
+  :global(html.from-card) .case__side > :nth-child(n + 4) {
+    animation-delay: 0.69s;
+  }
+  :global(html.from-card) .case__gallery > :not(.case__cover) {
+    animation: case-rise 1s var(--ease-out) both;
+    animation-delay: 0.6s;
+  }
+  :global(html.from-card) .case__gallery > :nth-child(3) {
+    animation-delay: 0.68s;
+  }
+  :global(html.from-card) .case__gallery > :nth-child(n + 4) {
+    animation-delay: 0.76s;
+  }
+  @keyframes case-rise {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.from-card) :is(.case__side > *, .case__gallery > *) {
+      animation: none;
     }
   }
 

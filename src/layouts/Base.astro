@@ -66,8 +66,13 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
           if (cover) {
             e.viewTransition.types.add('card');
             cover.style.viewTransitionName = 'project-cover';
+            // the rest of the case study settles in around the landed cover
+            document.documentElement.classList.add('from-card');
             e.viewTransition.finished.finally(function () {
               cover.style.viewTransitionName = '';
+              setTimeout(function () {
+                document.documentElement.classList.remove('from-card');
+              }, 1600);
             });
           }
         }
@@ -88,7 +93,6 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
     <script>
       import Lenis from 'lenis';
       // build must run before motion: it claims blocks in [data-build] sections first
-      import '../scripts/build';
       import '../scripts/motion';
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

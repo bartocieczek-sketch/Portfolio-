@@ -24,6 +24,7 @@
   --font-mono: var(--font-nm);
 
   --gutter: 24px;
+  --radius: 20px;
   /* Motion tokens */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entrances, hovers */
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* things travelling across the screen */
@@ -451,8 +452,10 @@ html:active-view-transition-type(card-back)::view-transition-new(root) {
 html:active-view-transition-type(card)::view-transition-old(root) {
   animation: vt-fade-out 0.45s ease both;
 }
+/* the case study's own content rises in after the cover (see [slug].astro),
+   so its page appears at once underneath the travelling cover */
 html:active-view-transition-type(card)::view-transition-new(root) {
-  animation: vt-fade-in 0.6s 0.3s ease both;
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
