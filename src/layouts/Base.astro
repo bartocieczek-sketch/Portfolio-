@@ -64,6 +64,28 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
         st.setProperty('--vn-w1', n[1][0] + 'px');
         st.setProperty('--vn-h1', n[1][1] + 'px');
       };
+      // debug (temporary): what each reveal did
+      window.addEventListener('pagereveal', function (e) {
+        try {
+          var vt = e.viewTransition;
+          var nav = performance.getEntriesByType('navigation')[0];
+          var c = document.querySelector('[data-vt-cover]');
+          setTimeout(function () {
+            var log = JSON.parse(sessionStorage.getItem('vt-log') || '[]');
+            log.push({
+              p: location.pathname,
+              vt: !!vt,
+              types: vt ? Array.from(vt.types) : [],
+              y: scrollY,
+              pre: nav ? Math.round(nav.activationStart || 0) : -1,
+              nt: window.navigation && navigation.activation ? navigation.activation.navigationType : '',
+              c: c ? Math.round(c.getBoundingClientRect().top) : null,
+              vn: document.documentElement.style.getPropertyValue('--vn-h0'),
+            });
+            sessionStorage.setItem('vt-log', JSON.stringify(log.slice(-12)));
+          }, 0);
+        } catch (err) {}
+      });
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
         try {
