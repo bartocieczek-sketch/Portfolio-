@@ -66,11 +66,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
          lives in a panel that slides in from the right: open on arrival,
          tucked away once you scroll, back with the handle on the edge. -->
     <a class="case__back-btn" href={href(Astro.locals, '/')} aria-label="Back to work">
-      {coverSrc && (
-        <span class="case__mini" data-vt-mini>
-          <img src={coverSrc} alt="" width="1000" height="1250" decoding="async" />
-        </span>
-      )}
       <span class="case__back-arrow" aria-hidden="true">←</span>
       <span class="t-label-small">Work</span>
     </a>
@@ -219,8 +214,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     display: flex;
     align-items: center;
     gap: 8px;
-    height: 44px;
-    padding: 0 16px 0 6px;
+    height: 40px;
+    padding: 0 16px 0 14px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.86);
     backdrop-filter: blur(14px);
@@ -231,21 +226,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   .case__back-btn:active {
     transform: scale(0.97);
-  }
-  /* the home pill, small: if the big cover is off screen, this is what flies
-     back into the column */
-  .case__mini {
-    width: 24px;
-    height: 32px;
-    border-radius: 999px;
-    overflow: hidden;
-    background: #f2f2f2;
-    flex: none;
-  }
-  .case__mini img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
   }
   .case__back-arrow {
     font-size: 14px;
@@ -517,7 +497,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   // - otherwise the small pill in the story column (pill to pill, no reshape)
   const slug = location.pathname.replace(/\/$/, '').split('/').pop();
   const cover = document.querySelector<HTMLElement>('[data-vt-cover]');
-  const mini = document.querySelector<HTMLElement>('[data-vt-mini]');
   const isHome = (url: string) => /^\/(preview\/?)?$/.test(new URL(url).pathname);
 
   // ---------- Cover: sharp picture over the flight picture ----------
@@ -594,7 +573,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   // which picture flies home: the cover while a third of it is visible,
   // otherwise the small pill in the back button
   let coverShowing = true;
-  if (cover && mini) {
+  if (cover) {
     new IntersectionObserver(
       ([e]) => {
         coverShowing = e.intersectionRatio > 0.33;
@@ -625,19 +604,23 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     try {
       sessionStorage.removeItem('vt-back');
       if (!cover || !to || !isHome(to) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      const usePill = !coverShowing && !!mini;
-      const el = usePill ? mini! : cover;
-      el.style.viewTransitionName = 'project-cover';
-      // where the picture starts: the small pill whole, or the big picture
-      // cropped by its frame (the crop closes into the home pill as it flies)
-      let clip = `inset(0 round ${usePill ? mini!.offsetWidth / 2 : 20}px)`;
-      if (!usePill && cover.parentElement) {
+      // cover scrolled away: nothing flies in from off screen, home just
+      // dissolves in with the column where it was
+      if (!coverShowing) {
+        sessionStorage.setItem('vt-back', JSON.stringify({ slug, still: true }));
+        return;
+      }
+      cover.style.viewTransitionName = 'project-cover';
+      // the big picture starts cropped by its frame; the crop closes into the
+      // home pill as it flies
+      let clip = 'inset(0 round 20px)';
+      if (cover.parentElement) {
         const b = cover.getBoundingClientRect();
         const f = cover.parentElement.getBoundingClientRect();
         const r = parseFloat(getComputedStyle(cover.parentElement).borderTopLeftRadius) || 20;
         clip = `inset(${(f.top - b.top).toFixed(1)}px ${(b.right - f.right).toFixed(1)}px ${(b.bottom - f.bottom).toFixed(1)}px ${(f.left - b.left).toFixed(1)}px round ${r}px)`;
       }
-      sessionStorage.setItem('vt-back', JSON.stringify({ slug, pill: usePill, clip }));
+      sessionStorage.setItem('vt-back', JSON.stringify({ slug, clip }));
     } catch (err) {}
   });
 </script>

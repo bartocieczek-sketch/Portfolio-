@@ -143,6 +143,15 @@ const LAPS = 3;
       var wrapped = ((pos % lap) + lap) % lap;
       window.__vhStart = pos;
       list.style.transform = 'translate3d(0,' + -(lap + wrapped) + 'px,0)';
+      var hero = document.querySelector('[data-vh]');
+      // the side texts are already showing this project in the first frame
+      hero.classList.add('is-instant');
+      [].forEach.call(hero.querySelectorAll('.vh__stack'), function (g) {
+        if (g.children[idx]) g.children[idx].classList.add('is-active');
+      });
+      // the cover was off screen on the case study: nothing flies, home simply
+      // dissolves in with the column where it was
+      if (d.still) return;
       p.classList.add('is-opening');
       p.style.viewTransitionName = 'project-cover';
       var html = document.documentElement;
@@ -152,12 +161,6 @@ const LAPS = 3;
       html.style.setProperty('--vt-from-radius', (d.r || 20) + 'px');
       if (d.clip) html.style.setProperty('--vt-from-clip', d.clip);
       html.style.setProperty('--vt-pill-r', p.offsetWidth / 2 + 'px');
-      // the side texts are already showing this project in the first frame
-      var hero = document.querySelector('[data-vh]');
-      hero.classList.add('is-instant');
-      [].forEach.call(hero.querySelectorAll('.vh__stack'), function (g) {
-        if (g.children[idx]) g.children[idx].classList.add('is-active');
-      });
     } catch (e) {}
   })();
 </script>
@@ -679,9 +682,10 @@ const LAPS = 3;
       try {
         const raw = sessionStorage.getItem('vt-back');
         const from = JSON.parse(sessionStorage.getItem('vh-from') || 'null') as { i: number } | null;
-        const back = raw ? (JSON.parse(raw) as { slug: string; pill?: boolean }) : null;
+        const back = raw ? (JSON.parse(raw) as { slug: string; still?: boolean }) : null;
         const p = from ? pills[from.i] : null;
-        if (back && p && !reduceMotion && p.getAttribute('href')?.replace(/\/$/, '').split('/').pop() === back.slug) {
+        if (back?.still) sessionStorage.removeItem('vt-back');
+        if (back && !back.still && p && !reduceMotion && p.getAttribute('href')?.replace(/\/$/, '').split('/').pop() === back.slug) {
           p.classList.add('is-opening');
           p.style.viewTransitionName = 'project-cover';
           root.classList.add('is-cover-back');
