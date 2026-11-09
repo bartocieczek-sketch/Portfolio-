@@ -384,50 +384,25 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   height: 100%;
   object-fit: cover;
 }
-/* While it travels, the cover flutters like a sheet of paper caught in the
-   air: it tips back and forth in 3D, shears with the motion and catches the
-   light, then lands flat. The group handles the move; this rides on top. */
+/* The cover travels from the home column into the case study: the pill's
+   round ends ease into the case cover's rounded corners as it moves, and
+   the image stays sharp the whole way (the old picture hands over at once). */
 ::view-transition-image-pair(project-cover) {
-  animation: vt-paper 0.9s var(--ease-in-out) both;
-  transform-origin: 50% 30%;
+  overflow: hidden;
+  animation: vt-round 0.9s var(--ease-in-out) both;
 }
-::view-transition-old(project-cover),
+::view-transition-old(project-cover) {
+  animation: vt-fade-out 0.25s ease both;
+}
 ::view-transition-new(project-cover) {
-  animation-name: vt-fade-out, vt-paper-light;
+  animation: none;
 }
-::view-transition-new(project-cover) {
-  animation-name: vt-fade-in, vt-paper-light;
-}
-@keyframes vt-paper {
-  0% {
-    transform: perspective(1400px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg);
+@keyframes vt-round {
+  from {
+    border-radius: 999px;
   }
-  22% {
-    transform: perspective(1400px) rotateX(22deg) rotateY(-14deg) rotateZ(-3deg) skew(-4deg, 2deg);
-  }
-  48% {
-    transform: perspective(1400px) rotateX(-14deg) rotateY(10deg) rotateZ(2deg) skew(5deg, -2deg);
-  }
-  72% {
-    transform: perspective(1400px) rotateX(7deg) rotateY(-4deg) rotateZ(-1deg) skew(-2deg, 1deg);
-  }
-  100% {
-    transform: perspective(1400px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg);
-  }
-}
-@keyframes vt-paper-light {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  22% {
-    filter: brightness(0.82);
-  }
-  48% {
-    filter: brightness(1.12);
-  }
-  72% {
-    filter: brightness(0.95);
+  to {
+    border-radius: var(--radius);
   }
 }
 
