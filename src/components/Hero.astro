@@ -25,10 +25,30 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
 }));
 ---
 
+<script is:inline>
+  // Liquid preloader: on a fresh visit or reload with a mouse/trackpad, not
+  // when coming back from another page of the site.
+  (function () {
+    try {
+      var nav = performance.getEntriesByType('navigation')[0];
+      var type = nav ? nav.type : 'navigate';
+      var internal = !!document.referrer && new URL(document.referrer).origin === location.origin;
+      var skip = type === 'back_forward' || (type === 'navigate' && internal);
+      var ok = matchMedia('(hover: hover) and (pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!skip && ok) {
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+        window.scrollTo(0, 0);
+        document.documentElement.classList.add('is-intro', 'is-scroll-locked');
+      }
+    } catch (e) {}
+  })();
+</script>
+
 <section class="vh" data-vh>
   <!-- Pinned layer over the scrolling column: WebGL, nav and the side texts -->
   <div class="vh__stage" data-vh-stage>
     <canvas class="vh__gl" aria-hidden="true" data-gl></canvas>
+    <span class="vh__blob" aria-hidden="true" data-blob></span>
 
     <div class="vh__nav">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
@@ -277,6 +297,50 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     opacity: 1;
   }
 
+  /* ---------- Preloader ---------- */
+  .vh__blob {
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    top: 50%;
+    width: 52px;
+    height: 52px;
+    margin: -26px 0 0 -26px;
+    background: var(--text-primary);
+    border-radius: 48% 52% 55% 45% / 50% 46% 54% 50%;
+    opacity: 0;
+    pointer-events: none;
+  }
+  :global(html.is-intro) .vh__blob {
+    opacity: 1;
+    animation: vh-blob 1.6s var(--ease-in-out) infinite;
+  }
+  @keyframes vh-blob {
+    0%,
+    100% {
+      border-radius: 48% 52% 55% 45% / 50% 46% 54% 50%;
+      transform: scale(1) rotate(0deg);
+    }
+    33% {
+      border-radius: 56% 44% 42% 58% / 44% 56% 46% 56%;
+      transform: scale(1.08, 0.94) rotate(40deg);
+    }
+    66% {
+      border-radius: 42% 58% 50% 50% / 58% 42% 58% 42%;
+      transform: scale(0.94, 1.07) rotate(80deg);
+    }
+  }
+  /* until the covers have poured out, only the blob and the nav show */
+  .vh :is(.vh__left, .vh__right, .vh__intro, .vh__hint) {
+    transition: opacity 0.7s var(--ease-out);
+  }
+  :global(html.is-intro) .vh :is(.vh__left, .vh__right, .vh__intro, .vh__hint) {
+    opacity: 0;
+  }
+  :global(html.is-intro) .vh__pill img {
+    opacity: 0;
+  }
+
   @media (max-width: 1099px) {
     .vh__intro {
       display: none;
@@ -339,9 +403,11 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 
-  // Tell the layout script the intro is done (Lenis waits for it)
-  document.documentElement.classList.remove('is-intro');
-  document.dispatchEvent(new CustomEvent('intro:done'));
+  const root = document.documentElement;
+  const endIntro = () => {
+    root.classList.remove('is-intro', 'is-scroll-locked');
+    document.dispatchEvent(new CustomEvent('intro:done'));
+  };
 
   if (hero && stage) {
     const pills = [...hero.querySelectorAll<HTMLElement>('[data-media]')];
@@ -404,6 +470,65 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       else window.addEventListener('load', later, { once: true });
     }
 
+    // ---------- Liquid preloader ----------
+    // The blob pulses until the covers on screen have loaded; then they pour
+    // out of it, the middle one first, rippling and running tall as they move,
+    // and settle into the column. Text comes in after.
+    const INTRO_MS = 1300;
+    const STAGGER = 110;
+    let introAt = -1;
+    let introCentre = 0;
+    if (root.classList.contains('is-intro')) {
+      if (!gl) endIntro();
+      else {
+        const vh0 = window.innerHeight;
+        const onScreen = pills.filter((p) => {
+          const r = p.getBoundingClientRect();
+          return r.bottom > 0 && r.top < vh0;
+        });
+        const minUntil = performance.now() + 600;
+        const giveUp = performance.now() + 2500;
+        const wait = () => {
+          const now = performance.now();
+          if ((!gl?.ready(onScreen) || now < minUntil) && now < giveUp) {
+            requestAnimationFrame(wait);
+            return;
+          }
+          introAt = performance.now();
+          introCentre = pills.indexOf(onScreen.reduce((a, b) => (Math.abs(b.getBoundingClientRect().top + b.offsetHeight / 2 - vh0 / 2) < Math.abs(a.getBoundingClientRect().top + a.offsetHeight / 2 - vh0 / 2) ? b : a), onScreen[0]));
+          stage.querySelector('[data-blob]')?.animate(
+            [
+              { transform: 'scale(1)', opacity: 1 },
+              { transform: 'scale(0.4)', opacity: 0 },
+            ],
+            { duration: 350, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'forwards' },
+          );
+          const last = Math.max(introCentre, pills.length - 1 - introCentre);
+          window.setTimeout(() => {
+            introAt = -1;
+            endIntro();
+          }, INTRO_MS + STAGGER * Math.min(last, 3));
+        };
+        requestAnimationFrame(wait);
+      }
+    } else endIntro();
+
+    const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+    const introPlace = (i: number, r: DOMRect) => {
+      const vh = window.innerHeight;
+      if (introAt < 0) {
+        // still loading: covers wait inside the blob
+        return { rect: { left: r.left + r.width / 2, top: vh / 2, width: 0, height: 0 }, wobble: 1 };
+      }
+      const t = (performance.now() - introAt - STAGGER * Math.abs(i - introCentre)) / INTRO_MS;
+      const p = easeOutExpo(clamp(t));
+      const s = 0.18 + 0.82 * p;
+      const cy = vh / 2 + (r.top + r.height / 2 - vh / 2) * p;
+      const w = r.width * s;
+      const h = r.height * s;
+      return { rect: { left: r.left + r.width / 2 - w / 2, top: cy - h / 2, width: w, height: h }, wobble: 1 - clamp(t * 1.15) };
+    };
+
     let visible = true;
     new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(hero);
 
@@ -431,7 +556,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       vel += (y - lastY - vel) * 0.2;
       lastY = y;
       for (let i = 0; i < pills.length; i++) hover[i] += ((hovered === i ? 1 : 0) - hover[i]) * 0.12;
-      if (gl) gl.draw(pills, clamp(Math.abs(vel) / 60), hover);
+      if (gl) gl.draw(pills, clamp(Math.abs(vel) / 60), hover, root.classList.contains('is-intro') ? introPlace : undefined);
     };
     requestAnimationFrame(frame);
   }
@@ -454,11 +579,18 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       uniform vec4 uRect;
       uniform vec2 uView;
       uniform float uSpeed;
+      uniform float uWobble;
+      uniform float uTime;
       varying vec2 vUv;
       varying float vEdge;
       void main() {
         vUv = aPos;
         vec2 p = uRect.xy + aPos * uRect.zw;
+        // liquid: while pouring in, the sheet ripples and runs taller
+        vec2 c = uRect.xy + uRect.zw * 0.5;
+        p.y = c.y + (p.y - c.y) * (1.0 + 0.45 * uWobble);
+        p.x += sin(aPos.y * 6.2832 + uTime * 7.0) * uWobble * uRect.z * 0.07;
+        p.y += sin(aPos.x * 3.1416 + uTime * 5.0) * uWobble * uRect.w * 0.04;
         float cx = uRect.x + uRect.z * 0.5;
         // -1 at the top of the screen, 0 in the middle, 1 at the bottom
         float ny = (p.y - uView.y * 0.5) / (uView.y * 0.5);
@@ -487,6 +619,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
       uniform float uHover;
       uniform float uAlpha;
       uniform float uSpeed;
+      uniform float uWobble;
+      uniform float uTime;
       varying vec2 vUv;
       varying float vEdge;
       vec2 cover(vec2 uv) {
@@ -502,6 +636,8 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         float r = size.x * 0.5;
         vec2 q = abs(vUv * size - size * 0.5) - (size * 0.5 - r);
         float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+        // wavy, liquid outline while pouring in
+        d += (sin(vUv.y * 14.0 + uTime * 8.0) + sin(vUv.x * 11.0 - uTime * 6.0)) * uWobble * size.x * 0.035;
         float mask = 1.0 - smoothstep(-1.0, 1.0, d);
         if (mask <= 0.0) discard;
 
@@ -559,6 +695,9 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
     const uHover = u('uHover');
     const uAlpha = u('uAlpha');
     const uImg = u('uImg');
+    const uWobble = u('uWobble');
+    const uTime = u('uTime');
+    const t0 = performance.now();
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -585,7 +724,14 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
 
     let lastSig = '';
     return {
-      draw(els: HTMLElement[], speed: number, hover: number[]) {
+      /** textures of these covers are ready to draw */
+      ready(els: HTMLElement[]) {
+        return els.every((el) => {
+          load(el);
+          return !!textures.get(el);
+        });
+      },
+      draw(els: HTMLElement[], speed: number, hover: number[], intro?: (i: number, r: DOMRect) => { rect: { left: number; top: number; width: number; height: number }; wobble: number } | null) {
         const cr = canvas.getBoundingClientRect();
         const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1 : 1.5);
         const W = Math.round(cr.width * dpr);
@@ -595,7 +741,7 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           canvas.height = H;
         }
         const now = performance.now();
-        type Job = { i: number; t: NonNullable<Tex>; r: DOMRect; alpha: number };
+        type Job = { i: number; t: NonNullable<Tex>; r: { left: number; top: number; width: number; height: number }; alpha: number; wobble: number };
         const jobs: Job[] = [];
         let sig = `${W},${H},${speed.toFixed(3)};`;
         els.forEach((el, i) => {
@@ -606,11 +752,14 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
           load(el);
           const t = textures.get(el);
           if (!t) return;
-          const alpha = clamp((now - t.at) / 500);
-          jobs.push({ i, t, r, alpha });
-          sig += `${i}:${r.left.toFixed(1)},${r.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)};`;
+          const ix = intro ? intro(i, r) : null;
+          const rr = ix ? ix.rect : r;
+          const wobble = ix ? ix.wobble : 0;
+          const alpha = ix ? 1 : clamp((now - t.at) / 500);
+          jobs.push({ i, t, r: rr, alpha, wobble });
+          sig += `${i}:${rr.left.toFixed(1)},${rr.top.toFixed(1)},${rr.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${wobble.toFixed(3)};`;
         });
-        if (sig === lastSig) return;
+        if (sig === lastSig && !jobs.some((j) => j.wobble > 0.001)) return;
         lastSig = sig;
 
         gl.viewport(0, 0, W, H);
@@ -618,12 +767,14 @@ const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform2f(uView, cr.width, cr.height);
         gl.uniform1f(uSpeed, speed);
-        for (const { i, t, r, alpha } of jobs) {
+        gl.uniform1f(uTime, (now - t0) / 1000);
+        for (const { i, t, r, alpha, wobble } of jobs) {
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
           gl.uniform4f(uRect, r.left - cr.left, r.top - cr.top, r.width, r.height);
           gl.uniform2f(uImg, t.w, t.h);
           gl.uniform1f(uHover, hover[i]);
           gl.uniform1f(uAlpha, alpha);
+          gl.uniform1f(uWobble, wobble);
           gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         }
       },
