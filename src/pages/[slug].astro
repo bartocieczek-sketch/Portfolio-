@@ -276,14 +276,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   :global(html.from-card) .case__side > :nth-child(n + 4) {
     animation-delay: 0.69s;
   }
-  :global(html.from-card) .case__gallery > :not(.case__cover) {
+  /* gallery items are rendered by Media.astro, so these selectors are global */
+  :global(html.from-card .case__gallery > :not(.case__cover)) {
     animation: case-rise 1s var(--ease-out) both;
     animation-delay: 0.6s;
   }
-  :global(html.from-card) .case__gallery > :nth-child(3) {
+  :global(html.from-card .case__gallery > :nth-child(3)) {
     animation-delay: 0.68s;
   }
-  :global(html.from-card) .case__gallery > :nth-child(n + 4) {
+  :global(html.from-card .case__gallery > :nth-child(n + 4)) {
     animation-delay: 0.76s;
   }
   @keyframes case-rise {
@@ -293,7 +294,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    :global(html.from-card) :is(.case__side > *, .case__gallery > *) {
+    :global(html.from-card .case__side > *),
+    :global(html.from-card .case__gallery > *) {
       animation: none;
     }
   }
