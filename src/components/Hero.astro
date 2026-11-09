@@ -601,9 +601,17 @@ const LAPS = 3;
           requestAnimationFrame(release);
           return;
         }
-        p.classList.remove('is-opening');
+        // WebGL draws the cover again first (its canvas sits above the DOM
+        // picture); the DOM picture is hidden only once that frame is up, so
+        // there's never a frame with neither
+        p.classList.add('is-releasing');
         p.style.viewTransitionName = '';
         root.classList.remove('is-cover-back');
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            p.classList.remove('is-opening', 'is-releasing');
+          }),
+        );
       };
       let done = false;
       const go = () => {
@@ -938,7 +946,7 @@ const LAPS = 3;
         const jobs: Job[] = [];
         let sig = `${W},${H};`;
         els.forEach((el, i) => {
-          if (el.classList.contains('is-opening')) return;
+          if (el.classList.contains('is-opening') && !el.classList.contains('is-releasing')) return;
           const r = el.getBoundingClientRect();
           const p = place(i, r);
           if (!p) return;

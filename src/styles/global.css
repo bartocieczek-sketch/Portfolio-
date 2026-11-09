@@ -432,11 +432,13 @@ html:active-view-transition-type(home)::view-transition-new(root) {
 html:active-view-transition-type(cover-back)::view-transition-group(root) {
   animation: none;
 }
+/* The pages never show through each other: the old one clears first, the
+   new one comes in just after, and the travelling cover stays on top */
 html:active-view-transition-type(cover-back)::view-transition-old(root) {
-  animation: vt-fade-out 0.45s var(--ease-out) both;
+  animation: vt-fade-out 0.25s var(--ease-out) both;
 }
 html:active-view-transition-type(cover-back)::view-transition-new(root) {
-  animation: vt-fade-in 0.45s var(--ease-out) both;
+  animation: vt-fade-in 0.45s 0.2s var(--ease-out) both;
 }
 
 /* After the WebGL flight the cover is already in place on both pages, so the
@@ -463,10 +465,10 @@ html:active-view-transition-type(card)::view-transition-group(root) {
   animation: none;
 }
 html:active-view-transition-type(card)::view-transition-old(root) {
-  animation: vt-fade-out 0.4s var(--ease-out) both;
+  animation: vt-fade-out 0.25s var(--ease-out) both;
 }
 html:active-view-transition-type(card)::view-transition-new(root) {
-  animation: vt-fade-in 0.4s var(--ease-out) both;
+  animation: vt-fade-in 0.45s 0.2s var(--ease-out) both;
   mix-blend-mode: normal;
 }
 
