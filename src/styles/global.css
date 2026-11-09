@@ -408,23 +408,27 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 ::view-transition-old(project-cover) {
   width: var(--vo-w1, 100%);
   height: var(--vo-h1, 100%);
+  translate: var(--vo-t1, 0 0);
   animation-name: vt-old-size;
 }
 ::view-transition-new(project-cover) {
   width: var(--vn-w1, 100%);
   height: var(--vn-h1, 100%);
+  translate: var(--vn-t1, 0 0);
   animation-name: vt-new-size;
 }
 @keyframes vt-old-size {
   from {
     width: var(--vo-w0, 100%);
     height: var(--vo-h0, 100%);
+    translate: var(--vo-t0, 0 0);
   }
 }
 @keyframes vt-new-size {
   from {
     width: var(--vn-w0, 100%);
     height: var(--vn-h0, 100%);
+    translate: var(--vn-t0, 0 0);
   }
 }
 /* The flying box starts as the home pill's whole photo; the clip shows just

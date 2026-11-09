@@ -159,7 +159,7 @@ const LAPS = 3;
       // corners ease from the case cover's radius into this pill's exact round
       // ends (px to px, so the rounding is even all the way)
       html.style.setProperty('--vt-from-radius', (d.r || 20) + 'px');
-      if (d.frame && box) window.__vtSizes(box, d.frame, false);
+      if (d.frame && box) window.__vtSizes(box, d.frame, false, d.focus);
     } catch (e) {}
   })();
 </script>
@@ -683,8 +683,8 @@ const LAPS = 3;
           root.classList.add('is-cover-back');
           root.style.setProperty('--vt-from-radius', `${(back as { r?: number }).r || 20}px`);
           const frame = (back as { frame?: { w: number; h: number } }).frame;
-          const sizes = (window as unknown as { __vtSizes?: (a: object, b: object, f: boolean) => void }).__vtSizes;
-          if (frame && sizes && box) sizes(box, frame, false);
+          const sizes = (window as unknown as { __vtSizes?: (a: object, b: object, f: boolean, focus?: object) => void }).__vtSizes;
+          if (frame && sizes && box) sizes(box, frame, false, (back as { focus?: object }).focus);
           handBack();
         }
       } catch (err) {}

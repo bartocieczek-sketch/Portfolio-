@@ -44,7 +44,10 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       // (wider, shorter) picture lies over the middle of the pill's, and they
       // grow or shrink together, so the photo scales evenly with no jump.
       // pill / frame: {w, h} of each box; forward: pill → frame.
-      window.__vtSizes = function (pill, frame, forward) {
+      // focus (optional): {x, y} 0..1, where in the photo the frame's crop is
+      // centred (the cover's focal point); both pictures shift so the photo
+      // stays continuous while the crop moves off-centre.
+      window.__vtSizes = function (pill, frame, forward, focus) {
         var ar = 0.8; // the cover photo is cropped 4:5 everywhere
         var dp = Math.max(pill.w, pill.h * ar); // photo width shown in the pill
         var df = Math.max(frame.w, frame.h * ar); // ... and in the frame
@@ -54,7 +57,20 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
         // old = what leaves, new = what arrives
         var o = forward ? [pillFrom, pillTo] : [frameTo, frameFrom];
         var n = forward ? [frameFrom, frameTo] : [pillTo, pillFrom];
+        // how far the frame's crop sits from the photo's centre, at frame size
+        var fx = focus && focus.x != null ? focus.x : 0.5;
+        var fy = focus && focus.y != null ? focus.y : 0.5;
+        var ox = (df - frame.w) * (fx - 0.5);
+        var oy = (df / ar - frame.h) * (fy - 0.5);
+        var photoT = [[0, 0], [-ox, -oy]]; // pill → frame: photo slides so the crop is centred
+        var bandT = [[ox / k, oy / k], [0, 0]]; // the frame's crop starts where it lies in the photo
+        var ot = forward ? photoT : [bandT[1], bandT[0]];
+        var nt = forward ? bandT : [photoT[1], photoT[0]];
         var st = document.documentElement.style;
+        st.setProperty('--vo-t0', ot[0][0] + 'px ' + ot[0][1] + 'px');
+        st.setProperty('--vo-t1', ot[1][0] + 'px ' + ot[1][1] + 'px');
+        st.setProperty('--vn-t0', nt[0][0] + 'px ' + nt[0][1] + 'px');
+        st.setProperty('--vn-t1', nt[1][0] + 'px ' + nt[1][1] + 'px');
         st.setProperty('--vo-w0', o[0][0] + 'px');
         st.setProperty('--vo-h0', o[0][1] + 'px');
         st.setProperty('--vo-w1', o[1][0] + 'px');
@@ -143,7 +159,8 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
             try {
               var pill = JSON.parse(sessionStorage.getItem('vt-pill') || 'null');
               var f = cover.getBoundingClientRect();
-              if (pill) window.__vtSizes(pill, { w: f.width, h: f.height }, true);
+              var focus = { x: parseFloat(cover.dataset.focusX || '0.5'), y: parseFloat(cover.dataset.focusY || '0.5') };
+              if (pill) window.__vtSizes(pill, { w: f.width, h: f.height }, true, focus);
             } catch (err) {}
             // the rest of the case study settles in around the landed cover
             document.documentElement.classList.add('from-card');

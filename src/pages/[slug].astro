@@ -32,6 +32,10 @@ const gallery: any[] = (project.gallery ?? []).filter(
 // so the thumbnail can morph straight into it
 const coverSrc = project.cover?.asset ? urlFor(project.cover).width(1000).height(1250).fit('crop').quality(82).url() : undefined;
 // the cover fills the first screen here, so it gets the full picture
+// where the cover's subject is (Sanity hotspot): the full-screen frame crops
+// around it instead of the photo's centre
+const focusX = project.cover?.hotspot?.x ?? 0.5;
+const focusY = project.cover?.hotspot?.y ?? 0.5;
 // same 4:5 crop as the home pill, only larger, so swapping to it just sharpens
 const heroSrc = project.cover?.asset ? urlFor(project.cover).width(2000).height(2500).fit('crop').quality(80).url() : undefined;
 const heroSet = project.cover?.asset
@@ -72,7 +76,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
     <section class="case__media">
       {coverSrc && (
-        <div class="case__cover" data-vt-cover>
+        <div class="case__cover" data-vt-cover data-focus-x={focusX} data-focus-y={focusY} style={`--focus:${(focusX * 100).toFixed(1)}% ${(focusY * 100).toFixed(1)}%`}>
           <!-- the home pill's own picture (already in the cache) carries the
                flight; the full-size one, same crop, sharpens it once decoded -->
           <img class="case__cover-lo" src={coverSrc} alt="" width="1000" height="1250" decoding="sync" />
@@ -177,6 +181,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: var(--focus, 50% 50%);
   }
   .case__cover-hi {
     opacity: 0;
@@ -809,7 +814,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       cover.style.viewTransitionName = 'project-cover';
       // the frame's size, so home can scale the photo evenly into the pill
       const f = cover.getBoundingClientRect();
-      sessionStorage.setItem('vt-back', JSON.stringify({ slug, frame: { w: f.width, h: f.height } }));
+      const focus = { x: parseFloat(cover.dataset.focusX || '0.5'), y: parseFloat(cover.dataset.focusY || '0.5') };
+      sessionStorage.setItem('vt-back', JSON.stringify({ slug, frame: { w: f.width, h: f.height }, focus }));
     } catch (err) {}
   });
 </script>
