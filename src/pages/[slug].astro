@@ -480,29 +480,50 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   :global(html.from-card.cover-landed .case__stack > :nth-child(2)) {
     transition-delay: 0.08s;
   }
-  /* Leaving for home: the same moves in reverse, quicker — the side
-     pictures slide back out to the right, the panel after them */
+  /* Leaving for home: the entrance played back — the same fades and slides,
+     one after another, just a little quicker. The story fades out line by
+     line, the side pictures slide back out to the right, pictures still in
+     view below sink away, then the panel itself slides off. */
+  .case.is-leaving .case__panel-in > * {
+    opacity: 0;
+    transform: translateX(24px);
+    transition:
+      opacity 0.35s var(--ease-out),
+      transform 0.5s var(--ease-out);
+  }
+  .case.is-leaving .case__panel-in > :nth-child(2) {
+    transition-delay: 0.06s;
+  }
+  .case.is-leaving .case__panel-in > :nth-child(3) {
+    transition-delay: 0.12s;
+  }
   .case.is-leaving .case__stack > :global(*) {
     opacity: 0;
     transform: translateX(48px);
     transition:
-      opacity 0.3s var(--ease-out),
-      transform 0.4s var(--ease-in-out);
+      opacity 0.4s var(--ease-out),
+      transform 0.6s var(--ease-out);
   }
-  .case.is-leaving .case__stack > :global(:nth-child(1)) {
-    transition-delay: 0.05s;
+  .case.is-leaving .case__stack > :global(:nth-child(2)) {
+    transition-delay: 0.07s;
+  }
+  .case.is-leaving .case__gallery > :global(*) {
+    opacity: 0;
+    transform: translateY(48px);
+    transition:
+      opacity 0.4s var(--ease-out),
+      transform 0.6s var(--ease-out);
+  }
+  .case.is-leaving .case__gallery > :global(:nth-child(2)) {
+    transition-delay: 0.07s;
   }
   .case.is-leaving .case__panel {
     transform: translate3d(calc(100% + 40px), 0, 0);
-    transition: transform 0.45s var(--ease-in-out) 0.06s;
-  }
-  .case.is-leaving .case__panel-in > * {
-    opacity: 0;
-    transition: opacity 0.25s var(--ease-out);
+    transition: transform 0.6s var(--ease-cover) 0.16s;
   }
   .case.is-leaving .case__back-btn {
     opacity: 0;
-    transition: opacity 0.25s var(--ease-out);
+    transition: opacity 0.3s var(--ease-out);
   }
   :global(html.from-card) .case__back-btn {
     animation: case-rise 0.7s 0.5s var(--ease-out) both;
@@ -696,7 +717,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         coverShowing = true;
         if (matchMedia('(prefers-reduced-motion: reduce)').matches || !main) return leave(a.href);
         main.classList.add('is-leaving');
-        window.setTimeout(() => leave(a.href), 430);
+        window.setTimeout(() => leave(a.href), 620);
       };
       if (y < 4 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
         goHome();
