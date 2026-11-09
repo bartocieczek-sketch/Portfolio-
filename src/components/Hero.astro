@@ -483,14 +483,15 @@ const total = pad(projects.length);
         float cx = uRect.x + uRect.z * 0.5;
         // -1 at the top of the screen, 0 in the middle, 1 at the bottom
         float ny = (p.y - uView.y * 0.5) / (uView.y * 0.5);
-        float t = 0.3 - 0.15 * uSpeed;
+        // the effect only starts in the outer part of the screen
+        float t = 0.55 - 0.1 * uSpeed;
         float over = max(0.0, abs(ny) - t);
-        float k = 1.1 + 1.4 * uSpeed;
+        float k = 0.8 + 1.0 * uSpeed;
         // stretch towards the edge: spacing grows the further out a point is
         p.y += sign(ny) * over * over * k * uView.y * 0.5;
         // and flare wider near the edge, like a bell
         float e = smoothstep(t, 1.0, abs(ny));
-        p.x = cx + (p.x - cx) * (1.0 + 0.32 * e);
+        p.x = cx + (p.x - cx) * (1.0 + 0.2 * e);
         vEdge = e;
         vec2 clip = p / uView * 2.0 - 1.0;
         gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
@@ -528,8 +529,8 @@ const total = pad(projects.length);
         vec2 uv = cover(vUv);
         float e = clamp(vEdge + uSpeed * 0.35, 0.0, 1.0);
         // vertical smear and colour split near the edges
-        float smear = 0.05 * e;
-        float split = 0.025 * e;
+        float smear = 0.035 * e;
+        float split = 0.018 * e;
         vec3 col = vec3(0.0);
         for (int i = 0; i < 5; i++) {
           float o = (float(i) / 4.0 - 0.5) * smear;
