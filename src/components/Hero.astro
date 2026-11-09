@@ -523,8 +523,9 @@ const LAPS = 3;
     const ARRIVE_MS = 1500;
     const ARRIVE_STAGGER = 70;
     let arriveAt = -1;
-    const arriving = root.classList.contains('is-arriving');
+    let arriving = root.classList.contains('is-arriving');
     const endArrival = () => {
+      arriving = false;
       arriveAt = -1;
       root.classList.remove('is-arriving');
     };
