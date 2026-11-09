@@ -150,6 +150,7 @@ const LAPS = 3;
       // corners ease from the case cover's radius into this pill's exact round
       // ends (px to px, so the rounding is even all the way)
       html.style.setProperty('--vt-from-radius', (d.r || 20) + 'px');
+      if (d.clip) html.style.setProperty('--vt-from-clip', d.clip);
       html.style.setProperty('--vt-pill-r', p.offsetWidth / 2 + 'px');
       // the side texts are already showing this project in the first frame
       var hero = document.querySelector('[data-vh]');
@@ -685,6 +686,8 @@ const LAPS = 3;
           p.style.viewTransitionName = 'project-cover';
           root.classList.add('is-cover-back');
           root.style.setProperty('--vt-from-radius', `${(back as { r?: number }).r || 20}px`);
+          const clip = (back as { clip?: string }).clip;
+          if (clip) root.style.setProperty('--vt-from-clip', clip);
           root.style.setProperty('--vt-pill-r', `${p.offsetWidth / 2}px`);
           handBack();
         }

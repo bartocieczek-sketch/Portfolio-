@@ -385,12 +385,12 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   height: 100%;
   object-fit: cover;
 }
-/* The cover travels from the home column into the case study: the pill's
-   round ends ease into the case cover's rounded corners as it moves, and
-   the image stays sharp the whole way (the old picture hands over at once). */
+/* The cover travels from the home column into the case study. The flying
+   box is the whole picture (nearly the pill's shape), so it scales up evenly
+   with no jump; a crop opens from the pill's round ends to the frame the
+   picture is shown in on the case study (--vt-to-clip, set in Base.astro). */
 ::view-transition-image-pair(project-cover) {
-  overflow: hidden;
-  animation: vt-round 0.85s var(--ease-cover) both;
+  animation: vt-clip 0.85s var(--ease-cover) both;
 }
 /* the new picture sits on top of the old one, so the old one never fades:
    if the new one is still decoding, the old one shows instead of white */
@@ -400,26 +400,25 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 ::view-transition-new(project-cover) {
   animation: none;
 }
-@keyframes vt-round {
+@keyframes vt-clip {
   from {
-    border-radius: var(--vt-pill-r, 999px);
+    clip-path: inset(0 round var(--vt-pill-r, 999px));
   }
   to {
-    border-radius: var(--radius);
+    clip-path: var(--vt-to-clip, inset(0 round var(--radius)));
   }
 }
 
-/* Back home: a picture from the project flies into its cover in the column,
-   its rounded corners easing into the pill's round ends */
+/* Back home: the same in reverse; the frame's crop closes into the pill */
 html:active-view-transition-type(cover-back)::view-transition-image-pair(project-cover) {
-  animation: vt-round-back 0.85s var(--ease-cover) both;
+  animation: vt-clip-back 0.85s var(--ease-cover) both;
 }
-@keyframes vt-round-back {
+@keyframes vt-clip-back {
   from {
-    border-radius: var(--vt-from-radius, var(--radius));
+    clip-path: var(--vt-from-clip, inset(0 round var(--radius)));
   }
   to {
-    border-radius: var(--vt-pill-r, 999px);
+    clip-path: inset(0 round var(--vt-pill-r, 999px));
   }
 }
 html:active-view-transition-type(home)::view-transition-group(root) {

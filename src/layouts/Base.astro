@@ -86,6 +86,17 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
               var pr = sessionStorage.getItem('vt-pill-r');
               if (pr) document.documentElement.style.setProperty('--vt-pill-r', pr + 'px');
             } catch (err) {}
+            // the flying picture ends cropped by its frame on this page
+            var frame = cover.parentElement;
+            if (frame && frame.hasAttribute('data-cover-frame')) {
+              var b = cover.getBoundingClientRect();
+              var f = frame.getBoundingClientRect();
+              var fr = parseFloat(getComputedStyle(frame).borderTopLeftRadius) || 20;
+              document.documentElement.style.setProperty(
+                '--vt-to-clip',
+                'inset(' + (f.top - b.top) + 'px ' + (b.right - f.right) + 'px ' + (b.bottom - f.bottom) + 'px ' + (f.left - b.left) + 'px round ' + fr + 'px)',
+              );
+            }
             // the rest of the case study settles in around the landed cover
             document.documentElement.classList.add('from-card');
             e.viewTransition.finished.finally(function () {

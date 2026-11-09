@@ -77,11 +77,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
     <section class="case__media">
       {coverSrc && (
-        <div class="case__cover" data-vt-cover>
-          <!-- the home pill's own picture (already in the cache) carries the
-               flight; the full-size one fades in over it once decoded -->
-          <img class="case__cover-lo" src={coverSrc} alt="" width="1000" height="1250" decoding="sync" />
-          <img class="case__cover-hi" src={heroSrc} srcset={heroSet} sizes="100vw" alt="" fetchpriority="high" decoding="async" data-cover-hi />
+        <div class="case__cover" data-cover-frame>
+          <!-- The whole 4:5 picture, centred in the frame and cropped by it.
+               This box is what flies from the home pill: its shape barely
+               changes, so the picture scales up evenly with no jump, while
+               the frame's crop opens around it. -->
+          <div class="case__cover-pic" data-vt-cover>
+            <img class="case__cover-lo" src={coverSrc} alt="" width="1000" height="1250" decoding="sync" />
+            <img class="case__cover-hi" src={heroSrc} srcset={heroSet} sizes="100vw" alt="" fetchpriority="high" decoding="async" data-cover-hi />
+          </div>
         </div>
       )}
       <div class="case__gallery">
@@ -89,8 +93,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       </div>
     </section>
 
-    <aside class="case__panel is-open" data-panel aria-label="About the project">
-      <button class="case__handle" type="button" data-panel-toggle aria-expanded="true" aria-label="Project info">
+    <aside class="case__panel" data-panel aria-label="About the project">
+      <button class="case__handle" type="button" data-panel-toggle aria-expanded="false" aria-label="Project info">
         <span></span>
       </button>
       <div class="case__panel-in">
@@ -174,7 +178,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__cover {
     position: relative;
   }
-  .case__cover img {
+  .case__cover-pic {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, calc((100svh - 16px) * 0.8));
+    aspect-ratio: 0.8;
+    translate: -50% -50%;
+  }
+  .case__cover-pic img {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -520,11 +532,13 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     : Promise.resolve();
 
   // ---------- The story panel ----------
-  // Open when the page arrives (after the cover has landed when coming from
-  // home), tucked away on the first real scroll, back with the handle or "i".
+  // Always slides in: after the cover has landed and turned sharp (from home),
+  // or just after the page shows (direct visit). Tucked away on the first
+  // scroll, back with the handle or "i".
   const panel = document.querySelector<HTMLElement>('[data-panel]');
   const toggle = panel?.querySelector<HTMLButtonElement>('[data-panel-toggle]');
-  if (panel && toggle) {
+  const startPanel = () => {
+    if (!panel || !toggle) return;
     let touched = false;
     const set = (open: boolean) => {
       panel.classList.toggle('is-open', open);
@@ -538,33 +552,29 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       if (e.key === 'Escape') set(false);
       if (e.key === 'i' && !(e.target as HTMLElement).closest('input, textarea')) set(!panel.classList.contains('is-open'));
     });
-    // coming from a home cover: start tucked away, slide in once it has landed
-    let fromCard = document.documentElement.classList.contains('from-card');
+    let opened = false;
+    const open = () => {
+      if (opened || touched || window.scrollY > 60) return;
+      opened = true;
+      set(true);
+    };
+    const root = document.documentElement;
+    let fromCard = root.classList.contains('from-card');
     try {
       fromCard ||= !!sessionStorage.getItem('vt-card');
     } catch (err) {}
-    if (fromCard) {
-      set(false);
-      let opened = false;
-      const open = () => {
-        if (opened || touched) return;
-        opened = true;
-        set(true);
-      };
-      // the panel comes in only once the cover has landed AND its full-size
-      // picture is sharp, so nothing else moves while the cover is settling
-      const landed = new Promise<void>((resolve) => {
-        if (document.documentElement.classList.contains('cover-landed')) return resolve();
-        new MutationObserver((_, mo) => {
-          if (!document.documentElement.classList.contains('cover-landed')) return;
-          mo.disconnect();
-          resolve();
-        }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-      });
-      Promise.all([landed, heroReady]).then(() => window.setTimeout(open, 120));
-      // never wait forever (slow network): open anyway after 3.5s
-      window.setTimeout(open, 3500);
-    }
+    // the cover has landed: at once on a direct visit, else when the flight ends
+    const landed = new Promise<void>((resolve) => {
+      if (!fromCard || root.classList.contains('cover-landed')) return resolve();
+      new MutationObserver((_, mo) => {
+        if (!root.classList.contains('cover-landed')) return;
+        mo.disconnect();
+        resolve();
+      }).observe(root, { attributes: true, attributeFilter: ['class'] });
+    });
+    Promise.all([landed, heroReady]).then(() => window.setTimeout(open, fromCard ? 120 : 350));
+    // never wait forever (slow network)
+    window.setTimeout(open, 3500);
     // the first scroll down tucks it away (once; after that it's the user's)
     window.addEventListener(
       'scroll',
@@ -575,7 +585,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       },
       { passive: true },
     );
-  }
+  };
+  // a page prerendered on hover runs this early: wait until it's really shown
+  if ((document as unknown as { prerendering?: boolean }).prerendering) {
+    document.addEventListener('prerenderingchange', startPanel, { once: true });
+  } else startPanel();
 
   // which picture flies home: the cover while a third of it is visible,
   // otherwise the small pill in the back button
@@ -586,7 +600,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         coverShowing = e.intersectionRatio > 0.33;
       },
       { threshold: [0, 0.33, 0.5, 1] },
-    ).observe(cover);
+    ).observe(cover.parentElement ?? cover);
   }
 
   // Came here from the home column? Going "back to work" is then a real
@@ -614,9 +628,16 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       const usePill = !coverShowing && !!mini;
       const el = usePill ? mini! : cover;
       el.style.viewTransitionName = 'project-cover';
-      // its corner radius, so the flight rounds off evenly into the home pill
-      const r = usePill ? mini!.offsetWidth / 2 : parseFloat(getComputedStyle(cover).borderTopLeftRadius) || 20;
-      sessionStorage.setItem('vt-back', JSON.stringify({ slug, pill: usePill, r }));
+      // where the picture starts: the small pill whole, or the big picture
+      // cropped by its frame (the crop closes into the home pill as it flies)
+      let clip = `inset(0 round ${usePill ? mini!.offsetWidth / 2 : 20}px)`;
+      if (!usePill && cover.parentElement) {
+        const b = cover.getBoundingClientRect();
+        const f = cover.parentElement.getBoundingClientRect();
+        const r = parseFloat(getComputedStyle(cover.parentElement).borderTopLeftRadius) || 20;
+        clip = `inset(${(f.top - b.top).toFixed(1)}px ${(b.right - f.right).toFixed(1)}px ${(b.bottom - f.bottom).toFixed(1)}px ${(f.left - b.left).toFixed(1)}px round ${r}px)`;
+      }
+      sessionStorage.setItem('vt-back', JSON.stringify({ slug, pill: usePill, clip }));
     } catch (err) {}
   });
 </script>
