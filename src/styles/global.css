@@ -28,6 +28,10 @@
   /* Motion tokens */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entrances, hovers */
   --ease-cover: cubic-bezier(0.32, 0.72, 0, 1);
+  /* shared-element morph (cover pill <-> case frame): easeInOutCubic, so the
+     picture starts gently, travels, and settles without a jump at either end */
+  --ease-morph: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-morph: 0.9s;
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* things travelling across the screen */
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);      /* long, cinematic reveals */
 }
@@ -374,14 +378,14 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 /* Card → case study: the cover moves and scales from the thumbnail's spot to
    its place on the new page while the pages crossfade underneath. */
 ::view-transition-group(project-cover) {
-  animation-duration: 0.85s;
-  animation-timing-function: var(--ease-cover);
+  animation-duration: var(--dur-morph);
+  animation-timing-function: var(--ease-morph);
   z-index: 10;
 }
 ::view-transition-old(project-cover),
 ::view-transition-new(project-cover) {
-  animation-duration: 0.85s;
-  animation-timing-function: var(--ease-cover);
+  animation-duration: var(--dur-morph);
+  animation-timing-function: var(--ease-morph);
   height: 100%;
   object-fit: cover;
 }
@@ -393,7 +397,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
    arriving picture sits on top; the leaving one fills around it. */
 ::view-transition-image-pair(project-cover) {
   overflow: hidden;
-  animation: vt-pill-open 0.85s var(--ease-cover) both;
+  animation: vt-pill-open var(--dur-morph) var(--ease-morph) both;
 }
 ::view-transition-old(project-cover),
 ::view-transition-new(project-cover) {
@@ -401,8 +405,8 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   inset: 0;
   margin: auto;
   object-fit: fill;
-  animation-duration: 0.85s;
-  animation-timing-function: var(--ease-cover);
+  animation-duration: var(--dur-morph);
+  animation-timing-function: var(--ease-morph);
   animation-fill-mode: both;
 }
 ::view-transition-old(project-cover) {
@@ -438,7 +442,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 html:active-view-transition-type(cover-back)::view-transition-image-pair(project-cover) {
-  animation: vt-pill-close 0.85s var(--ease-cover) both;
+  animation: vt-pill-close var(--dur-morph) var(--ease-morph) both;
 }
 @keyframes vt-pill-close {
   from {
@@ -469,12 +473,12 @@ html:active-view-transition-type(card)::view-transition-image-pair(root) {
 }
 html:active-view-transition-type(cover-back)::view-transition-old(root),
 html:active-view-transition-type(card)::view-transition-old(root) {
-  animation: vt-fade-out 0.4s var(--ease-out) both;
+  animation: vt-fade-out 0.55s var(--ease-morph) both;
   mix-blend-mode: plus-lighter;
 }
 html:active-view-transition-type(cover-back)::view-transition-new(root),
 html:active-view-transition-type(card)::view-transition-new(root) {
-  animation: vt-fade-in 0.4s var(--ease-out) both;
+  animation: vt-fade-in 0.55s var(--ease-morph) both;
   mix-blend-mode: plus-lighter;
 }
 
