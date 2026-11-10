@@ -461,6 +461,7 @@ html:active-view-transition-type(cover-back)::view-transition-image-pair(project
   to {
     clip-path: inset(var(--vt-pill-clip-y, 0px) var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));
   }
+}
 
 /* Same-shape ends (desktop): the flight is pure transform + clip on a box of
    its final size (see __vtFlight in Base.astro) — compositor-only, so it
@@ -498,7 +499,6 @@ html.vt-uniform::view-transition-new(project-cover) {
   to {
     clip-path: var(--vt-c1);
   }
-}
 }
 html:active-view-transition-type(home)::view-transition-group(root) {
   animation: none;
