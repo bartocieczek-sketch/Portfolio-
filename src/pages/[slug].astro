@@ -528,7 +528,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__panel :global(.ln-i) {
     display: inline-block;
     transform: translateY(110%);
-    transition: transform 1.1s var(--ease-out) var(--d, 0s);
+    transition: transform 0.8s var(--ease-out) var(--d, 0s);
   }
   .case__panel:not(.is-out) :global(.ln-i) {
     transform: none;
@@ -621,16 +621,18 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   :global(html.from-card .case__stack > *) {
     transform: translateX(48px);
   }
+  :global(html.from-card.case-in .case__stack > *),
+  :global(html.from-card.case-in .case__gallery > *),
   :global(html.from-card.cover-landed .case__stack > *),
   :global(html.from-card.cover-landed .case__gallery > *) {
     opacity: 1;
     transform: none;
     transition:
-      opacity 0.6s var(--ease-out),
-      transform 1s var(--ease-out);
+      opacity 0.5s var(--ease-out),
+      transform 0.8s var(--ease-out);
   }
-  :global(html.from-card.cover-landed .case__stack > :nth-child(2)) {
-    transition-delay: 0.08s;
+  :global(html.from-card.case-in .case__gallery > :nth-child(2)) {
+    transition-delay: 0.05s;
   }
   /* Leaving for home: the entrance played back — the same fades and slides,
      one after another, just a little quicker. The story fades out line by
@@ -832,8 +834,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     const blocks = [
       ...panel.querySelectorAll<HTMLElement>('.case__title, .case__intro p, .case__intro li, .case__live, .case__meta dd'),
     ];
-    const STEP = 0.08; // between blocks
-    const LINE = 0.06; // between lines of a block
+    const STEP = 0.05; // between blocks
+    const LINE = 0.035; // between lines of a block
     const wrap = (node: Node, out: HTMLElement[]) => {
       if (node.nodeType === 3) {
         const parts = (node.textContent || '').split(/(\s+)/);
@@ -904,17 +906,18 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         fromCard ||= !!sessionStorage.getItem('vt-card');
       } catch (err) {}
       const landed = new Promise<void>((resolve) => {
-        if (!fromCard || root.classList.contains('cover-landed')) return resolve();
+        const ready = () => root.classList.contains('case-in') || root.classList.contains('cover-landed');
+        if (!fromCard || ready()) return resolve();
         new MutationObserver((_, mo) => {
-          if (!root.classList.contains('cover-landed')) return;
+          if (!ready()) return;
           mo.disconnect();
           resolve();
         }).observe(root, { attributes: true, attributeFilter: ['class'] });
       });
       // the sharp picture gets a short grace (never holds the panel back for
       // long on a heavy image), so every project opens on the same beat
-      const sharp = Promise.race([heroReady, new Promise<void>((r) => window.setTimeout(r, 350))]);
-      Promise.all([landed, sharp]).then(() => window.setTimeout(openOnce, fromCard ? 120 : 250));
+      // (straight away: the story rises in with the pictures, mid-flight)
+      landed.then(() => window.setTimeout(openOnce, fromCard ? 0 : 150));
       // never wait forever (slow network)
       window.setTimeout(openOnce, 3500);
     });

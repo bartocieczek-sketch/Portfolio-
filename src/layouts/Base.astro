@@ -323,14 +323,20 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
                 if (!uniform) window.__vtSizes(pill, { w: f.width, h: f.height }, true, focus);
               }
             } catch (err) {}
-            // the rest of the case study settles in around the landed cover
+            // the rest of the case study comes in while the cover is still
+            // flying (a third of the way), so it all arrives together
             document.documentElement.classList.add('from-card');
+            e.viewTransition.ready.then(function () {
+              setTimeout(function () {
+                document.documentElement.classList.add('case-in');
+              }, 280);
+            });
             e.viewTransition.finished.finally(function () {
               cover.style.viewTransitionName = '';
               // the cover is in place: now the rest of the pictures come in
               document.documentElement.classList.add('cover-landed');
               setTimeout(function () {
-                document.documentElement.classList.remove('from-card', 'cover-landed');
+                document.documentElement.classList.remove('from-card', 'cover-landed', 'case-in');
               }, 1600);
             });
           }
