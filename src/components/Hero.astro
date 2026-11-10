@@ -205,9 +205,9 @@ const LAPS = 3;
       var K = big.matches ? FOCUS : 0;
       var h = pills[0].offsetHeight;
       var G = (K * h) / 2;
-      var base = pills[0].offsetTop;
+      var base = (pills[0].parentNode).offsetTop;
       for (var i = 0; i < pills.length; i++) {
-        var d = (pills[i].offsetTop - base - (lap + wrapped)) / step;
+        var d = ((pills[i].parentNode).offsetTop - base - (lap + wrapped)) / step;
         var a = Math.min(1, Math.abs(d));
         var w = (1 + Math.cos(Math.PI * a)) / 2;
         var t = K ? 'translate3d(0,' + ((d < 0 ? -1 : 1) * G * (1 - w)).toFixed(2) + 'px,0) scale(' + (1 + K * w).toFixed(4) + ')' : '';
@@ -237,8 +237,8 @@ const LAPS = 3;
         if (pills[N + i].getAttribute('href').replace(/\/$/, '').split('/').pop() === d.slug) idx = i;
       }
       if (idx < 0) return;
-      var step = pills[1].offsetTop - pills[0].offsetTop;
-      var lap = pills[N].offsetTop - pills[0].offsetTop;
+      var step = (pills[1].parentNode).offsetTop - (pills[0].parentNode).offsetTop;
+      var lap = (pills[N].parentNode).offsetTop - (pills[0].parentNode).offsetTop;
       // where the column was when this project was clicked (else: centre it)
       var from = null;
       try {
@@ -561,8 +561,8 @@ const LAPS = 3;
     let step = 1; // distance between two covers
     let lap = 1; // height of one full set
     const measure = () => {
-      step = pills[1] ? pills[1].offsetTop - pills[0].offsetTop : 1;
-      lap = pills[N] ? pills[N].offsetTop - pills[0].offsetTop : step * N;
+      step = pills[1] ? (pills[1].parentNode as HTMLElement).offsetTop - (pills[0].parentNode as HTMLElement).offsetTop : 1;
+      lap = pills[N] ? (pills[N].parentNode as HTMLElement).offsetTop - (pills[0].parentNode as HTMLElement).offsetTop : step * N;
     };
     measure();
     window.addEventListener('resize', measure);
@@ -798,7 +798,7 @@ const LAPS = 3;
           const idx = pills.slice(N, 2 * N).findIndex((el) => slugOf(el) === back.slug);
           if (idx >= 0) {
             pos = target = idx * step;
-            const lapH = pills[N].offsetTop - pills[0].offsetTop;
+            const lapH = (pills[N].parentNode as HTMLElement).offsetTop - (pills[0].parentNode as HTMLElement).offsetTop;
             const wrapped = ((pos % lapH) + lapH) % lapH;
             list.style.transform = `translate3d(0, ${(-(lapH + wrapped)).toFixed(2)}px, 0)`;
             p = pills[N + idx];
