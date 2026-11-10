@@ -1136,10 +1136,9 @@ const LAPS = 3;
     const LENS_IN = 380;
     return {
       ready(els: HTMLElement[]) {
-        return els.every((el) => {
-          load(el);
-          return !!get(el);
-        });
+        // start every load first (every() would stop at the first missing one)
+        els.forEach(load);
+        return els.every((el) => !!get(el));
       },
       /** place(i, rect) returns where to draw a cover (top + speed) or null to skip it */
       /** maxElong: the most a cover may lengthen with speed (from the gap
