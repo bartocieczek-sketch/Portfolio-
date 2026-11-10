@@ -15,9 +15,11 @@ if (!settings) return new Response('Content not found', { status: 500 });
     <header class="about__top">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
     </header>
-    <h1 class="t-display about__say" data-split style="--split-delay:700ms">
-      Hi, I’m Bart — a designer &amp; developer pushing my horizons further with AI every day. Fuelled by sport and way too much coffee.
-    </h1>
+    <div class="about__say">
+      <h1 class="t-display" data-split style="--split-delay:700ms">
+        Hi, I’m Bart — a designer &amp; developer pushing my horizons further with AI every day. Fuelled by sport and way too much coffee.
+      </h1>
+    </div>
     <canvas class="about__mark" data-monogram aria-label="B monogram" role="img"></canvas>
   </main>
 </Base>
@@ -44,10 +46,14 @@ if (!settings) return new Response('Content not found', { status: 500 });
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: none;
+  }
+  .about__say h1 {
+    margin: 0;
+    max-width: 1400px;
     text-align: center;
     font-size: clamp(40px, 7.4vw, 120px);
     color: var(--text-primary);
-    pointer-events: none;
   }
   .about__mark {
     z-index: 2;
