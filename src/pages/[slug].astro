@@ -149,8 +149,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     <!-- Two columns: the pictures on the left, the story on the right in a
          panel that stays put (sticky) while the pictures scroll. The cover
          grows up to where the panel starts; the panel slides in once. -->
-    <a class="case__back-btn" href={href(Astro.locals, '/')} aria-label="Back to work">
-      <svg class="case__back-arrow" viewBox="0 0 28 28" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 14H5.5M12.5 7l-7 7 7 7" /></svg>
+    <a class="case__back-btn" href={href(Astro.locals, '/')} aria-label="Close project">
+      <svg class="case__back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
     </a>
 
     <section class="case__row">
@@ -372,9 +372,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__back-btn {
     position: fixed;
     z-index: 20;
+    /* close: top right, 24px in from the pictures' corner */
     top: 36px;
-    /* over the cover's top-left corner, now that the story sits to its left */
-    left: calc(24px + var(--panel-w) + 16px + 12px);
+    right: 36px;
     display: grid;
     place-items: center;
     width: 52px;
@@ -405,7 +405,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       background-color: #fff;
     }
     .case__back-btn:hover .case__back-arrow {
-      transform: translateX(-3px);
+      transform: rotate(90deg);
     }
   }
 
@@ -702,12 +702,13 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     animation: case-back-in 0.9s 0.35s var(--ease-out) backwards;
   }
   :global(html.from-card) .case__back-btn {
-    animation: case-back-in 0.9s 0.55s var(--ease-out) backwards;
+    animation: case-back-in 0.8s 0.5s var(--ease-out) backwards;
   }
+  /* it turns into place as it grows in */
   @keyframes case-back-in {
     from {
       opacity: 0;
-      transform: translateX(22px);
+      transform: scale(0.5) rotate(-90deg);
     }
   }
   @keyframes case-rise {
@@ -736,7 +737,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     /* the arrow 24px in from the cover's corner (the page's 12px plus 24) */
     .case__back-btn {
       top: 24px;
-      left: 24px;
+      right: 24px;
+      left: auto;
     }
     /* phones, as on osply: one column, every picture full width in its
        own shape; the cover keeps its 4:5 (so it flies the same way) */

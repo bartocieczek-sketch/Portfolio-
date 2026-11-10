@@ -184,34 +184,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
           a.currentTime = css.currentTime || 0;
           css.cancel();
         }
-        // opening a project: the back button rides in on the flying cover,
-        // sitting in its corner the whole way (a little smaller while the
-        // cover is small), fading up as it travels, settling where it lives
-        var btn = !back && document.querySelector('.case__back-btn');
-        var coverEl = !back && document.querySelector('[data-vt-cover]');
-        if (btn && coverEl) {
-          var br = btn.getBoundingClientRect();
-          var cr = coverEl.getBoundingClientRect();
-          var ox = br.left - cr.left, oy = br.top - cr.top;
-          var bk = [];
-          for (var j = 0; j <= N; j++) {
-            var ej = es[j];
-            var scj = L(P.s, P.s1, ej);
-            var gx = L(P.fx, P.tx, ej), gy = L(P.fy, P.ty, ej);
-            // the corner of what is visible: the cover's box minus its clip
-            var vx = gx + L(P.c0.x * P.s, P.c1.x * P.s1, ej);
-            var vy = gy + L(P.c0.y * P.s, P.c1.y * P.s1, ej);
-            var bs = 0.6 + 0.4 * Math.min(1, scj / P.s1);
-            bk.push({
-              offset: j / N,
-              transform: 'translate(' + (vx + ox * scj) + 'px,' + (vy + oy * scj) + 'px) scale(' + bs.toFixed(4) + ')',
-              opacity: Math.min(1, Math.max(0, (ej - 0.15) / 0.45)),
-            });
-          }
-          btn.style.animation = 'none';
-          var bpe = '::view-transition-group(case-back)';
-          document.documentElement.animate(bk, { duration: 850, easing: 'linear', fill: 'both', pseudoElement: bpe }).currentTime = a.currentTime;
-        }
+
       };
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
