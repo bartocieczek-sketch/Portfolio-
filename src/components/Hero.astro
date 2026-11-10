@@ -117,22 +117,23 @@ const LAPS = 3;
     <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
   </div>
 
-  <div class="vh__left vh__fade" aria-hidden="true">
-    <span class="vh__stack vh__title">
-      {projects.map((p: any) => <span class="vh__roll">{p.title}</span>)}
-    </span>
-  </div>
-
-  <div class="vh__right vh__fade" aria-hidden="true">
-    <span class="vh__stack vh__year t-label-small">
-      {projects.map((p: any) => <span class="vh__roll">{p.year}</span>)}
+  <!-- Project details: a hairline across the middle of the screen, behind
+       the column, with the centred project's details hanging under it -->
+  <div class="vh__line" aria-hidden="true"></div>
+  <div class="vh__details vh__fade" aria-hidden="true">
+    <span class="vh__stack vh__num">
+      {projects.map((_: any, i: number) => <span class="vh__roll">{String(i + 1).padStart(2, '0')}</span>)}
     </span>
     <span class="vh__stack vh__tags">
-      {projects.map((p: any) => (
-        <span class="vh__roll">
-          {p.tags.map((t: string) => <span>{t}</span>)}
-        </span>
-      ))}
+      {projects.map((p: any) => <span class="vh__roll">{p.tags.join(', ')}</span>)}
+    </span>
+    <span class="vh__names" data-vh-names>
+      <span class="vh__names-track" data-vh-names-track>
+        {Array.from({ length: 3 }, () => projects.map((p: any) => <span class="vh__name">{p.title}</span>))}
+      </span>
+    </span>
+    <span class="vh__stack vh__year">
+      {projects.map((p: any) => <span class="vh__roll">{p.year}</span>)}
     </span>
   </div>
 
@@ -212,6 +213,11 @@ const LAPS = 3;
       [].forEach.call(hero.querySelectorAll('.vh__stack'), function (g) {
         if (g.children[idx]) g.children[idx].classList.add('is-active');
       });
+      var track = hero.querySelector('[data-vh-names-track]');
+      if (track) {
+        track.style.setProperty('--at', String(N + idx));
+        if (track.children[N + idx]) track.children[N + idx].classList.add('is-on');
+      }
       // the cover was off screen on the case study: nothing flies, home simply
       // dissolves in with the column where it was
       if (d.still) return;
@@ -325,26 +331,34 @@ const LAPS = 3;
     opacity: 1;
   }
 
-  /* ---------- Side texts ---------- */
-  .vh__left,
-  .vh__right {
+  /* ---------- Project details ---------- */
+  .vh__line {
+    position: absolute;
+    z-index: 0;
+    left: var(--gutter);
+    right: var(--gutter);
+    top: 50%;
+    height: 1px;
+    background: var(--line);
+    pointer-events: none;
+    transform-origin: 50% 50%;
+    transition: transform 1.1s var(--ease-in-out);
+  }
+  .vh__details {
+    --row: 18px;
     position: absolute;
     z-index: 3;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+    left: var(--gutter);
+    right: var(--gutter);
+    top: calc(50% + 10px);
+    display: grid;
+    grid-template-columns: 9% 1fr 16% auto;
+    align-items: start;
+    font-size: 14px;
+    line-height: var(--row);
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
     pointer-events: none;
-  }
-  .vh__left {
-    right: calc(50% + var(--pill-w) / 2 + 56px);
-    align-items: flex-end;
-    text-align: right;
-  }
-  .vh__right {
-    left: calc(50% + var(--pill-w) / 2 + 56px);
-    align-items: flex-start;
   }
   /* rows share one grid cell; the active one sits in place, the rest wait
      above or below and roll through */
@@ -359,7 +373,7 @@ const LAPS = 3;
     opacity: 0;
     transition: transform 0.6s var(--ease-out), opacity 0.4s ease;
   }
-  .vh.is-instant .vh__roll {
+  .vh.is-instant :is(.vh__roll, .vh__names-track, .vh__name) {
     transition: none;
   }
   .vh__roll.is-past {
@@ -369,25 +383,33 @@ const LAPS = 3;
     transform: none;
     opacity: 1;
   }
-  .vh__left .vh__roll {
+  .vh__year {
     justify-self: end;
   }
-  .vh__title {
-    font-family: var(--font-head);
-    font-weight: 500;
-    font-size: clamp(30px, 3.2vw, 52px);
-    line-height: 1.05;
-    letter-spacing: -0.04em;
-    color: var(--text-primary);
-    padding-bottom: 0.08em;
+  .vh__year .vh__roll {
+    justify-self: end;
   }
-  .vh__tags .vh__roll {
+  /* every project's name in a list: the centred one sits on the row, the
+     next ones trail below it and fade out */
+  .vh__names {
+    position: relative;
+    height: calc(var(--row) * 4);
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0 calc(var(--row) * 1.5), rgba(0, 0, 0, 0.55) calc(var(--row) * 2.5), transparent);
+    mask-image: linear-gradient(to bottom, #000 0 calc(var(--row) * 1.5), rgba(0, 0, 0, 0.55) calc(var(--row) * 2.5), transparent);
+  }
+  .vh__names-track {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    font-size: 15px;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
+    transform: translateY(calc(var(--at, 0) * var(--row) * -1));
+    transition: transform 0.6s var(--ease-out);
+  }
+  .vh__name {
+    white-space: nowrap;
+    color: var(--text-secondary);
+    transition: color 0.4s ease;
+  }
+  .vh__name.is-on {
     color: var(--text-primary);
   }
 
@@ -436,16 +458,27 @@ const LAPS = 3;
 
   /* Texts come in once the covers have landed: the side rows roll up into
      place one after another, the corner texts rise in */
-  .vh.is-entering .vh__title .vh__roll {
+  .vh.is-entering .vh__num .vh__roll {
     transition-duration: 0.9s;
-  }
-  .vh.is-entering .vh__year .vh__roll {
-    transition-duration: 0.9s;
-    transition-delay: 90ms;
   }
   .vh.is-entering .vh__tags .vh__roll {
     transition-duration: 0.9s;
-    transition-delay: 170ms;
+    transition-delay: 70ms;
+  }
+  .vh.is-entering .vh__names {
+    transition: opacity 0.9s var(--ease-out) 140ms, transform 0.9s var(--ease-out) 140ms;
+  }
+  .vh.is-entering .vh__year .vh__roll {
+    transition-duration: 0.9s;
+    transition-delay: 210ms;
+  }
+  /* the hairline draws out from the middle as the covers land */
+  :global(html.is-arriving) .vh__line {
+    transform: scaleX(0);
+  }
+  :global(html.is-arriving) .vh__names {
+    opacity: 0;
+    transform: translateY(8px);
   }
   .vh__intro > *,
   .vh__hint {
@@ -475,36 +508,12 @@ const LAPS = 3;
       --pill-w: 66vw;
       --gap: 18px;
     }
-    .vh__left,
-    .vh__right {
-      top: auto;
-      transform: none;
-      bottom: 64px;
-      gap: 8px;
-    }
-    .vh__left {
-      right: auto;
-      left: var(--gutter);
-      align-items: flex-start;
-      text-align: left;
-    }
-    .vh__left .vh__roll {
-      justify-self: start;
-    }
-    .vh__right {
-      left: auto;
-      right: var(--gutter);
-      align-items: flex-end;
-      text-align: right;
-    }
-    .vh__right .vh__roll {
-      justify-self: end;
+    .vh__details {
+      grid-template-columns: 12% 1fr auto;
+      font-size: 13px;
     }
     .vh__tags {
       display: none;
-    }
-    .vh__title {
-      font-size: 26px;
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -634,6 +643,43 @@ const LAPS = 3;
           el.classList.toggle('is-past', k !== i && forward);
         });
       }
+      moveNames(i, prev, forward);
+    };
+    // the name list keeps moving the way the column does: across the loop
+    // seam it carries on into the next copy, then quietly jumps back to the
+    // middle copy once it has settled
+    const namesTrack = hero.querySelector<HTMLElement>('[data-vh-names-track]');
+    const names = namesTrack ? [...namesTrack.children] : [];
+    let namesAt = -1;
+    let namesFix = 0;
+    const moveNames = (i: number, prev: number, forward: boolean) => {
+      if (!namesTrack) return;
+      if (namesAt < 0) {
+        const fromInline = Number(namesTrack.style.getPropertyValue('--at'));
+        namesAt = Number.isFinite(fromInline) && fromInline >= N ? fromInline : N + i;
+      }
+      if (prev >= 0) {
+        let d = (i - prev + N) % N;
+        if (!forward) d -= N;
+        namesAt += d;
+      } else namesAt = N + i;
+      namesTrack.style.setProperty('--at', String(namesAt));
+      names.forEach((el, k) => el.classList.toggle('is-on', k === namesAt));
+      window.clearTimeout(namesFix);
+      namesFix = window.setTimeout(() => {
+        const home = N + (((namesAt % N) + N) % N);
+        if (home === namesAt) return;
+        namesTrack.style.transition = 'none';
+        names.forEach((el) => ((el as HTMLElement).style.transition = 'none'));
+        namesAt = home;
+        namesTrack.style.setProperty('--at', String(namesAt));
+        names.forEach((el, k) => el.classList.toggle('is-on', k === namesAt));
+        namesTrack.getBoundingClientRect();
+        requestAnimationFrame(() => {
+          namesTrack.style.transition = '';
+          names.forEach((el) => ((el as HTMLElement).style.transition = ''));
+        });
+      }, 700);
     };
 
     // ---------- Edge lens gate ----------
