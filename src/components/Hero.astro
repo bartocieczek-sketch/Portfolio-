@@ -906,7 +906,10 @@ const LAPS = 3;
         e.preventDefault();
         if (opening) return;
         opening = true;
-        gateTo(0, 320);
+        // the edge lens flattens out quickly before home is captured, so the
+        // home left behind (blurred under the case study) matches the flat
+        // stand-in for it there exactly
+        gateTo(0, 140);
         warm(p.href);
         const domImg = p.querySelector('img');
         if (domImg) domImg.loading = 'eager';
@@ -917,7 +920,12 @@ const LAPS = 3;
           centring = null;
           // 2. hand the cover to the view transition: the (decoded) DOM image
           //    takes over from WebGL in the same frame, framed identically
-          decoded.then(() => {
+          const flat = new Promise<void>((res) => {
+            const t0 = performance.now();
+            const wait = () => (gateAt(performance.now()) < 0.02 || performance.now() - t0 > 200 ? res() : requestAnimationFrame(wait));
+            wait();
+          });
+          Promise.all([decoded, flat]).then(() => {
             const i = pills.indexOf(p);
             p.classList.add('is-opening');
             // the picture carries WebGL's hover zoom in its size

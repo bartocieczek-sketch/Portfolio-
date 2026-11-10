@@ -228,10 +228,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     opacity: 0.4;
     transition: opacity 0.7s var(--ease-out);
   }
-  /* while a cover is flying in (or out) the real home is what shows behind;
-     this stand-in only fades in once the cover has landed, and is gone
-     before the page leaves, so the two never show at once */
-  :global(html.from-card:not(.cover-landed)) .case__under,
+  /* opening: the real home (flattened, blurred, fading out) and this
+     stand-in (fading in with the page) sit in exactly the same places, so
+     they melt into each other; leaving: it is gone before the page goes */
   .case.is-leaving .case__under {
     opacity: 0;
     transition-duration: 0.3s;
@@ -247,7 +246,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     overflow: hidden;
     /* the neighbours sit one cover plus the gap away, pushed out by the
        middle one's extra size, as on home */
-    transform: translateY(calc(var(--o) * (var(--pill-h) * 1.06 + 28px)));
+    transform: translateY(calc(var(--o) * (var(--pill-h) * (1 + var(--uk, 0.12) / 2) + var(--ug, 28px))));
     filter: grayscale(1);
   }
   .case__under-pill.is-on {
@@ -269,8 +268,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     opacity: 0.25;
   }
   @media (max-width: 809px) {
+    /* as the phone home column: narrower covers, a much larger middle one */
     .case__under {
-      --pill-w: 66vw;
+      --pill-w: 48vw;
+      --uk: 0.5;
+      --ug: 12px;
     }
   }
 

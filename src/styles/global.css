@@ -538,24 +538,24 @@ html:active-view-transition-type(cover-back)::view-transition-new(root) {
 @keyframes vt-focus-in {
   from {
     filter: blur(9px) brightness(0.97);
-    transform: scale(1.015);
+    transform: none;
     opacity: 0;
   }
   to {
     filter: blur(0) brightness(1);
-    transform: scale(1);
+    transform: none;
     opacity: 1;
   }
 }
 @keyframes vt-defocus {
   from {
     filter: blur(0) brightness(1);
-    transform: scale(1);
+    transform: none;
     opacity: 1;
   }
   to {
     filter: blur(9px) brightness(0.97);
-    transform: scale(1.015);
+    transform: none;
     opacity: 0;
   }
 }
