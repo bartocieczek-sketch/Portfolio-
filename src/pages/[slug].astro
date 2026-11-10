@@ -385,9 +385,30 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     font-size: 15px;
     letter-spacing: -0.01em;
     color: var(--text-primary);
-    border-bottom: 1px solid currentColor;
-    padding-bottom: 1px;
+    position: relative;
+    padding-bottom: 2px;
     transition: opacity 0.2s ease;
+  }
+  /* its underline draws in from the left once the words have risen */
+  .case__live::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    transition: transform 0.9s var(--ease-out) var(--ul, 0.4s);
+  }
+  .case__panel:not(.is-out) .case__live::after {
+    transform: none;
+  }
+  .case.is-leaving .case__live::after {
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+    transition: transform 0.45s var(--ease-in-out);
   }
   @media (hover: hover) and (pointer: fine) {
     .case__live:hover {
@@ -716,6 +737,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       }
       t += STEP + Math.max(0, line) * LINE * 0.5;
     });
+    const live = panel.querySelector<HTMLElement>('.case__live');
+    const liveD = live?.querySelector<HTMLElement>('.ln-i')?.style.getPropertyValue('--d');
+    if (live && liveD) live.style.setProperty('--ul', (parseFloat(liveD) + 0.35).toFixed(3) + 's');
     // the grey labels fade in a beat after the values beside them
     panel.querySelectorAll<HTMLElement>('[data-pm-fade]').forEach((el) => {
       const dd = el.nextElementSibling?.querySelector<HTMLElement>('.ln-i');
