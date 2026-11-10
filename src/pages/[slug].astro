@@ -227,17 +227,22 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   /* the main visual in its own 4:5 shape, as big as the screen allows: the
      whole picture is visible (nothing cropped away), and the home pill only
      has to grow, not change shape, on the way in */
+  /* The cover and, beside it, two pictures one above the other in exactly
+     the shape of the paired pictures below (0.82), sized so the three end
+     flush with the gallery's right edge:
+       cover W (4:5, height 1.25W) + 8 + stack w, with
+       w = 0.82 * (1.25W - 8) / 2  →  W = (row - 4.72px) / 1.5125 */
   .case__top {
     grid-area: top;
     display: flex;
     gap: 8px;
-    align-items: stretch;
+    align-items: flex-start;
+    container-type: inline-size;
   }
   .case__cover {
     position: relative;
     flex: none;
-    /* as tall as the screen allows, but always leaving room beside it */
-    width: min(64%, calc((100svh - 48px) * 0.8));
+    width: calc((100cqw - 4.72px) / 1.5125);
     aspect-ratio: 4 / 5;
     overflow: hidden;
     border-radius: var(--photo-radius);
@@ -251,9 +256,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     gap: 8px;
   }
   .case__stack > :global(.media) {
-    flex: 1;
-    min-height: 0;
-    aspect-ratio: auto;
+    flex: none;
+    aspect-ratio: 0.82;
   }
   .case__stack :global(.media img),
   .case__stack :global(.media video) {
