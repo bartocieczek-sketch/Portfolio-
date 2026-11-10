@@ -190,20 +190,25 @@ const LAPS = 3;
         rowH = tracks[0].firstElementChild.offsetHeight || 18;
       }
       var n = tracks[0].children.length / 3;
-      // still scroll-linked, but the rows change over the middle of the way
-      // between two covers, so while the column rests or drifts slowly near
-      // a cover they sit exactly on the line instead of peeking half-way
-      var whole = Math.floor(f), fr = f - whole;
-      var e = Math.min(1, Math.max(0, (fr - 0.2) / 0.6));
-      f = whole + e * e * (3 - 2 * e);
-      var y = (-(n + f) * rowH).toFixed(2);
-      for (var i = 0; i < tracks.length; i++) tracks[i].style.transform = 'translate3d(0,' + y + 'px,0)';
-      var k = n + Math.round(f);
-      var names = tracks[2];
-      if (k !== on && names && names.children[k]) {
-        if (names.children[on]) names.children[on].classList.remove('is-on');
-        names.children[k].classList.add('is-on');
-        on = k;
+      // as osply: every row sits at its distance from the centred project
+      // (one row per project), fully there on the line and fading out over
+      // one row's travel; the names below stay faintly visible (22%)
+      var at = n + f;
+      var y = (-at * rowH).toFixed(2);
+      for (var i = 0; i < tracks.length; i++) {
+        var tr = tracks[i];
+        tr.style.transform = 'translate3d(0,' + y + 'px,0)';
+        var isNames = i === 2;
+        var cells = tr.children;
+        for (var k = 0; k < cells.length; k++) {
+          var d = Math.abs(k - at);
+          var o = isNames ? (k < at - 1 ? 0 : 0.22 + 0.78 * Math.max(0, 1 - d)) : Math.max(0, 1 - d);
+          var os = o.toFixed(3);
+          if (cells[k]._o !== os) {
+            cells[k]._o = os;
+            cells[k].style.opacity = os;
+          }
+        }
       }
     };
     window.addEventListener('resize', function () { tracks = null; });
@@ -430,16 +435,9 @@ const LAPS = 3;
     text-align: right;
   }
   .vh__names {
-    height: calc(var(--row) * 4.5);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0 var(--row), rgba(0, 0, 0, 0.6) calc(var(--row) * 2), transparent);
-    mask-image: linear-gradient(to bottom, #000 0 var(--row), rgba(0, 0, 0, 0.6) calc(var(--row) * 2), transparent);
-  }
-  .vh__name {
-    color: var(--text-secondary);
-    transition: color 0.35s ease;
-  }
-  .vh__name.is-on {
-    color: var(--text-primary);
+    height: calc(var(--row) * 5);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0 calc(var(--row) * 4), transparent);
+    mask-image: linear-gradient(to bottom, #000 0 calc(var(--row) * 4), transparent);
   }
 
   .vh__intro {
@@ -697,6 +695,65 @@ const LAPS = 3;
         stepBy(-1);
       }
     });
+
+    // ---------- Sound ----------
+    // As osply: a tiny synthesized tick (a falling sine blip through a low
+    // pass, with a short filtered noise click), pitched a little per project.
+    // Browsers only allow sound after a click or key press, so it starts
+    // working from the first one.
+    let actx: AudioContext | null = null;
+    let lastTick = 0;
+    let tickAt: number | null = null;
+    const VOLUME = 0.3;
+    const unlock = () => {
+      try {
+        if (!actx) actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+        if (actx.state === 'suspended') actx.resume();
+      } catch (err) {}
+    };
+    ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'].forEach((t) => window.addEventListener(t, unlock, { passive: true, capture: true }));
+    const tick = (i: number) => {
+      if (!actx || actx.state !== 'running' || reduceMotion) return;
+      const now = performance.now();
+      if (now - lastTick < 45) return;
+      lastTick = now;
+      const t = actx.currentTime;
+      const f = 110 * Math.pow(1.07, i % 6);
+      const lp = actx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 900;
+      lp.Q.value = 0.5;
+      lp.connect(actx.destination);
+      const osc = actx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f * 1.7, t);
+      osc.frequency.exponentialRampToValueAtTime(f, t + 0.03);
+      const g = actx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(VOLUME, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+      osc.connect(g);
+      g.connect(lp);
+      osc.start(t);
+      osc.stop(t + 0.1);
+      const len = Math.floor(actx.sampleRate * 0.02);
+      const buf = actx.createBuffer(1, len, actx.sampleRate);
+      const ch = buf.getChannelData(0);
+      for (let k = 0; k < len; k++) ch[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / len, 4);
+      const src = actx.createBufferSource();
+      src.buffer = buf;
+      const bp = actx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 500 * Math.pow(1.07, i % 6);
+      bp.Q.value = 0.8;
+      const ng = actx.createGain();
+      ng.gain.setValueAtTime(VOLUME * 0.25, t);
+      ng.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+      src.connect(bp);
+      bp.connect(ng);
+      ng.connect(lp);
+      src.start(t);
+    };
 
     // ---------- Project details ----------
     // (drawn from the column's position every frame, see __vhDetails)
@@ -1041,6 +1098,12 @@ const LAPS = 3;
         if (glow[i] > 0) glow[i] = pills[i].classList.contains('is-opening') ? 1 : Math.max(0, glow[i] - dt / 0.9);
       }
       details(wrapped / step);
+      // a soft tick each time a new project reaches the middle
+      const nowAt = Math.round(pos / step);
+      if (nowAt !== tickAt) {
+        if (tickAt !== null) tick(((nowAt % N) + N) % N);
+        tickAt = nowAt;
+      }
 
       if (!gl) return;
       const speed = clamp(Math.abs(vel) / 45);

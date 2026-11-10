@@ -106,10 +106,79 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
         st.setProperty('--vt-c0', 'inset(' + clipFrom.y / s + 'px ' + clipFrom.x / s + 'px round ' + clipFrom.r / s + 'px)');
         st.setProperty('--vt-c1', 'inset(' + clipTo.y / s1 + 'px ' + clipTo.x / s1 + 'px round ' + clipTo.r / s1 + 'px)');
         document.documentElement.classList.add('vt-uniform');
+        window.__vtFP = {
+          fx: from.x, fy: from.y, s: s, tx: to.x, ty: to.y, s1: s1, nw: nw, nh: nw * (to.h / to.w),
+          c0: { x: clipFrom.x / s, y: clipFrom.y / s, r: clipFrom.r / s },
+          c1: { x: clipTo.x / s1, y: clipTo.y / s1, r: clipTo.r / s1 },
+        };
         return true;
+      };
+      // Like osply's: on its way the picture tilts a little in perspective,
+      // leaning into its travel (strongest while it moves fastest, flat again
+      // as it lands). The same flight as the CSS one (same curve, length and
+      // clip), sampled into keyframes so the tilt can ride along; it takes
+      // over from the CSS animation in its first frame.
+      var bez = function (x1, y1, x2, y2) {
+        return function (t) {
+          var lo = 0, hi = 1, u = t;
+          for (var i = 0; i < 24; i++) {
+            u = (lo + hi) / 2;
+            var x = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u;
+            if (x < t) lo = u; else hi = u;
+          }
+          return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
+        };
+      };
+      var flightEase = bez(0.2, 0, 0, 1);
+      var tiltFly = function () {
+        var P = window.__vtFP;
+        if (!P || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        var pe = '::view-transition-group(project-cover)';
+        var css = document.getAnimations().filter(function (a) {
+          return a.effect && a.effect.pseudoElement === pe;
+        })[0];
+        var N = 40, kf = [], es = [];
+        for (var i = 0; i <= N; i++) es.push(flightEase(i / N));
+        var vmax = 0, vs = [];
+        for (var j = 0; j <= N; j++) {
+          var v = (es[Math.min(N, j + 1)] - es[Math.max(0, j - 1)]) / ((Math.min(N, j + 1) - Math.max(0, j - 1)) / N);
+          vs.push(v);
+          if (v > vmax) vmax = v;
+        }
+        // which way it travels decides the lean
+        var dx = P.tx + (P.nw * P.s1) / 2 - (P.fx + (P.nw * P.s) / 2);
+        var dy = P.ty + (P.nh * P.s1) / 2 - (P.fy + (P.nh * P.s) / 2);
+        var clampDeg = function (d) { return Math.max(-11, Math.min(11, d)); };
+        var ry = clampDeg((dx / window.innerWidth) * 26);
+        var rx = clampDeg((-dy / window.innerHeight) * 26);
+        var persp = Math.max(P.nw, P.nh) * 2.4;
+        var L = function (a, b, e) { return a + (b - a) * e; };
+        for (var k = 0; k <= N; k++) {
+          var e = es[k], env = vmax ? vs[k] / vmax : 0;
+          // ease the lean out completely at both ends
+          env *= Math.sin(Math.PI * Math.min(1, k / N));
+          var x = L(P.fx, P.tx, e), y = L(P.fy, P.ty, e), sc = L(P.s, P.s1, e);
+          kf.push({
+            offset: k / N,
+            transform:
+              'translate(' + x + 'px,' + y + 'px) scale(' + sc + ') translate(' + P.nw / 2 + 'px,' + P.nh / 2 + 'px) perspective(' + persp + 'px) rotateX(' +
+              (rx * env).toFixed(3) + 'deg) rotateY(' + (ry * env).toFixed(3) + 'deg) translate(' + -P.nw / 2 + 'px,' + -P.nh / 2 + 'px)',
+            clipPath: 'inset(' + L(P.c0.y, P.c1.y, e) + 'px ' + L(P.c0.x, P.c1.x, e) + 'px round ' + L(P.c0.r, P.c1.r, e) + 'px)',
+          });
+        }
+        var a = document.documentElement.animate(kf, { duration: 850, easing: 'linear', fill: 'both', pseudoElement: pe });
+        if (css) {
+          a.currentTime = css.currentTime || 0;
+          css.cancel();
+        }
       };
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
+        var vt = e.viewTransition;
+        vt.ready.then(function () {
+          if (document.documentElement.classList.contains('vt-uniform')) tiltFly();
+          window.__vtFP = null;
+        }).catch(function () {});
         e.viewTransition.finished.finally(function () {
           document.documentElement.classList.remove('vt-uniform');
         });
