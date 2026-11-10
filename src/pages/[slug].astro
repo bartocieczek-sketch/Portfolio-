@@ -694,7 +694,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
   }
   @media (max-width: 809px) {
-    /* phones: the main picture is 4:3, not the whole screen */
+    /* phones, as on osply: one column, every picture full width in its
+       own shape; the cover keeps its 4:5 (so it flies the same way) */
     .case__top {
       flex-direction: column;
     }
@@ -702,7 +703,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     .case__cover:only-child {
       flex: none;
       width: 100%;
-      aspect-ratio: 4 / 3;
+      aspect-ratio: 4 / 5;
     }
     .case__stack {
       flex: none;
@@ -727,7 +728,46 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       padding: 28px 0 8px;
     }
     .case__gallery {
+      gap: 12px;
+    }
+    .case__grow {
+      flex-direction: column;
+      gap: 12px;
+    }
+    .case__grow.is-single {
+      width: 100%;
+    }
+    .case__grow > :global(.media.media--fit),
+    .case__stack > :global(.media.media--fit) {
+      flex: none;
+      width: 100%;
+    }
+    .case__top {
+      gap: 12px;
+    }
+    /* the facts as osply lists them: label on the left, value on the right */
+    .case__meta {
       grid-template-columns: 1fr;
+      gap: 6px;
+      padding-top: 16px;
+    }
+    .case__meta > div {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .case__meta dt {
+      margin: 0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .case__meta dd {
+      text-align: right;
+    }
+    .case__title {
+      font-size: 30px;
     }
     .next {
       --pill-w: 58vw;

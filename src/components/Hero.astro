@@ -177,8 +177,9 @@ const LAPS = 3;
   // stays the same. Driven by the column's position (layout px, never by
   // measured, already-scaled boxes); desktop only.
   (function () {
-    var big = matchMedia('(min-width: 810px) and (hover: hover) and (pointer: fine)');
-    var FOCUS = 0.12;
+    var big = matchMedia('(min-width: 810px)');
+    // desktop: a touch larger; phones (as osply): half as wide again
+    var FOCUS = 0.12, FOCUS_PHONE = 0.5;
     var last = [];
     // the details under the line: f = which project is centred, as a
     // fraction (0..N) of the way along the column
@@ -213,7 +214,7 @@ const LAPS = 3;
     };
     window.addEventListener('resize', function () { tracks = null; });
     window.__vhFocus = function (pills, step, lap, wrapped) {
-      var K = big.matches ? FOCUS : 0;
+      var K = big.matches ? FOCUS : FOCUS_PHONE;
       var h = pills[0].offsetHeight;
       var G = (K * h) / 2;
       var base = (pills[0].parentNode).offsetTop;
@@ -529,16 +530,41 @@ const LAPS = 3;
       display: none;
     }
   }
+  /* Phones, as on osply: the column alone on screen, the middle cover much
+     larger than the ones coming in (see __vhFocus), the hairline through
+     it, and the statement at the bottom; the detail rows stay out of the
+     way on a narrow screen */
   @media (max-width: 809px) {
     .vh {
-      --pill-w: 66vw;
-      --gap: 18px;
+      --pill-w: 48vw;
+      --gap: 12px;
     }
     .vh__details {
-      grid-template-columns: 12% 1fr auto;
-      font-size: 13px;
+      display: none;
     }
-    .vh__tags {
+    .vh__line {
+      left: 0;
+      right: 0;
+    }
+    .vh__hint {
+      display: none;
+    }
+    .vh__intro {
+      display: flex;
+      left: var(--gutter);
+      right: var(--gutter);
+      width: auto;
+      bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px));
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+    }
+    .vh__intro .vh__statement {
+      font-size: 13px;
+      line-height: 1.3;
+      max-width: 34ch;
+    }
+    .vh__intro .badge {
       display: none;
     }
   }
