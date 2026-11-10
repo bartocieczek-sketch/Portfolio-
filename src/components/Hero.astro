@@ -669,6 +669,8 @@ const LAPS = 3;
         if (done) return;
         done = true;
         release();
+        // the drift only starts again a quiet moment after the landing
+        touchInput();
       };
       document.addEventListener('cover-back:done', go, { once: true });
       window.setTimeout(go, 1800);
@@ -693,8 +695,10 @@ const LAPS = 3;
     }
     window.addEventListener('pageshow', (e) => {
       if (!(e as PageTransitionEvent).persisted) return;
-      // back on home: the lens grows back in, from flat
+      // back on home: the lens grows back in, from flat; and no drift yet
       gateTo(1, 700, 0);
+      drift = 0;
+      touchInput();
       opening = false;
       centring = null;
       // nothing is hovered any more: WebGL must take the cover back unzoomed
@@ -839,7 +843,18 @@ const LAPS = 3;
       const dt = Math.min(0.05, (now - lastT) / 1000);
       lastT = now;
       const idle =
-        !reduceMotion && !arriving && !opening && !centring && dragY === null && !hovered && !document.hidden && now - lastInput > IDLE_AFTER;
+        !reduceMotion &&
+        !arriving &&
+        !opening &&
+        !centring &&
+        // a cover is flying back into its pill: the column holds perfectly
+        // still until it has landed (then waits the usual quiet moment)
+        !root.classList.contains('is-cover-back') &&
+        !pills.some((el) => el.classList.contains('is-opening')) &&
+        dragY === null &&
+        !hovered &&
+        !document.hidden &&
+        now - lastInput > IDLE_AFTER;
       // ease in slowly, ease out quickly
       drift += ((idle ? DRIFT : 0) - drift) * (idle ? 0.02 : 0.15);
       if (Math.abs(drift) > 0.01) {
