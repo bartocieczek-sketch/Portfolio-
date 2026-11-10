@@ -3,7 +3,6 @@ import { PortableText } from 'astro-portabletext';
 import { stegaClean } from '@sanity/client/stega';
 import Base from '../layouts/Base.astro';
 import Media from '../components/Media.astro';
-import Footer from '../components/Footer.astro';
 import { PROJECT_ORDER_QUERY, PROJECT_QUERY, SETTINGS_QUERY, srcset, urlFor } from '../lib/sanity';
 import { load } from '../lib/load';
 import { href } from '../lib/preview';
@@ -66,11 +65,12 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
 <Base title={`${stegaClean(project.title)} – ${settings?.name ?? 'Bart Ocieczek'}`} description={description} image={project.cover}>
   <main class="case">
-    <!-- Home, still there underneath: the column as it was left (this project
-         in the middle, larger and in colour, its neighbours black and white,
-         the hairline), seen softly through a heavy blur behind the story -->
+    <!-- Home, still there underneath: the column as it was left (its
+         neighbours black and white, the hairline; the middle slot is empty,
+         its cover is the one that flew up here), seen softly through a heavy
+         blur behind the story -->
     <div class="case__under" aria-hidden="true">
-      {list.length > 0 && index >= 0 && [-1, 0, 1].map((o) => {
+      {list.length > 0 && index >= 0 && [-1, 1].map((o) => {
         const p = list[(index + o + list.length) % list.length];
         return p?.cover?.asset ? (
           <span class:list={['case__under-pill', { 'is-on': o === 0 }]} style={`--o:${o}`}>
@@ -138,40 +138,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       </div>
     </section>
 
-
-
-    <!-- Next project, the way it looks on home: title, the pill, year and
-         tags. Clicking it flies the pill into that project's cover. -->
-    {next && (
-      <a class="next" href={href(Astro.locals, `/${next.slug}`)} data-next>
-        <span class="next__label t-label-small">Next project</span>
-        <div class="next__row">
-          <p class="next__title">{next.cardTitle || next.title}</p>
-          {next.cover?.asset && (
-            <span class="next__pill" data-next-pill>
-              <img
-                src={urlFor(next.cover).width(1000).height(1250).fit('crop').quality(82).url()}
-                width="1000"
-                height="1250"
-                alt=""
-                loading="lazy"
-                decoding="async"
-              />
-            </span>
-          )}
-          <div class="next__meta">
-            {next.year && <span class="t-label-small muted">{next.year}</span>}
-            {next.cardTags?.length > 0 && (
-              <span class="next__tags">
-                {next.cardTags.slice(0, 3).map((t: string) => <span>{t.replace(/,\s*$/, '')}</span>)}
-              </span>
-            )}
-          </div>
-        </div>
-      </a>
-    )}
-
-    {settings && <Footer settings={settings} ctaText={about?.ctaText} />}
   </main>
 </Base>
 
