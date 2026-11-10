@@ -441,7 +441,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
    the pill (its sides and round ends) and opens to the frame's corners */
 @keyframes vt-pill-open {
   from {
-    clip-path: inset(0 var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));
+    clip-path: inset(var(--vt-pill-clip-y, 0px) var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));
   }
   to {
     clip-path: inset(0 0 round var(--radius));
@@ -455,7 +455,7 @@ html:active-view-transition-type(cover-back)::view-transition-image-pair(project
     clip-path: inset(0 0 round var(--radius));
   }
   to {
-    clip-path: inset(0 var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));
+    clip-path: inset(var(--vt-pill-clip-y, 0px) var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));
   }
 }
 html:active-view-transition-type(home)::view-transition-group(root) {

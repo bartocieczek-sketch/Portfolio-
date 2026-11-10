@@ -762,7 +762,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     try {
       sessionStorage.setItem('vt-card', '1');
       sessionStorage.setItem('vt-pill', JSON.stringify(box));
-      sessionStorage.setItem('vt-pill-shape', JSON.stringify({ r: nextPill.offsetWidth / 2, clip: box ? (box.w - nextPill.offsetWidth) / 2 : 0 }));
+      const b = box as { cx?: number; cy?: number; r?: number } | null;
+      sessionStorage.setItem('vt-pill-shape', JSON.stringify({ r: b?.r ?? nextPill.offsetWidth / 2, clip: b?.cx ?? 0, clipY: b?.cy ?? 0 }));
     } catch (err) {}
     requestAnimationFrame(() => {
       location.href = nextLink.href;

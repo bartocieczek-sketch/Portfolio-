@@ -587,11 +587,12 @@ const LAPS = 3;
           //    takes over from WebGL in the same frame, framed identically
           decoded.then(() => {
             const i = pills.indexOf(p);
-            if (domImg) domImg.style.transform = `scale(${(1 / (1 - 0.06 * hover[i])).toFixed(4)})`;
             p.classList.add('is-opening');
-            const box = (window as unknown as { __pillCover(p: HTMLElement, on: boolean): { w: number; h: number } | null }).__pillCover(p, true);
+            // the picture carries WebGL's hover zoom in its size
+            const zoom = 1 / (1 - 0.06 * hover[i]);
+            const box = (window as unknown as { __pillCover(p: HTMLElement, on: boolean, zoom?: number): { w: number; h: number; cx: number; cy: number; r: number } | null }).__pillCover(p, true, zoom);
             try {
-              sessionStorage.setItem('vt-pill-shape', JSON.stringify({ r: p.offsetWidth / 2, clip: box ? (box.w - p.offsetWidth) / 2 : 0 }));
+              sessionStorage.setItem('vt-pill-shape', JSON.stringify({ r: box?.r ?? p.offsetWidth / 2, clip: box?.cx ?? 0, clipY: box?.cy ?? 0 }));
               sessionStorage.setItem('vt-pill', JSON.stringify(box));
               sessionStorage.setItem('vt-card', '1');
               // remember where it was, so coming back lands in the same spot

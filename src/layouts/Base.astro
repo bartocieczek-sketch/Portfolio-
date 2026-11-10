@@ -90,25 +90,36 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       // flight always has the full photo to show at every size; corners are
       // drawn by the transition's clip (--vt-pill-clip, --vt-pill-r).
       // Returns the picture's box, or clears it with on = false.
-      window.__pillCover = function (p, on) {
+      window.__pillCover = function (p, on, zoom) {
         var img = p && p.querySelector('img');
         if (!img) return null;
         var st = img.style;
         if (!on) {
-          st.position = st.left = st.top = st.width = st.maxWidth = st.viewTransitionName = '';
+          st.position = st.left = st.top = st.width = st.height = st.maxWidth = st.transform = st.transition = st.viewTransitionName = '';
           return null;
         }
-        var w = p.offsetWidth, h = p.offsetHeight, wf = h * 0.8;
+        // a hover zoom on the picture becomes part of its size here (a
+        // transform would scale the whole flying box instead and jump)
+        if (!zoom) {
+          var m = getComputedStyle(img).transform;
+          zoom = m && m !== 'none' ? parseFloat(m.split('(')[1]) || 1 : 1;
+        }
+        var w = p.offsetWidth, h = p.offsetHeight;
+        var H = h * zoom, W = H * 0.8;
+        st.transition = 'none';
+        st.transform = 'none';
         st.position = 'absolute';
-        st.top = '0';
-        st.left = (w - wf) / 2 + 'px';
-        st.width = wf + 'px';
+        st.top = (h - H) / 2 + 'px';
+        st.left = (w - W) / 2 + 'px';
+        st.width = W + 'px';
+        st.height = H + 'px';
         st.maxWidth = 'none';
         st.viewTransitionName = 'project-cover';
         var r = document.documentElement.style;
         r.setProperty('--vt-pill-r', w / 2 + 'px');
-        r.setProperty('--vt-pill-clip', (wf - w) / 2 + 'px');
-        return { w: wf, h: h };
+        r.setProperty('--vt-pill-clip', (W - w) / 2 + 'px');
+        r.setProperty('--vt-pill-clip-y', (H - h) / 2 + 'px');
+        return { w: W, h: H, cx: (W - w) / 2, cy: (H - h) / 2, r: w / 2 };
       };
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
@@ -159,6 +170,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
               if (pr) {
                 document.documentElement.style.setProperty('--vt-pill-r', pr.r + 'px');
                 document.documentElement.style.setProperty('--vt-pill-clip', pr.clip + 'px');
+                document.documentElement.style.setProperty('--vt-pill-clip-y', (pr.clipY || 0) + 'px');
               }
             } catch (err) {}
             try {
