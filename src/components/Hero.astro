@@ -70,11 +70,30 @@ const LAPS = 3;
     var SWAP = 'cubic-bezier(0.77, 0, 0.175, 1)';
     var OUT = 'cubic-bezier(0.7, 0, 0.84, 0)';
     var down = 'translateY(105%)', mid = 'translateY(0)', up = 'translateY(-105%)';
-    var opt = function (delay, dur, easing) { return { delay: delay, duration: dur, easing: easing, fill: 'both' }; };
-    w[0].animate([{ transform: down }, { transform: mid }], opt(120, 800, IN));
-    w[0].animate([{ transform: mid }, { transform: up }], opt(1150, 700, SWAP)).ready.catch(function () {});
-    w[1].animate([{ transform: down }, { transform: mid }], opt(1150, 700, SWAP));
-    var out = w[1].animate([{ transform: mid }, { transform: up }], opt(2150, 520, OUT));
+    // one timeline per word (stacked fill:both animations would mask each other)
+    var T = 2670;
+    var at = function (ms) { return ms / T; };
+    w[0].animate(
+      [
+        { transform: down, offset: 0 },
+        { transform: down, offset: at(120), easing: IN },
+        { transform: mid, offset: at(920) },
+        { transform: mid, offset: at(1150), easing: SWAP },
+        { transform: up, offset: at(1850) },
+        { transform: up, offset: 1 },
+      ],
+      { duration: T, fill: 'both' },
+    );
+    var out = w[1].animate(
+      [
+        { transform: down, offset: 0 },
+        { transform: down, offset: at(1150), easing: SWAP },
+        { transform: mid, offset: at(1850) },
+        { transform: mid, offset: at(2150), easing: OUT },
+        { transform: up, offset: 1 },
+      ],
+      { duration: T, fill: 'both' },
+    );
     var done = false;
     var finish = function () {
       if (done) return;
