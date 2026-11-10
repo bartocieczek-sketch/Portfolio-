@@ -461,6 +461,44 @@ html:active-view-transition-type(cover-back)::view-transition-image-pair(project
   to {
     clip-path: inset(var(--vt-pill-clip-y, 0px) var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));
   }
+
+/* Same-shape ends (desktop): the flight is pure transform + clip on a box of
+   its final size (see __vtFlight in Base.astro) — compositor-only, so it
+   never stalls or jumps while the arriving page is still busy */
+html.vt-uniform::view-transition-group(project-cover) {
+  transform-origin: 0 0;
+  animation: vt-fly 0.85s var(--ease-flight) both;
+}
+html.vt-uniform::view-transition-image-pair(project-cover) {
+  animation: vt-fly-clip 0.85s var(--ease-flight) both;
+}
+html.vt-uniform::view-transition-old(project-cover),
+html.vt-uniform::view-transition-new(project-cover) {
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  scale: none;
+  translate: none;
+  animation: none;
+}
+@keyframes vt-fly {
+  from {
+    transform: var(--vt-g0);
+  }
+  to {
+    transform: var(--vt-g1);
+  }
+}
+@keyframes vt-fly-clip {
+  from {
+    clip-path: var(--vt-c0);
+  }
+  to {
+    clip-path: var(--vt-c1);
+  }
+}
 }
 html:active-view-transition-type(home)::view-transition-group(root) {
   animation: none;

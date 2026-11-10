@@ -85,6 +85,31 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
         set('--vo', o);
         set('--vn', n);
       };
+      // The flight as pure transform + clip, when both ends have the photo's
+      // own shape (desktop: the case cover is 4:5, like the flying picture):
+      // the box keeps its final size and only moves and scales, which the
+      // compositor runs on its own — no stalls while the new page is busy.
+      // from/to: {x, y, w, h} in viewport px; clips: {x, y, r} insets/radius
+      // in each end's own px. Returns false when the shapes differ.
+      window.__vtFlight = function (from, to, clipFrom, clipTo) {
+        if (Math.abs(from.w / from.h - to.w / to.h) > 0.01) return false;
+        var s = from.w / to.w; // start scale against the final (to) size
+        var st = document.documentElement.style;
+        st.setProperty('--vt-g0', 'translate(' + from.x + 'px, ' + from.y + 'px) scale(' + s + ')');
+        st.setProperty('--vt-g1', 'translate(' + to.x + 'px, ' + to.y + 'px)');
+        // clip insets live in the final box's px; at the start they are seen
+        // through the start scale, so divide by it
+        st.setProperty('--vt-c0', 'inset(' + clipFrom.y / s + 'px ' + clipFrom.x / s + 'px round ' + clipFrom.r / s + 'px)');
+        st.setProperty('--vt-c1', 'inset(' + clipTo.y + 'px ' + clipTo.x + 'px round ' + clipTo.r + 'px)');
+        document.documentElement.classList.add('vt-uniform');
+        return true;
+      };
+      window.addEventListener('pagereveal', function (e) {
+        if (!e.viewTransition) return;
+        e.viewTransition.finished.finally(function () {
+          document.documentElement.classList.remove('vt-uniform');
+        });
+      });
       // The home pill's picture as the flying element: widened (inside its
       // pill, which still crops it the same) to the whole 4:5 photo, so the
       // flight always has the full photo to show at every size; corners are
@@ -119,7 +144,8 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
         r.setProperty('--vt-pill-r', w / 2 + 'px');
         r.setProperty('--vt-pill-clip', (W - w) / 2 + 'px');
         r.setProperty('--vt-pill-clip-y', (H - h) / 2 + 'px');
-        return { w: W, h: H, cx: (W - w) / 2, cy: (H - h) / 2, r: w / 2 };
+        var b = img.getBoundingClientRect();
+        return { w: W, h: H, cx: (W - w) / 2, cy: (H - h) / 2, r: w / 2, x: b.left, y: b.top };
       };
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
@@ -177,7 +203,18 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
               var pill = JSON.parse(sessionStorage.getItem('vt-pill') || 'null');
               var f = cover.getBoundingClientRect();
               var focus = { x: parseFloat(cover.dataset.focusX || '0.5'), y: parseFloat(cover.dataset.focusY || '0.5') };
-              if (pill) window.__vtSizes(pill, { w: f.width, h: f.height }, true, focus);
+              if (pill) {
+                var fr = parseFloat(getComputedStyle(cover).borderTopLeftRadius) || 20;
+                var uniform =
+                  pill.x != null &&
+                  window.__vtFlight(
+                    { x: pill.x, y: pill.y, w: pill.w, h: pill.h },
+                    { x: f.left, y: f.top, w: f.width, h: f.height },
+                    { x: pill.cx || 0, y: pill.cy || 0, r: pill.r || pill.w / 2 },
+                    { x: 0, y: 0, r: fr },
+                  );
+                if (!uniform) window.__vtSizes(pill, { w: f.width, h: f.height }, true, focus);
+              }
             } catch (err) {}
             // the rest of the case study settles in around the landed cover
             document.documentElement.classList.add('from-card');

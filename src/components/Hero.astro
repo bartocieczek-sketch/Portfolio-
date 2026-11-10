@@ -159,7 +159,17 @@ const LAPS = 3;
       // corners ease from the case cover's radius into this pill's exact round
       // ends (px to px, so the rounding is even all the way)
       html.style.setProperty('--vt-from-radius', (d.r || 20) + 'px');
-      if (d.frame && box) window.__vtSizes(box, d.frame, false, d.focus);
+      if (d.frame && box) {
+        var u =
+          d.frame.x != null &&
+          window.__vtFlight(
+            { x: d.frame.x, y: d.frame.y, w: d.frame.w, h: d.frame.h },
+            { x: box.x, y: box.y, w: box.w, h: box.h },
+            { x: 0, y: 0, r: d.frame.r || 20 },
+            { x: box.cx, y: box.cy, r: box.r },
+          );
+        if (!u) window.__vtSizes(box, d.frame, false, d.focus);
+      }
     } catch (e) {}
   })();
 </script>
@@ -704,7 +714,13 @@ const LAPS = 3;
           root.style.setProperty('--vt-from-radius', `${(back as { r?: number }).r || 20}px`);
           const frame = (back as { frame?: { w: number; h: number } }).frame;
           const sizes = (window as unknown as { __vtSizes?: (a: object, b: object, f: boolean, focus?: object) => void }).__vtSizes;
-          if (frame && sizes && box) sizes(box, frame, false, (back as { focus?: object }).focus);
+          const fl = (window as unknown as { __vtFlight?: (a: object, b: object, c: object, d: object) => boolean }).__vtFlight;
+          const fb = frame as { w: number; h: number; x?: number; y?: number; r?: number } | undefined;
+          const bx = box as { w: number; h: number; x: number; y: number; cx: number; cy: number; r: number } | null;
+          const u =
+            !!fb && !!bx && fb.x != null && !!fl &&
+            fl({ x: fb.x, y: fb.y, w: fb.w, h: fb.h }, { x: bx.x, y: bx.y, w: bx.w, h: bx.h }, { x: 0, y: 0, r: fb.r || 20 }, { x: bx.cx, y: bx.cy, r: bx.r });
+          if (!u && frame && sizes && box) sizes(box, frame, false, (back as { focus?: object }).focus);
           handBack();
         }
       } catch (err) {}

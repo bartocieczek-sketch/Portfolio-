@@ -792,7 +792,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       // the frame's size, so home can scale the photo evenly into the pill
       const f = cover.getBoundingClientRect();
       const focus = { x: parseFloat(cover.dataset.focusX || '0.5'), y: parseFloat(cover.dataset.focusY || '0.5') };
-      sessionStorage.setItem('vt-back', JSON.stringify({ slug, frame: { w: f.width, h: f.height }, focus }));
+      const fr = parseFloat(getComputedStyle(cover).borderTopLeftRadius) || 20;
+      sessionStorage.setItem('vt-back', JSON.stringify({ slug, frame: { w: f.width, h: f.height, x: f.left, y: f.top, r: fr }, focus }));
     } catch (err) {}
   });
 </script>
