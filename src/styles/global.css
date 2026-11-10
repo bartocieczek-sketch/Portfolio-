@@ -878,3 +878,51 @@ html:has(main.about) {
   background: var(--surface-dark);
   color-scheme: dark;
 }
+
+/* ---------- Home easter egg: a lucky spin ---------- */
+.vh-lucky {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  color: var(--text-primary);
+  transition: opacity 0.8s ease;
+}
+.vh-lucky.is-out {
+  opacity: 0;
+}
+.vh-lucky__clover {
+  position: absolute;
+  display: block;
+  will-change: transform, opacity;
+}
+.vh-lucky__clover svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.vh-lucky__badge {
+  position: absolute;
+  left: var(--gutter);
+  top: calc(50% - 30px);
+  height: 18px;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 18px;
+  letter-spacing: -0.01em;
+}
+.vh-lucky__badge span {
+  display: block;
+  animation: vh-lucky-rise 1s cubic-bezier(0.23, 1, 0.32, 1) 0.15s both;
+}
+.vh-lucky__badge span::first-letter {
+  color: #3f8f4a;
+}
+@keyframes vh-lucky-rise {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: none;
+  }
+}
