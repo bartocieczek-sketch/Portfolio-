@@ -752,6 +752,14 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
   }
   @media (max-width: 809px) {
+    /* the story now sits on top: the blurred home stand-in only shows while
+       the cover is flying in, then fades so the text reads on clean white */
+    .case__under {
+      opacity: 0;
+    }
+    :global(html.from-card:not(.cover-landed)) .case__under {
+      opacity: 0.4;
+    }
     /* the arrow 24px in from the cover's corner (the page's 12px plus 24) */
     .case__back-btn {
       top: 24px;
