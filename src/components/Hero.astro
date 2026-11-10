@@ -780,10 +780,9 @@ const LAPS = 3;
     unlock();
     ['wheel', 'pointermove', 'touchstart', 'scroll'].forEach((t) => window.addEventListener(t, () => { if (!actx || actx.state !== 'running') unlock(); }, { passive: true, capture: true }));
     document.addEventListener('visibilitychange', () => { if (!document.hidden && actx?.state === 'suspended') unlock(); });
-    // An ASMR tap, close-miked and soft: a crisp little brush of
-    // band-limited noise (like a fingertip across paper) over a faint, warm
-    // wooden knock underneath. Gentle onset, quick natural decay, the same
-    // every time, no pitch changes.
+    // An ASMR brush, close-miked and soft: a crisp little sweep of
+    // band-limited noise, like a fingertip across paper. Gentle onset, quick
+    // natural decay, the same every time, no pitch changes.
     const tick = (_i: number) => {
       if (!actx || actx.state !== 'running' || reduceMotion) return;
       const now = performance.now();
@@ -816,19 +815,6 @@ const LAPS = 3;
       hs.connect(g);
       g.connect(actx.destination);
       src.start(t);
-      // the knock: a soft, low sine that drops a little and dies in ~60 ms
-      const o = actx.createOscillator();
-      o.type = 'sine';
-      o.frequency.setValueAtTime(210, t);
-      o.frequency.exponentialRampToValueAtTime(150, t + 0.06);
-      const og = actx.createGain();
-      og.gain.setValueAtTime(0.0001, t);
-      og.gain.exponentialRampToValueAtTime(v * 0.35, t + 0.005);
-      og.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
-      o.connect(og);
-      og.connect(actx.destination);
-      o.start(t);
-      o.stop(t + 0.09);
     };
 
     // ---------- Easter egg: a lucky spin ----------
