@@ -704,7 +704,7 @@ const LAPS = 3;
     let actx: AudioContext | null = null;
     let lastTick = 0;
     let tickAt: number | null = null;
-    const VOLUME = 0.7;
+    const VOLUME = 0.55;
     const unlock = () => {
       try {
         if (!actx) actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
