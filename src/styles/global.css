@@ -397,9 +397,11 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 }
 ::view-transition-old(project-cover),
 ::view-transition-new(project-cover) {
+  /* centred on the box by explicit offsets: these pictures are often larger
+     than the box, and auto margins would pin them to its top-left corner */
   position: absolute;
-  inset: 0;
-  margin: auto;
+  left: 50%;
+  top: 50%;
   object-fit: fill;
   animation-duration: 0.85s;
   animation-timing-function: var(--ease-cover);
@@ -408,6 +410,8 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 ::view-transition-old(project-cover) {
   width: var(--vo-w, 100%);
   height: var(--vo-h, 100%);
+  margin-left: calc(var(--vo-w, 100%) / -2);
+  margin-top: calc(var(--vo-h, 100%) / -2);
   scale: var(--vo-s1, 1);
   translate: var(--vo-t1, 0 0);
   animation-name: vt-old-size;
@@ -415,6 +419,8 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 ::view-transition-new(project-cover) {
   width: var(--vn-w, 100%);
   height: var(--vn-h, 100%);
+  margin-left: calc(var(--vn-w, 100%) / -2);
+  margin-top: calc(var(--vn-h, 100%) / -2);
   scale: var(--vn-s1, 1);
   translate: var(--vn-t1, 0 0);
   animation-name: vt-new-size;
