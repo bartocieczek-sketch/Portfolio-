@@ -5,13 +5,19 @@ interface Props {
   role?: string;
 }
 import { href } from '../lib/preview';
+import glyphs from '../lib/monogram-b.json';
+// the B monogram, flat, as the home link (font units are y-up, so flipped)
+const [mPath, mBox] = glyphs.g.B as [string, number[], number];
+const mView = `${mBox[0]} ${-mBox[3]} ${mBox[2] - mBox[0]} ${mBox[3] - mBox[1]}`;
 const { callUrl, socials = [], role } = Astro.props;
 const path = Astro.url.pathname;
 const to = (p: string) => href(Astro.locals, p);
 ---
 
 <nav class="nav" aria-label="Main">
-  <a href={to("/")} class="u-link t-label" aria-current={path === '/' ? 'page' : undefined}>Home</a>
+  <a href={to("/")} class="nav__home" aria-label="Home" aria-current={path === '/' ? 'page' : undefined}>
+    <svg viewBox={mView} aria-hidden="true"><path transform="scale(1,-1)" d={mPath} fill="currentColor" /></svg>
+  </a>
   <div class="nav__links">
     <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
     {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's cooperate</a>}
@@ -53,6 +59,23 @@ const to = (p: string) => href(Astro.locals, p);
     display: flex;
     justify-content: space-between;
     gap: 30px;
+  }
+  /* the monogram as the home link: tips a little on hover */
+  .nav__home {
+    display: block;
+    height: 26px;
+    color: var(--text-primary);
+  }
+  .nav__home svg {
+    display: block;
+    height: 100%;
+    width: auto;
+    transition: transform 0.25s var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nav__home:hover svg {
+      transform: rotate(-8deg) scale(1.06);
+    }
   }
   .nav__toggle {
     display: none;
