@@ -54,8 +54,8 @@ const LAPS = 3;
   </span>
 </div>
 <script is:inline>
-  // Preloader: the name rises into a masked line, is pushed out by the role,
-  // which then leaves too, and the column streams in underneath.
+  // Preloader: the name drops into a masked line, is pushed down and out by
+  // the role, which then falls out too, in the same direction as the covers, and the column streams in underneath.
   (function () {
     var root = document.documentElement;
     var el = document.querySelector('[data-preload]');
@@ -69,7 +69,7 @@ const LAPS = 3;
     var IN = 'cubic-bezier(0.16, 1, 0.3, 1)';
     var SWAP = 'cubic-bezier(0.77, 0, 0.175, 1)';
     var OUT = 'cubic-bezier(0.7, 0, 0.84, 0)';
-    var down = 'translateY(105%)', mid = 'translateY(0)', up = 'translateY(-105%)';
+    var down = 'translateY(-105%)', mid = 'translateY(0)', up = 'translateY(105%)';
     // one timeline per word (stacked fill:both animations would mask each other)
     var T = 2670;
     var at = function (ms) { return ms / T; };
