@@ -66,6 +66,20 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
 <Base title={`${stegaClean(project.title)} – ${settings?.name ?? 'Bart Ocieczek'}`} description={description} image={project.cover}>
   <main class="case">
+    <!-- Home, still there underneath: the column as it was left (this project
+         in the middle, larger and in colour, its neighbours black and white,
+         the hairline), seen softly through a heavy blur behind the story -->
+    <div class="case__under" aria-hidden="true">
+      {list.length > 0 && index >= 0 && [-1, 0, 1].map((o) => {
+        const p = list[(index + o + list.length) % list.length];
+        return p?.cover?.asset ? (
+          <span class:list={['case__under-pill', { 'is-on': o === 0 }]} style={`--o:${o}`}>
+            <img src={urlFor(p.cover).width(500).height(625).fit('crop').quality(55).url()} alt="" loading="eager" decoding="async" />
+          </span>
+        ) : null;
+      })}
+      <span class="case__under-line"></span>
+    </div>
     <!-- Two columns: the pictures on the left, the story on the right in a
          panel that stays put (sticky) while the pictures scroll. The cover
          grows up to where the panel starts; the panel slides in once. -->
@@ -163,7 +177,57 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
 <style>
   .case {
+    position: relative;
+    isolation: isolate;
     background: var(--surface-dark);
+  }
+  .case__under {
+    --pill-w: clamp(240px, 21vw, 370px);
+    --pill-h: calc(var(--pill-w) / 0.75);
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+    filter: blur(30px);
+    opacity: 0.32;
+  }
+  .case__under-pill {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--pill-w);
+    height: var(--pill-h);
+    margin: calc(var(--pill-h) / -2) 0 0 calc(var(--pill-w) / -2);
+    border-radius: 999px;
+    overflow: hidden;
+    /* the neighbours sit one cover plus the gap away, pushed out by the
+       middle one's extra size, as on home */
+    transform: translateY(calc(var(--o) * (var(--pill-h) * 1.06 + 28px)));
+    filter: grayscale(1);
+  }
+  .case__under-pill.is-on {
+    transform: scale(1.12);
+    filter: none;
+  }
+  .case__under-pill img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .case__under-line {
+    position: absolute;
+    left: var(--gutter);
+    right: var(--gutter);
+    top: 50%;
+    height: 1px;
+    background: var(--text-primary);
+    opacity: 0.25;
+  }
+  @media (max-width: 809px) {
+    .case__under {
+      --pill-w: 66vw;
+    }
   }
 
   /* no visible scrollbar on a case study (scrolling still works) */
@@ -541,7 +605,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
      view below sink away, then the panel itself slides off. */
   .case.is-leaving .case__panel :global(.ln-i) {
     transform: translateY(-110%);
-    transition: transform 0.6s var(--ease-in-out) calc(var(--d, 0s) * 0.4);
+    transition: transform 0.5s var(--ease-in-out) calc(var(--d, 0s) * 0.3);
   }
   .case.is-leaving .case__panel [data-pm-fade] {
     opacity: 0;
@@ -814,7 +878,12 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       const main = document.querySelector<HTMLElement>('.case');
       if (matchMedia('(prefers-reduced-motion: reduce)').matches || !main) return leave(a.href);
       main.classList.add('is-leaving');
-      window.setTimeout(() => leave(a.href), 280);
+      // the cover sets off only once the story has fully slipped away
+      let last = 0;
+      main.querySelectorAll<HTMLElement>('.case__panel .ln-i').forEach((el) => {
+        last = Math.max(last, parseFloat(el.style.getPropertyValue('--d')) || 0);
+      });
+      window.setTimeout(() => leave(a.href), Math.round((last * 0.3 + 0.5) * 1000) + 40);
     });
   });
   // ---------- Next project: its pill flies into that project's cover ----------
