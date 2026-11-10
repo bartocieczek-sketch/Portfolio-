@@ -1,5 +1,5 @@
 // /v2: a big black-chrome B behind the home column, shown at a whisper
-// (the canvas sits at ~11% opacity), slowly turning, tilting a touch with the
+// (the canvas sits at ~7% opacity), slowly turning, tilting a touch with the
 // pointer and swinging with the column as it scrolls.
 import * as THREE from 'three';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
