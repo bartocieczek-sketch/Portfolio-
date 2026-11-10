@@ -279,6 +279,27 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+      // While a cover is flying (into a case study, until it has landed; or
+      // back home, until the home column has it again) the page doesn't
+      // scroll: wheel, touch and scroll keys are swallowed before anything
+      // else (smooth scroll, the home column) sees them.
+      {
+        const html = document.documentElement;
+        const since = performance.now();
+        const locked = () =>
+          performance.now() - since < 4000 &&
+          ((html.classList.contains('from-card') && !html.classList.contains('cover-landed')) || html.classList.contains('is-cover-back'));
+        const swallow = (e: Event) => {
+          if (!locked()) return;
+          if (e.cancelable) e.preventDefault();
+          e.stopPropagation();
+        };
+        const keys = new Set(['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Home', 'End']);
+        window.addEventListener('wheel', swallow, { capture: true, passive: false });
+        window.addEventListener('touchmove', swallow, { capture: true, passive: false });
+        window.addEventListener('keydown', (e) => keys.has(e.key) && swallow(e), { capture: true });
+      }
+
       // Smooth scroll (Framer "SmoothScroll", intensity 8)
       if (!reduceMotion) {
         const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 1 });
