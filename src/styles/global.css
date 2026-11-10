@@ -936,6 +936,7 @@ html:active-view-transition-type(cover-back)::view-transition-group(project-cove
 ::view-transition-group(case-back) {
   z-index: 30;
   animation: none;
+  transform-origin: 0 0;
 }
 ::view-transition-new(case-back) {
   animation: none;
