@@ -819,7 +819,13 @@ const LAPS = 3;
     const enableGL = () => {
       if (gl || reduceMotion) return;
       gl = setupGL(hero.querySelector<HTMLCanvasElement>('[data-gl]')!);
-      if (gl) hero.classList.add('has-gl');
+      if (gl) {
+        hero.classList.add('has-gl');
+        // fetch every cover's texture now (one per project, shared by the
+        // laps): one that arrived only as it scrolled in would fade in over
+        // its flat DOM picture and show both shapes at once
+        gl.ready(pills);
+      }
     };
     if (finePointer) enableGL();
     else {
