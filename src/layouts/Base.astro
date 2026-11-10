@@ -1,4 +1,9 @@
 ---
+// The fallback face is served by the site itself (no third-party font
+// request that Safari's privacy settings or a blocker could stop)
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-700.css';
 import '../styles/fonts.css';
 import '../styles/global.css';
 import { urlFor } from '../lib/sanity';
@@ -371,13 +376,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
         }
       });
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.sanity.io" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-    />
   </head>
   <body>
     <slot />
