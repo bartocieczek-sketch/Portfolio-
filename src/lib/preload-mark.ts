@@ -62,14 +62,15 @@ export function mountPreloadMark() {
   const quartOut = (x: number) => 1 - Math.pow(1 - x, 4);
   const inOut = (x: number) => (x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2);
   const t0 = performance.now();
-  let leaveAt = 0;
-  addEventListener('preload:leave', () => (leaveAt = performance.now()), { once: true });
   let raf = 0;
   const tick = () => {
     const now = performance.now();
     const t = (now - t0) / 1000;
     const k = quartOut(Math.min(1, t / 1.1));
-    const out = leaveAt ? inOut(Math.min(1, (now - leaveAt) / 600)) : 0;
+    // follow the preloader's own timeline (set up in Hero) for the exit
+    const m = (window as any).__preloadMark;
+    const ct = m ? Number(m.anim.currentTime ?? 0) : 0;
+    const out = m ? inOut(Math.min(1, Math.max(0, (ct - m.leave) / m.out))) : 0;
     B.rotation.y = (1 - k) * -1.9 + Math.sin(t * 1.5) * 0.22 * k + out * Math.PI;
     B.rotation.x = Math.sin(t * 1.1) * 0.07 + out * 0.25;
     renderer.render(scene, camera);

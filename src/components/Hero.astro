@@ -84,35 +84,33 @@ const LAPS = 3;
         el.remove();
       });
     };
+    // one timeline, so a busy main thread can never skip the hold:
+    // in 750ms (drops a little and settles from 0.9, strong ease-out),
+    // hold, out 520ms (falls on down with the column, ease-in-out)
+    var IN_MS = 750;
+    var OUT_MS = 520;
+    var T = IN_MS + HOLD + OUT_MS;
     var start = function () {
       if (started) return;
       started = true;
-      // in: drops a little and settles, from 0.9 scale; 750ms strong ease-out
-      mark.animate(
+      var a = mark.animate(
         [
-          { opacity: 0, transform: 'translateY(-14%) scale(0.9)' },
-          { opacity: 1, transform: 'none' },
+          { opacity: 0, transform: 'translateY(-14%) scale(0.9)', offset: 0, easing: OUT },
+          { opacity: 1, transform: 'none', offset: IN_MS / T },
+          { opacity: 1, transform: 'none', offset: (IN_MS + HOLD) / T, easing: MOVE },
+          { opacity: 0, transform: 'translateY(22%) scale(0.94)', offset: 1 },
         ],
-        { duration: 750, easing: OUT, fill: 'both' },
+        { duration: T, fill: 'both' },
       );
-      // out: falls on down with the column and fades, 520ms ease-in-out
-      setTimeout(function () {
-        window.dispatchEvent(new Event('preload:leave'));
-        mark.animate(
-          [
-            { opacity: 1, transform: 'none' },
-            { opacity: 0, transform: 'translateY(22%) scale(0.94)' },
-          ],
-          { duration: 520, easing: MOVE, fill: 'both' },
-        );
-        setTimeout(finish, 300);
-      }, 750 + HOLD);
+      // the 3D side reads this timeline to spin away in step with the fall
+      window.__preloadMark = { anim: a, leave: IN_MS + HOLD, out: OUT_MS };
+      a.finished.then(finish, finish);
+      setTimeout(finish, T + 4000); // only if the timeline never ends
     };
     // wait for the 3D to be drawn (it signals) but never hold the page long
     mark.style.opacity = '0';
     window.addEventListener('preload:mark-ready', start, { once: true });
     setTimeout(start, 900);
-    setTimeout(finish, 4000);
   })();
 </script>
 
