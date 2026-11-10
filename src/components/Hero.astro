@@ -773,6 +773,13 @@ const LAPS = 3;
       } catch (err) {}
     };
     ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'].forEach((t) => window.addEventListener(t, unlock, { passive: true, capture: true }));
+    // try straight away too, and on the first wheel/move: browsers allow it
+    // whenever this visit already had a click (e.g. arriving from a project
+    // or another page of the site) or the site is trusted for sound; otherwise
+    // it simply stays muted until the first click or key
+    unlock();
+    ['wheel', 'pointermove', 'touchstart', 'scroll'].forEach((t) => window.addEventListener(t, () => { if (!actx || actx.state !== 'running') unlock(); }, { passive: true, capture: true }));
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && actx?.state === 'suspended') unlock(); });
     // A barely-there tick, felt more than heard: a few milliseconds of very
     // soft, muffled noise with a gentle (not instant) onset, nothing below or
     // above it; very quiet, the same every time. It sits under the motion.
