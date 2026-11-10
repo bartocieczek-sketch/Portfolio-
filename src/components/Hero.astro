@@ -47,22 +47,19 @@ const LAPS = 3;
   })();
 </script>
 <script>
-  // the preloader's chrome B: drawn in three.js once the module arrives, a
-  // slow turn while the name plays, torn down when the preloader leaves
+  // the preloader's chrome B, drawn in three.js; it signals once drawn so the
+  // drop-in waits for it, and is torn down when the preloader leaves
   import { mountPreloadMark } from '../lib/preload-mark';
   mountPreloadMark();
 </script>
 
 <div class="preload" aria-hidden="true" data-preload>
-  <canvas class="preload__mark" data-preload-mark width="112" height="112"></canvas>
-  <span class="preload__line">
-    <span class="preload__word">Bart Ocieczek</span>
-    <span class="preload__word">Designer &amp; Developer</span>
-  </span>
+  <canvas class="preload__mark" data-preload-mark></canvas>
 </div>
 <script is:inline>
-  // Preloader: the name drops into a masked line, is pushed down and out by
-  // the role, which then falls out too, in the same direction as the covers, and the column streams in underneath.
+  // Preloader: just the chrome B. It drops in (the 3D side turns it to face
+  // you as it lands), holds a beat, then falls out the way the covers fall
+  // while its 3D side spins it away; the column streams in underneath.
   (function () {
     var root = document.documentElement;
     var el = document.querySelector('[data-preload]');
@@ -72,62 +69,50 @@ const LAPS = 3;
       el.remove();
       return;
     }
-    var w = el.querySelectorAll('.preload__word');
-    var IN = 'cubic-bezier(0.16, 1, 0.3, 1)';
-    var SWAP = 'cubic-bezier(0.77, 0, 0.175, 1)';
-    var OUT = 'cubic-bezier(0.7, 0, 0.84, 0)';
-    var down = 'translateY(-105%)', mid = 'translateY(0)', up = 'translateY(105%)';
-    // one timeline per word (stacked fill:both animations would mask each other)
-    // the little chrome B turns in first, then the name follows
-    var LEAD = 450;
-    var T = 2670 + LEAD;
-    var at = function (ms) { return (ms + LEAD) / T; };
     var mark = el.querySelector('[data-preload-mark]');
-    if (mark) {
-      mark.animate(
-        [
-          { opacity: 0, transform: 'translateY(30%) scale(0.6)', offset: 0 },
-          { opacity: 1, transform: 'none', offset: at(300), easing: OUT },
-          { opacity: 1, transform: 'none', offset: at(2150) },
-          { opacity: 0, transform: 'translateY(60%) scale(0.8)', offset: 1 },
-        ].map(function (k, i) { if (i === 0) k.easing = IN; return k; }),
-        { duration: T, fill: 'both' },
-      );
-    }
-    w[0].animate(
-      [
-        { transform: down, offset: 0 },
-        { transform: down, offset: at(120), easing: IN },
-        { transform: mid, offset: at(920) },
-        { transform: mid, offset: at(1150), easing: SWAP },
-        { transform: up, offset: at(1850) },
-        { transform: up, offset: 1 },
-      ],
-      { duration: T, fill: 'both' },
-    );
-    var out = w[1].animate(
-      [
-        { transform: down, offset: 0 },
-        { transform: down, offset: at(1150), easing: SWAP },
-        { transform: mid, offset: at(1850) },
-        { transform: mid, offset: at(2150), easing: OUT },
-        { transform: up, offset: 1 },
-      ],
-      { duration: T, fill: 'both' },
-    );
+    var OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+    var MOVE = 'cubic-bezier(0.77, 0, 0.175, 1)';
+    var HOLD = 1050; // from landing to leaving
+    var started = false;
     var done = false;
     var finish = function () {
       if (done) return;
       done = true;
-      // the column starts falling as the role leaves; the cover fades away
       root.classList.remove('is-preloading');
       window.dispatchEvent(new Event('preload:done'));
-      el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, easing: 'ease-out', fill: 'both' }).finished.then(function () {
+      el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, easing: 'ease-out', fill: 'both' }).finished.then(function () {
         el.remove();
       });
     };
-    setTimeout(finish, 2450 + LEAD);
-    out.finished.then(finish, finish);
+    var start = function () {
+      if (started) return;
+      started = true;
+      // in: drops a little and settles, from 0.9 scale; 750ms strong ease-out
+      mark.animate(
+        [
+          { opacity: 0, transform: 'translateY(-14%) scale(0.9)' },
+          { opacity: 1, transform: 'none' },
+        ],
+        { duration: 750, easing: OUT, fill: 'both' },
+      );
+      // out: falls on down with the column and fades, 520ms ease-in-out
+      setTimeout(function () {
+        window.dispatchEvent(new Event('preload:leave'));
+        mark.animate(
+          [
+            { opacity: 1, transform: 'none' },
+            { opacity: 0, transform: 'translateY(22%) scale(0.94)' },
+          ],
+          { duration: 520, easing: MOVE, fill: 'both' },
+        );
+        setTimeout(finish, 300);
+      }, 750 + HOLD);
+    };
+    // wait for the 3D to be drawn (it signals) but never hold the page long
+    mark.style.opacity = '0';
+    window.addEventListener('preload:mark-ready', start, { once: true });
+    setTimeout(start, 900);
+    setTimeout(finish, 4000);
   })();
 </script>
 

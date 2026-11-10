@@ -1,6 +1,6 @@
-// The small black-chrome B in the preloader. Same glyph and material as the
-// /logo-b monogram, drawn into a tiny canvas; a slow half turn while the name
-// plays. Everything is disposed once the preloader is gone.
+// The black-chrome B in the preloader. Same glyph and material as the
+// /logo-b monogram: it turns in to face you, rocks gently, then spins away
+// as the preloader leaves. Everything is disposed once the preloader is gone.
 import * as THREE from 'three';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -17,7 +17,7 @@ export function mountPreloadMark() {
     return;
   }
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(canvas.clientWidth || 56, canvas.clientHeight || 56, false);
+  renderer.setSize(canvas.clientWidth || 140, canvas.clientHeight || 140, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene();
@@ -57,18 +57,26 @@ export function mountPreloadMark() {
   const B = new THREE.Mesh(geo, mat);
   scene.add(B);
 
+  // in: turned away, swings round to face you (1.1s, quart out) and rocks
+  // gently; out: spins on through a half turn as it falls (0.6s, in-out)
+  const quartOut = (x: number) => 1 - Math.pow(1 - x, 4);
+  const inOut = (x: number) => (x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2);
   const t0 = performance.now();
+  let leaveAt = 0;
+  addEventListener('preload:leave', () => (leaveAt = performance.now()), { once: true });
   let raf = 0;
   const tick = () => {
-    const t = (performance.now() - t0) / 1000;
-    // comes in turned away, settles facing forward, then rocks gently
-    const k = 1 - Math.pow(1 - Math.min(1, t / 1.2), 4);
-    B.rotation.y = (1 - k) * -1.8 + Math.sin(t * 1.6) * 0.28 * k;
-    B.rotation.x = Math.sin(t * 1.1) * 0.08;
+    const now = performance.now();
+    const t = (now - t0) / 1000;
+    const k = quartOut(Math.min(1, t / 1.1));
+    const out = leaveAt ? inOut(Math.min(1, (now - leaveAt) / 600)) : 0;
+    B.rotation.y = (1 - k) * -1.9 + Math.sin(t * 1.5) * 0.22 * k + out * Math.PI;
+    B.rotation.x = Math.sin(t * 1.1) * 0.07 + out * 0.25;
     renderer.render(scene, camera);
     raf = requestAnimationFrame(tick);
   };
   tick();
+  dispatchEvent(new Event('preload:mark-ready'));
 
   const stop = () => {
     if (canvas.isConnected) return;
