@@ -669,8 +669,8 @@ const LAPS = 3;
         if (done) return;
         done = true;
         release();
-        // the drift only starts again a quiet moment after the landing
-        touchInput();
+        // the drift picks up again shortly after the landing (0.5s)
+        lastInput = performance.now() - (IDLE_AFTER - 500);
       };
       document.addEventListener('cover-back:done', go, { once: true });
       window.setTimeout(go, 1800);
@@ -698,7 +698,6 @@ const LAPS = 3;
       // back on home: the lens grows back in, from flat; and no drift yet
       gateTo(1, 700, 0);
       drift = 0;
-      touchInput();
       opening = false;
       centring = null;
       // nothing is hovered any more: WebGL must take the cover back unzoomed
