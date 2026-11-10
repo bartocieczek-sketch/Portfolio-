@@ -773,12 +773,12 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       flex: none;
       width: 100%;
     }
-    /* phones: one column — picture, story, then the rest of the pictures */
+    /* phones: one column — the story first, then every picture */
     .case__row {
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
-        'top'
         'panel'
+        'top'
         'gallery';
       padding: 12px;
       row-gap: 12px;
@@ -788,8 +788,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       height: auto;
       transform: none !important;
     }
+    /* clear of the close button (24px in, 52px round) */
     .case__panel-in {
-      padding: 28px 0 8px;
+      padding: 88px 0 20px;
     }
     .case__gallery {
       gap: 12px;
