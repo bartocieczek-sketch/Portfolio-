@@ -749,6 +749,50 @@ const LAPS = 3;
       }
     };
 
+    // The sound of the glide itself: a soft, filtered breath of air that
+    // swells with the column's speed and opens up a little as it goes faster,
+    // then dies away as it slows; the soft tone above marks the moment it
+    // settles on a project. Together they follow the motion instead of
+    // ticking over it.
+    let air: { g: GainNode; f: BiquadFilterNode } | null = null;
+    const startAir = () => {
+      if (!actx || air) return;
+      const len = actx.sampleRate * 2;
+      const buf = actx.createBuffer(1, len, actx.sampleRate);
+      const ch = buf.getChannelData(0);
+      // soft (brown-ish) noise: gentle, no hiss
+      let last = 0;
+      for (let k = 0; k < len; k++) {
+        last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+        ch[k] = last * 3.5;
+      }
+      const src = actx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      const f = actx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = 400;
+      f.Q.value = 0.6;
+      const g = actx.createGain();
+      g.gain.value = 0;
+      src.connect(f);
+      f.connect(g);
+      g.connect(actx.destination);
+      src.start();
+      air = { g, f };
+    };
+    const AIR_MAX = 0.05;
+    const airFollow = (speed: number) => {
+      if (!actx || actx.state !== 'running' || reduceMotion) return;
+      if (!air) startAir();
+      if (!air) return;
+      const k = Math.min(1, speed);
+      const t = actx.currentTime;
+      air.g.gain.setTargetAtTime(AIR_MAX * Math.pow(k, 1.3), t, 0.09);
+      air.f.frequency.setTargetAtTime(320 + 900 * k, t, 0.12);
+    };
+    let gliding = false;
+
     // ---------- Easter egg: a lucky spin ----------
     // Spin the column really hard (seven projects or more flying past within
     // a moment) and, once it settles, it pays out like a slot machine, in the
@@ -1184,14 +1228,18 @@ const LAPS = 3;
       details(wrapped / step);
       // the lucky spin pays out once the column has come to rest
       if (luckyArmed && !wheelTimer && dragY === null && Math.abs(target - pos) < 1.5 && Math.abs(glideV) < 20) lucky();
-      // a soft tick each time a new project reaches the middle
+      // sound follows the glide: air while it moves, a soft tone as it
+      // settles on a project (the passes are still counted for the lucky spin)
       const nowAt = Math.round(pos / step);
       if (nowAt !== tickAt) {
-        if (tickAt !== null) {
-          tick(((nowAt % N) + N) % N);
-          if (!reduceMotion) noteSpin();
-        }
+        if (tickAt !== null && !reduceMotion) noteSpin();
         tickAt = nowAt;
+      }
+      airFollow(Math.abs(pos - lastPos) / Math.max(dt, 1 / 240) / 2600);
+      if (Math.abs(target - pos) > step * 0.25) gliding = true;
+      else if (gliding && Math.abs(target - pos) < step * 0.04 && !wheelTimer && dragY === null) {
+        gliding = false;
+        tick(((Math.round(target / step) % N) + N) % N);
       }
 
       if (!gl) return;
