@@ -1,0 +1,146 @@
+---
+// Preview of the BO monogram in three.js: a blackletter O with a B set
+// across it (UnifrakturCook, SIL OFL), extruded and bevelled, slowly turning
+// and following the pointer. Not linked anywhere yet.
+export const prerender = true;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>BO monogram</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #ebe9e3;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      .tag {
+        position: fixed;
+        left: 24px;
+        bottom: 20px;
+        font: 13px/1.3 system-ui, sans-serif;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas data-logo></canvas>
+    <p class="tag">BO monogram · move the pointer</p>
+    <script>
+      import * as THREE from 'three';
+      import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+      import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+      import glyphs from '../lib/monogram-glyphs.json';
+
+      const canvas = document.querySelector<HTMLCanvasElement>('[data-logo]')!;
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      const scene = new THREE.Scene();
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 0.55;
+      const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+      camera.position.set(0, 0, 9);
+
+      // soft key light + a warm rim, on top of the room reflections
+      const key = new THREE.DirectionalLight(0xffffff, 2.4);
+      key.position.set(-3, 4, 6);
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0xffe2c4, 0.8);
+      rim.position.set(4, -2, -3);
+      scene.add(rim);
+
+      // a creamy, lacquered material, like a cast and polished letter
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: 0xf6f3ec,
+        roughness: 0.28,
+        metalness: 0.0,
+        clearcoat: 1,
+        clearcoatRoughness: 0.12,
+        sheen: 0.4,
+        sheenColor: new THREE.Color(0xfff6e8),
+      });
+
+      const U = glyphs.upm;
+      const shapesOf = (d: string) => {
+        const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`);
+        return data.paths.flatMap((p) => p.toShapes(true));
+      };
+      const letter = (ch: 'B' | 'O', depth: number) => {
+        const [d] = glyphs.g[ch] as [string, number[], number];
+        const geo = new THREE.ExtrudeGeometry(shapesOf(d), {
+          depth,
+          bevelEnabled: true,
+          bevelThickness: depth * 0.22,
+          bevelSize: 18,
+          bevelSegments: 6,
+          curveSegments: 28,
+        });
+        geo.computeBoundingBox();
+        const bb = geo.boundingBox!;
+        geo.translate(-(bb.min.x + bb.max.x) / 2, -(bb.min.y + bb.max.y) / 2, -(bb.min.z + bb.max.z) / 2);
+        geo.scale(1 / U, 1 / U, 1 / U);
+        geo.computeVertexNormals();
+        return new THREE.Mesh(geo, mat);
+      };
+
+      // the O, large, behind; the B across it, a little forward and right,
+      // so the two read as one interlaced monogram
+      const logo = new THREE.Group();
+      const O = letter('O', 420);
+      O.scale.setScalar(2.9);
+      O.position.set(-0.32, 0.05, -0.18);
+      const B = letter('B', 480);
+      B.scale.setScalar(2.4);
+      B.position.set(0.42, -0.08, 0.22);
+      logo.add(O, B);
+      scene.add(logo);
+
+      const resize = () => {
+        const w = innerWidth;
+        const h = innerHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        camera.position.z = w < h ? 13 : 9;
+      };
+      addEventListener('resize', resize);
+      resize();
+
+      // slow idle turn; the pointer tilts it (eased, never snaps)
+      let px = 0;
+      let py = 0;
+      addEventListener('pointermove', (e) => {
+        px = (e.clientX / innerWidth) * 2 - 1;
+        py = (e.clientY / innerHeight) * 2 - 1;
+      });
+      let rx = 0;
+      let ry = 0;
+      const t0 = performance.now();
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const tick = () => {
+        const t = (performance.now() - t0) / 1000;
+        const idle = calm ? 0 : Math.sin(t * 0.45) * 0.35;
+        ry += (idle + px * 0.5 - ry) * 0.05;
+        rx += (py * 0.3 - rx) * 0.05;
+        logo.rotation.set(rx, ry, 0);
+        logo.position.y = calm ? 0 : Math.sin(t * 0.8) * 0.05;
+        renderer.render(scene, camera);
+        requestAnimationFrame(tick);
+      };
+      tick();
+    </script>
+  </body>
+</html>
