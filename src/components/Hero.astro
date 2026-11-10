@@ -16,8 +16,10 @@ interface Props {
   home: any;
   // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
   settings: any;
+  // a big, barely-there 3D B behind the column (the /v2 variant)
+  backdrop?: boolean;
 }
-const { home, settings } = Astro.props;
+const { home, settings, backdrop = false } = Astro.props;
 
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const projects = (home.projects ?? []).filter((p: any) => p?.cover?.asset).map((p: any) => ({
@@ -50,7 +52,9 @@ const LAPS = 3;
   // the preloader's chrome B, drawn in three.js; it signals once drawn so the
   // drop-in waits for it, and is torn down when the preloader leaves
   import { mountPreloadMark } from '../lib/preload-mark';
+  import { mountBackdropMark } from '../lib/backdrop-mark';
   mountPreloadMark();
+  mountBackdropMark();
 </script>
 
 <div class="preload" aria-hidden="true" data-preload>
@@ -116,6 +120,7 @@ const LAPS = 3;
 
 <section class="vh" data-vh>
   <canvas class="vh__gl" aria-hidden="true" data-gl></canvas>
+  {backdrop && <canvas class="vh__backdrop" aria-hidden="true" data-backdrop></canvas>}
 
   <div class="vh__nav">
     <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
@@ -321,6 +326,20 @@ const LAPS = 3;
     width: 100%;
     height: 100%;
     pointer-events: none;
+  }
+  /* the big B behind everything, a whisper of grey chrome */
+  .vh__backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 2s var(--ease-out);
+  }
+  .vh__backdrop.is-on {
+    opacity: 0.11;
   }
   .vh__nav {
     position: relative;

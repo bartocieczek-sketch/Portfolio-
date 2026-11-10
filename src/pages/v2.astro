@@ -1,0 +1,19 @@
+---
+// Variant of home with a big, barely-visible 3D B behind the column.
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import { HOME_QUERY, SETTINGS_QUERY } from '../lib/sanity';
+import { load } from '../lib/load';
+
+const [home, settings] = await Promise.all([load(Astro.locals, HOME_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
+if (!home || !settings) return new Response('Content not found', { status: 500 });
+
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const projects: any[] = (home.projects ?? []).filter(Boolean);
+---
+
+<Base title={settings.seoTitle} description={settings.seoDescription} image={projects[0]?.cover}>
+  <main class="home">
+    <Hero home={home} settings={settings} backdrop />
+  </main>
+</Base>
