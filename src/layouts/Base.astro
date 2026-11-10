@@ -234,7 +234,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
               var f = cover.getBoundingClientRect();
               var focus = { x: parseFloat(cover.dataset.focusX || '0.5'), y: parseFloat(cover.dataset.focusY || '0.5') };
               if (pill) {
-                var fr = parseFloat(getComputedStyle(cover).borderTopLeftRadius) || 20;
+                var fr = Math.min(parseFloat(getComputedStyle(cover).borderTopLeftRadius) || 20, f.width / 2, f.height / 2);
                 var uniform =
                   pill.x != null &&
                   window.__vtFlight(

@@ -25,6 +25,8 @@
 
   --gutter: 24px;
   --radius: 20px;
+  /* the project photos: as round as the home covers (each side fully rounded) */
+  --photo-radius: 999px;
   /* Motion tokens */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entrances, hovers */
   --ease-cover: cubic-bezier(0.32, 0.72, 0, 1);
@@ -448,7 +450,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
     clip-path: inset(var(--vt-pill-clip-y, 0px) var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));
   }
   to {
-    clip-path: inset(0 0 round var(--radius));
+    clip-path: inset(0 0 round var(--photo-radius));
   }
 }
 html:active-view-transition-type(cover-back)::view-transition-image-pair(project-cover) {
@@ -456,7 +458,7 @@ html:active-view-transition-type(cover-back)::view-transition-image-pair(project
 }
 @keyframes vt-pill-close {
   from {
-    clip-path: inset(0 0 round var(--radius));
+    clip-path: inset(0 0 round var(--photo-radius));
   }
   to {
     clip-path: inset(var(--vt-pill-clip-y, 0px) var(--vt-pill-clip, 0px) round var(--vt-pill-r, 999px));

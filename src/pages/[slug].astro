@@ -210,7 +210,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     width: min(64%, calc((100svh - 48px) * 0.8));
     aspect-ratio: 4 / 5;
     overflow: hidden;
-    border-radius: var(--radius);
+    border-radius: var(--photo-radius);
   }
   /* the next two pictures, one above the other, as tall as the cover */
   .case__stack {
@@ -792,7 +792,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       // the frame's size, so home can scale the photo evenly into the pill
       const f = cover.getBoundingClientRect();
       const focus = { x: parseFloat(cover.dataset.focusX || '0.5'), y: parseFloat(cover.dataset.focusY || '0.5') };
-      const fr = parseFloat(getComputedStyle(cover).borderTopLeftRadius) || 20;
+      // the corner as drawn (a 999px radius is drawn as half the short side)
+      const fr = Math.min(parseFloat(getComputedStyle(cover).borderTopLeftRadius) || 20, f.width / 2, f.height / 2);
       sessionStorage.setItem('vt-back', JSON.stringify({ slug, frame: { w: f.width, h: f.height, x: f.left, y: f.top, r: fr }, focus }));
     } catch (err) {}
   });
