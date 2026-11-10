@@ -279,10 +279,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   .case__row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--panel-w);
+    /* the story on the left, the pictures on the right */
+    grid-template-columns: var(--panel-w) minmax(0, 1fr);
     grid-template-areas:
-      'top panel'
-      'gallery panel';
+      'panel top'
+      'panel gallery';
     column-gap: 16px;
     row-gap: 8px;
     align-items: start;
@@ -363,7 +364,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     position: fixed;
     z-index: 20;
     top: 36px;
-    left: 36px;
+    /* over the cover's top-left corner, now that the story sits to its left */
+    left: calc(24px + var(--panel-w) + 16px + 12px);
     display: grid;
     place-items: center;
     width: 52px;
@@ -414,7 +416,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     flex-direction: column;
     gap: 32px;
     /* no card: the text sits straight on the page beside the photos */
-    padding: 12px 8px 4px 20px;
+    padding: 12px 20px 4px 4px;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
