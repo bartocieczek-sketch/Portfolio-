@@ -370,6 +370,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     height: 52px;
     border-radius: 50%;
     color: #fff;
+    /* its own layer in page transitions, so the flying cover passes under it
+       instead of over it */
+    view-transition-name: case-back;
     /* a round, dark frosted disc: the white arrow reads on any picture */
     background: rgba(17, 17, 17, 0.42);
     backdrop-filter: blur(14px) saturate(1.2);

@@ -931,3 +931,15 @@ html:has(main.about) {
 html:active-view-transition-type(cover-back)::view-transition-group(project-cover) {
   animation-duration: 0.68s;
 }
+
+/* the case study's back button rides above the flying cover */
+::view-transition-group(case-back) {
+  z-index: 30;
+  animation: none;
+}
+::view-transition-new(case-back) {
+  animation: none;
+}
+::view-transition-old(case-back) {
+  animation: vt-fade-out 0.3s ease both;
+}
