@@ -42,8 +42,52 @@ const LAPS = 3;
       var skip = type === 'back_forward' || (type === 'navigate' && internal);
       var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
       document.documentElement.classList.add('is-endless');
-      if (!skip && !calm) document.documentElement.classList.add('is-arriving');
+      if (!skip && !calm) document.documentElement.classList.add('is-arriving', 'is-preloading');
     } catch (e) {}
+  })();
+</script>
+
+<div class="preload" aria-hidden="true" data-preload>
+  <span class="preload__line">
+    <span class="preload__word">Bart Ocieczek</span>
+    <span class="preload__word">Designer &amp; Developer</span>
+  </span>
+</div>
+<script is:inline>
+  // Preloader: the name rises into a masked line, is pushed out by the role,
+  // which then leaves too, and the column streams in underneath.
+  (function () {
+    var root = document.documentElement;
+    var el = document.querySelector('[data-preload]');
+    if (!el) return;
+    if (!root.classList.contains('is-preloading') || !el.animate) {
+      root.classList.remove('is-preloading');
+      el.remove();
+      return;
+    }
+    var w = el.querySelectorAll('.preload__word');
+    var IN = 'cubic-bezier(0.16, 1, 0.3, 1)';
+    var SWAP = 'cubic-bezier(0.77, 0, 0.175, 1)';
+    var OUT = 'cubic-bezier(0.7, 0, 0.84, 0)';
+    var down = 'translateY(105%)', mid = 'translateY(0)', up = 'translateY(-105%)';
+    var opt = function (delay, dur, easing) { return { delay: delay, duration: dur, easing: easing, fill: 'both' }; };
+    w[0].animate([{ transform: down }, { transform: mid }], opt(120, 800, IN));
+    w[0].animate([{ transform: mid }, { transform: up }], opt(1150, 700, SWAP)).ready.catch(function () {});
+    w[1].animate([{ transform: down }, { transform: mid }], opt(1150, 700, SWAP));
+    var out = w[1].animate([{ transform: mid }, { transform: up }], opt(2150, 520, OUT));
+    var done = false;
+    var finish = function () {
+      if (done) return;
+      done = true;
+      // the column starts falling as the role leaves; the cover fades away
+      root.classList.remove('is-preloading');
+      window.dispatchEvent(new Event('preload:done'));
+      el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, easing: 'ease-out', fill: 'both' }).finished.then(function () {
+        el.remove();
+      });
+    };
+    setTimeout(finish, 2450);
+    out.finished.then(finish, finish);
   })();
 </script>
 
@@ -789,13 +833,24 @@ const LAPS = 3;
     if (arriving) {
       if (!gl) endArrival();
       else {
-        const t0 = performance.now();
+        let t0 = performance.now();
         const onScreen = () =>
           pills.filter((p) => {
             const r = p.getBoundingClientRect();
             return r.bottom > 0 && r.top < window.innerHeight;
           });
+        let t0Set = false;
         const go = () => {
+          // wait for the preloader to hand over; the picture wait is counted
+          // from then on
+          if (root.classList.contains('is-preloading')) {
+            requestAnimationFrame(go);
+            return;
+          }
+          if (!t0Set) {
+            t0Set = true;
+            t0 = Math.min(t0, performance.now());
+          }
           // start only once every cover on screen has its picture (3s at most),
           // so none of them pops in or loads while falling
           if (!gl?.ready(onScreen()) && performance.now() - t0 < 3000) {
