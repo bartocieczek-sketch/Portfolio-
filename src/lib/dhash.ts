@@ -56,3 +56,54 @@ export function hashDistance(a: string, b: string): number {
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;
   return d;
 }
+
+/** How much detail sits right at the picture's edges (where a parallax zoom
+    trims ~7%): the busiest edge band's local contrast, relative to the
+    picture's overall contrast. ~0 = quiet margins (safe to trim), ≥ ~0.8 =
+    content runs to the edge (a UI, a layout, text). null when unknown. */
+export function edgeDetail(lqip?: string | null): number | null {
+  if (!lqip) return null;
+  const px = decode(lqip);
+  if (!px || px.width < 6 || px.height < 6) return null;
+  const { width: w, height: h, data } = px;
+  const L = (x: number, y: number) => {
+    const i = (y * w + x) * 4;
+    return data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+  };
+  const grad = (x: number, y: number) => {
+    let g = 0;
+    let n = 0;
+    if (x + 1 < w) {
+      g += Math.abs(L(x, y) - L(x + 1, y));
+      n++;
+    }
+    if (y + 1 < h) {
+      g += Math.abs(L(x, y) - L(x, y + 1));
+      n++;
+    }
+    return n ? g / n : 0;
+  };
+  let all = 0;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) all += grad(x, y);
+  all /= w * h;
+  const band = Math.max(1, Math.round(Math.min(w, h) * 0.08));
+  const bands = [
+    (x: number, y: number) => y < band,
+    (x: number, y: number) => y >= h - band,
+    (x: number, y: number) => x < band,
+    (x: number, y: number) => x >= w - band,
+  ];
+  let worst = 0;
+  for (const inBand of bands) {
+    let s = 0;
+    let n = 0;
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++)
+        if (inBand(x, y)) {
+          s += grad(x, y);
+          n++;
+        }
+    if (n) worst = Math.max(worst, s / n);
+  }
+  return all > 0.5 ? worst / all : 0;
+}

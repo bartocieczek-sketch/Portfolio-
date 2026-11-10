@@ -1,5 +1,6 @@
 ---
 import { srcset, urlFor } from '../lib/sanity';
+import { edgeDetail } from '../lib/dhash';
 
 interface Props {
   item: {
@@ -24,13 +25,20 @@ const dims = item.image?.asset?.metadata?.dimensions;
 const lqip = item.image?.asset?.metadata?.lqip;
 const sizes = item.size === 'full' ? '(max-width: 809px) 100vw, 65vw' : '(max-width: 809px) 100vw, 32vw';
 const isSvg = item.image?.asset?.mimeType === 'image/svg+xml';
+// the parallax zoom trims ~7% off every edge: fine for a photo with quiet
+// margins, not for a layout or UI that runs right to the edge — those stay
+// still (shown whole)
+const edge = edgeDetail((item.kind === 'image' ? item.image : item.poster)?.asset?.metadata?.lqip);
+const EDGE_BUSY = 0.8;
+const still = isSvg || (edge !== null && edge >= EDGE_BUSY);
 ---
 
 <figure
   class={`media media--${item.size} media--${item.kind}${ratio ? ' media--fit' : ''}`}
   style={ratio ? `--r:${ratio.toFixed(4)}` : undefined}
   data-reveal
-  data-parallax={item.kind === 'lottie' ? undefined : ratio ? 'soft' : ''}
+  data-parallax={item.kind === 'lottie' || still ? undefined : ''}
+  data-edge={edge !== null ? edge.toFixed(2) : undefined}
 >
   {item.kind === 'image' && item.image?.asset && (
     <img
