@@ -28,6 +28,10 @@
   /* Motion tokens */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entrances, hovers */
   --ease-cover: cubic-bezier(0.32, 0.72, 0, 1);
+  /* the cover's flight: Material 3 "emphasized" (made for container
+     transforms) — it leaves at rest instead of at full speed, so the first
+     frames never jump, then covers most of the way early and glides in */
+  --ease-flight: cubic-bezier(0.2, 0, 0, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* things travelling across the screen */
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);      /* long, cinematic reveals */
 }
@@ -375,13 +379,13 @@ html:active-view-transition-type(back)::view-transition-new(root) {
    its place on the new page while the pages crossfade underneath. */
 ::view-transition-group(project-cover) {
   animation-duration: 0.85s;
-  animation-timing-function: var(--ease-cover);
+  animation-timing-function: var(--ease-flight);
   z-index: 10;
 }
 ::view-transition-old(project-cover),
 ::view-transition-new(project-cover) {
   animation-duration: 0.85s;
-  animation-timing-function: var(--ease-cover);
+  animation-timing-function: var(--ease-flight);
   height: 100%;
   object-fit: cover;
 }
@@ -393,7 +397,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
    arriving picture sits on top; the leaving one fills around it. */
 ::view-transition-image-pair(project-cover) {
   overflow: hidden;
-  animation: vt-pill-open 0.85s var(--ease-cover) both;
+  animation: vt-pill-open 0.85s var(--ease-flight) both;
 }
 ::view-transition-old(project-cover),
 ::view-transition-new(project-cover) {
@@ -404,7 +408,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   top: 50%;
   object-fit: fill;
   animation-duration: 0.85s;
-  animation-timing-function: var(--ease-cover);
+  animation-timing-function: var(--ease-flight);
   animation-fill-mode: both;
 }
 ::view-transition-old(project-cover) {
@@ -448,7 +452,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 html:active-view-transition-type(cover-back)::view-transition-image-pair(project-cover) {
-  animation: vt-pill-close 0.85s var(--ease-cover) both;
+  animation: vt-pill-close 0.85s var(--ease-flight) both;
 }
 @keyframes vt-pill-close {
   from {
