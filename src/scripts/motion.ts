@@ -125,11 +125,8 @@ if (frames.length && !reduceMotion) {
       const r = frame.getBoundingClientRect();
       // -1 when the frame enters at the bottom, +1 when it leaves at the top
       const p = Math.max(-1, Math.min(1, (vh / 2 - (r.top + r.height / 2)) / (vh / 2 + r.height / 2)));
-      // "soft": the pictures shown whole in a case study — just enough zoom
-      // for the drift (8%, under 4% trimmed off each edge)
-      const soft = frame.dataset.parallax === 'soft';
-      const shift = p * r.height * (soft ? 0.035 : 0.07);
-      inner.style.transform = `translate3d(0, ${shift.toFixed(1)}px, 0) scale(${soft ? 1.08 : 1.15})`;
+      const shift = p * r.height * 0.07;
+      inner.style.transform = `translate3d(0, ${shift.toFixed(1)}px, 0) scale(1.15)`;
     }
   };
   // only when the page actually moves, not every frame
