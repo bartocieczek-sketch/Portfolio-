@@ -30,7 +30,7 @@ const isSvg = item.image?.asset?.mimeType === 'image/svg+xml';
   class={`media media--${item.size} media--${item.kind}${ratio ? ' media--fit' : ''}`}
   style={ratio ? `--r:${ratio.toFixed(4)}` : undefined}
   data-reveal
-  data-parallax={ratio || item.kind === 'lottie' ? undefined : ''}
+  data-parallax={item.kind === 'lottie' ? undefined : ratio ? 'soft' : ''}
 >
   {item.kind === 'image' && item.image?.asset && (
     <img

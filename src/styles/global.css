@@ -685,6 +685,9 @@ html:active-view-transition-type(about-out)::view-transition-new(root) {
   transform: scale(1.15);
   will-change: transform;
 }
+[data-parallax='soft'].has-parallax > * {
+  transform: scale(1.08);
+}
 
 /* ---------- Swarm build reveal (see src/scripts/build.ts) ---------- */
 :where([data-build]) {
