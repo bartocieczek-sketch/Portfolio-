@@ -217,9 +217,12 @@ const LAPS = 3;
         var a = Math.min(1, Math.abs(d));
         var w = (1 + Math.cos(Math.PI * a)) / 2;
         var t = K ? 'translate3d(0,' + ((d < 0 ? -1 : 1) * G * (1 - w)).toFixed(2) + 'px,0) scale(' + (1 + K * w).toFixed(4) + ')' : '';
-        if (last[i] !== t) {
-          last[i] = t;
+        var sat = w.toFixed(3);
+        if (last[i] !== t + sat) {
+          last[i] = t + sat;
           pills[i].parentNode.style.transform = t;
+          // the DOM pictures (shown until WebGL takes over) match its colour
+          pills[i].parentNode.style.setProperty('--sat', sat);
         }
       }
     };
@@ -374,6 +377,10 @@ const LAPS = 3;
   }
   .vh.has-gl .vh__pill.is-opening img {
     opacity: 1;
+  }
+  /* out of focus: black and white, like the WebGL covers */
+  .vh__pill:not(.is-opening) img {
+    filter: grayscale(calc(1 - var(--sat, 1)));
   }
 
   /* ---------- Project details ---------- */
@@ -735,6 +742,7 @@ const LAPS = 3;
         // picture); the DOM picture is hidden only once that frame is up, so
         // there's never a frame with neither
         p.classList.add('is-releasing');
+        glow[pills.indexOf(p)] = 1;
         pillCover(p, false);
         root.classList.remove('is-cover-back');
         requestAnimationFrame(() =>
@@ -829,6 +837,8 @@ const LAPS = 3;
       } catch (err) {}
     });
     const hover = pills.map(() => 0);
+    // colour held by a cover that just flew back, easing away to its focus
+    const glow = pills.map(() => 0);
 
     // ---------- WebGL ----------
     let gl: ReturnType<typeof setupGL> = null;
@@ -977,6 +987,7 @@ const LAPS = 3;
           best = i;
         }
         hover[i] += ((hovered === pills[i] ? 1 : 0) - hover[i]) * 0.12;
+        if (glow[i] > 0) glow[i] = pills[i].classList.contains('is-opening') ? 1 : Math.max(0, glow[i] - dt / 0.9);
       }
       details(wrapped / step);
 
@@ -987,7 +998,11 @@ const LAPS = 3;
         if (!a) return null;
         // falling covers stay clean: no stretch, smear or colour split while
         // they come in; the edge lens eases in only as each one settles
-        return { top: r.top + a.off, speed: a.k < 1 ? 0 : speed * gateAt(performance.now()), lens: a.k * a.k * a.k * gateAt(performance.now()) };
+        // colour: the cover in focus, one under the pointer, and one that has
+        // just flown back from its case study (fading out of it gently)
+        const fd = Math.min(1, Math.abs(r.top + r.height / 2 - vh / 2) / step);
+        const sat = Math.max((1 + Math.cos(Math.PI * fd)) / 2, hover[i], glow[i]);
+        return { top: r.top + a.off, speed: a.k < 1 ? 0 : speed * gateAt(performance.now()), lens: a.k * a.k * a.k * gateAt(performance.now()), sat };
       }, maxElong());
     };
     requestAnimationFrame(frame);
@@ -1045,6 +1060,7 @@ const LAPS = 3;
       uniform float uHover;
       uniform float uAlpha;
       uniform float uSpeed;
+      uniform float uSat;
       varying vec2 vUv;
       varying float vEdge;
       vec2 cover(vec2 uv) {
@@ -1074,6 +1090,8 @@ const LAPS = 3;
           col.b += texture2D(uTex, uv + vec2(0.0, o - split)).b;
         }
         col /= 5.0;
+        // covers out of focus are drawn in black and white
+        col = mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, uSat);
         gl_FragColor = vec4(col, 1.0) * uAlpha * mask;
       }`;
     const compile = (type: number, src: string) => {
@@ -1116,6 +1134,7 @@ const LAPS = 3;
     const uLens = u('uLens');
     const uElong = u('uElong');
     const uImg = u('uImg');
+    const uSat = u('uSat');
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -1159,7 +1178,7 @@ const LAPS = 3;
       /** place(i, rect) returns where to draw a cover (top + speed) or null to skip it */
       /** maxElong: the most a cover may lengthen with speed (from the gap
           between covers), so neighbours never touch */
-      draw(els: HTMLElement[], hover: number[], place: (i: number, r: DOMRect) => { top: number; speed: number; lens: number } | null, maxElong = 0.04) {
+      draw(els: HTMLElement[], hover: number[], place: (i: number, r: DOMRect) => { top: number; speed: number; lens: number; sat: number } | null, maxElong = 0.04) {
         const cr = canvas.getBoundingClientRect();
         const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1 : 1.5);
         const W = Math.round(cr.width * dpr);
@@ -1170,7 +1189,7 @@ const LAPS = 3;
         }
         const now = performance.now();
         const since = shownSince < 0 ? now : shownSince;
-        type Job = { i: number; t: NonNullable<Tex>; x: number; y: number; w: number; h: number; alpha: number; speed: number; lens: number };
+        type Job = { i: number; t: NonNullable<Tex>; x: number; y: number; w: number; h: number; alpha: number; speed: number; lens: number; sat: number };
         const jobs: Job[] = [];
         let sig = `${W},${H};`;
         els.forEach((el, i) => {
@@ -1191,8 +1210,8 @@ const LAPS = 3;
           if (firstDrawnAt < 0) firstDrawnAt = now;
           const li = clamp((now - firstDrawnAt) / LENS_IN);
           const lensIn = 1 - (1 - li) * (1 - li) * (1 - li); // ease-out cubic
-          jobs.push({ i, t, x: r.left - cr.left, y: p.top - cr.top, w: r.width, h: r.height, alpha, speed: p.speed, lens: p.lens * lensIn });
-          sig += `${i}:${r.left.toFixed(1)},${p.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${p.speed.toFixed(3)},${(p.lens * lensIn).toFixed(3)};`;
+          jobs.push({ i, t, x: r.left - cr.left, y: p.top - cr.top, w: r.width, h: r.height, alpha, speed: p.speed, lens: p.lens * lensIn, sat: p.sat });
+          sig += `${i}:${r.left.toFixed(1)},${p.top.toFixed(1)},${r.width.toFixed(1)},${alpha.toFixed(3)},${hover[i].toFixed(3)},${p.speed.toFixed(3)},${(p.lens * lensIn).toFixed(3)},${p.sat.toFixed(3)};`;
         });
         if (jobs.length && shownSince < 0) shownSince = now;
         if (sig === lastSig) return;
@@ -1202,7 +1221,7 @@ const LAPS = 3;
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform2f(uView, cr.width, cr.height);
-        for (const { i, t, x, y, w, h, alpha, speed, lens } of jobs) {
+        for (const { i, t, x, y, w, h, alpha, speed, lens, sat } of jobs) {
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
           gl.uniform4f(uRect, x, y, w, h);
           gl.uniform2f(uImg, t.w, t.h);
@@ -1210,6 +1229,7 @@ const LAPS = 3;
           gl.uniform1f(uAlpha, alpha);
           gl.uniform1f(uSpeed, speed);
           gl.uniform1f(uLens, lens);
+          gl.uniform1f(uSat, sat);
           gl.uniform1f(uElong, Math.min(0.12 * speed, maxElong));
           gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         }
