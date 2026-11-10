@@ -780,9 +780,10 @@ const LAPS = 3;
     unlock();
     ['wheel', 'pointermove', 'touchstart', 'scroll'].forEach((t) => window.addEventListener(t, () => { if (!actx || actx.state !== 'running') unlock(); }, { passive: true, capture: true }));
     document.addEventListener('visibilitychange', () => { if (!document.hidden && actx?.state === 'suspended') unlock(); });
-    // A barely-there tick, felt more than heard: a few milliseconds of very
-    // soft, muffled noise with a gentle (not instant) onset, nothing below or
-    // above it; very quiet, the same every time. It sits under the motion.
+    // An ASMR tap, close-miked and soft: a crisp little brush of
+    // band-limited noise (like a fingertip across paper) over a faint, warm
+    // wooden knock underneath. Gentle onset, quick natural decay, the same
+    // every time, no pitch changes.
     const tick = (_i: number) => {
       if (!actx || actx.state !== 'running' || reduceMotion) return;
       const now = performance.now();
@@ -790,27 +791,44 @@ const LAPS = 3;
       const v = VOLUME * Math.min(1, Math.max(0.6, (now - lastTick) / 220));
       lastTick = now;
       const t = actx.currentTime + 0.002;
-      const len = Math.floor(actx.sampleRate * 0.022);
+      // the brush: 32 ms of noise, ~4 ms soft rise, exponential tail
+      const len = Math.floor(actx.sampleRate * 0.032);
       const buf = actx.createBuffer(1, len, actx.sampleRate);
       const ch = buf.getChannelData(0);
       for (let k = 0; k < len; k++) {
         const x = k / len;
-        // a ~5 ms soft rise, then a smooth fade (no sharp click edge)
-        ch[k] = (Math.random() * 2 - 1) * Math.min(1, x / 0.22) * Math.pow(1 - x, 2.4);
+        ch[k] = (Math.random() * 2 - 1) * Math.min(1, x / 0.12) * Math.exp(-x * 7);
       }
       const src = actx.createBufferSource();
       src.buffer = buf;
-      const lp = actx.createBiquadFilter();
-      lp.type = 'lowpass';
-      // muffled but within what laptop and phone speakers can play
-      lp.frequency.value = 1150;
-      lp.Q.value = 0.3;
+      const bp = actx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 2600;
+      bp.Q.value = 0.9;
+      const hs = actx.createBiquadFilter();
+      hs.type = 'highshelf';
+      hs.frequency.value = 6000;
+      hs.gain.value = -12;
       const g = actx.createGain();
-      g.gain.value = v;
-      src.connect(lp);
-      lp.connect(g);
+      g.gain.value = v * 0.9;
+      src.connect(bp);
+      bp.connect(hs);
+      hs.connect(g);
       g.connect(actx.destination);
       src.start(t);
+      // the knock: a soft, low sine that drops a little and dies in ~60 ms
+      const o = actx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(210, t);
+      o.frequency.exponentialRampToValueAtTime(150, t + 0.06);
+      const og = actx.createGain();
+      og.gain.setValueAtTime(0.0001, t);
+      og.gain.exponentialRampToValueAtTime(v * 0.35, t + 0.005);
+      og.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+      o.connect(og);
+      og.connect(actx.destination);
+      o.start(t);
+      o.stop(t + 0.09);
     };
 
     // ---------- Easter egg: a lucky spin ----------
