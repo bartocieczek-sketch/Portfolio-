@@ -150,8 +150,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
          panel that stays put (sticky) while the pictures scroll. The cover
          grows up to where the panel starts; the panel slides in once. -->
     <a class="case__back-btn" href={href(Astro.locals, '/')} aria-label="Back to work">
-      <span class="case__back-arrow" aria-hidden="true">←</span>
-      <span class="t-label-small">Work</span>
+      <svg class="case__back-arrow" viewBox="0 0 28 28" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 14H5.5M12.5 7l-7 7 7 7" /></svg>
     </a>
 
     <section class="case__row">
@@ -357,30 +356,33 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
 
   /* ---------- Back to work (top left) ---------- */
+  /* Back: just a white arrow over the cover, 24px in from its corner (the
+     page's own 24px plus 24px). A soft shadow keeps it readable on light
+     pictures. The hit area is larger than the arrow. */
   .case__back-btn {
     position: fixed;
     z-index: 20;
-    top: 20px;
-    left: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 16px 0 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.86);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    color: var(--text-primary);
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 6px 24px rgba(0, 0, 0, 0.08);
-    transition: transform 0.2s var(--ease-out);
+    top: 36px;
+    left: 36px;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    color: #fff;
+    filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.35));
+    transition: transform 0.25s var(--ease-out);
   }
   .case__back-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.92);
   }
   .case__back-arrow {
-    font-size: 14px;
-    line-height: 1;
+    display: block;
+    transition: transform 0.35s var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .case__back-btn:hover .case__back-arrow {
+      transform: translateX(-4px);
+    }
   }
 
   /* ---------- The panel ---------- */
@@ -670,8 +672,19 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     opacity: 0;
     transition: opacity 0.3s var(--ease-out);
   }
+  /* in it comes with the pictures: slides in from the right, sweeping
+     into place as it fades up */
+  .case__back-btn {
+    animation: case-back-in 0.9s 0.35s var(--ease-out) backwards;
+  }
   :global(html.from-card) .case__back-btn {
-    animation: case-rise 0.7s 0.5s var(--ease-out) both;
+    animation: case-back-in 0.9s 0.55s var(--ease-out) backwards;
+  }
+  @keyframes case-back-in {
+    from {
+      opacity: 0;
+      transform: translateX(22px);
+    }
   }
   @keyframes case-rise {
     from {
@@ -696,6 +709,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
   }
   @media (max-width: 809px) {
+    /* the arrow 24px in from the cover's corner (the page's 12px plus 24) */
+    .case__back-btn {
+      top: 24px;
+      left: 24px;
+    }
     /* phones, as on osply: one column, every picture full width in its
        own shape; the cover keeps its 4:5 (so it flies the same way) */
     .case__top {
