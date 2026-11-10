@@ -303,9 +303,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     display: flex;
     flex-direction: column;
     gap: 32px;
-    padding: 36px 32px 28px;
-    background: #f4f4f2;
-    border-radius: var(--radius);
+    /* no card: the text sits straight on the page beside the photos */
+    padding: 12px 8px 4px 20px;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
@@ -588,7 +587,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       transform: none !important;
     }
     .case__panel-in {
-      padding: 28px 22px 22px;
+      padding: 28px 0 8px;
     }
     .case__gallery {
       grid-template-columns: 1fr;

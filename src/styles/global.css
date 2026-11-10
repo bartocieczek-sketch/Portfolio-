@@ -25,8 +25,8 @@
 
   --gutter: 24px;
   --radius: 20px;
-  /* the project photos: as round as the home covers (each side fully rounded) */
-  --photo-radius: 999px;
+  /* the project photos' corners */
+  --photo-radius: var(--radius);
   /* Motion tokens */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entrances, hovers */
   --ease-cover: cubic-bezier(0.32, 0.72, 0, 1);
