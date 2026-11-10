@@ -74,6 +74,23 @@ const rows: { items: typeof pics; single?: boolean }[] = [];
     }
   }
   if (open) open.single = true;
+  // never a lonely half row: a tall picture left without a partner joins a
+  // neighbouring row instead (a pair becomes three, or it stands beside a
+  // wide one), all at one height, still uncropped. It joins whichever
+  // neighbour keeps that row tallest (fewest, narrowest pictures).
+  const single = rows.findIndex((r) => r.single);
+  if (single >= 0 && rows.length > 1) {
+    const lone = rows[single];
+    const sum = (r: (typeof rows)[number]) => r.items.reduce((t, x) => t + x.r, 0);
+    const prev = rows[single - 1];
+    const next = rows[single + 1];
+    const pick = !next || (prev && sum(prev) <= sum(next)) ? prev : next;
+    if (pick) {
+      if (pick === prev) pick.items.push(...lone.items);
+      else pick.items.unshift(...lone.items);
+      rows.splice(single, 1);
+    }
+  }
 }
 
 // First graphic: the card cover in the same 4:5 crop as the home carousel,
