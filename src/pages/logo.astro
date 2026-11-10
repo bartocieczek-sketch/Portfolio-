@@ -97,17 +97,15 @@ export const prerender = true;
         return new THREE.Mesh(geo, mat);
       };
 
-      // the O, a little larger, sweeps around and behind; the B is written
-      // inside it, slightly forward and to the left, so it reads as one mark
+      // the O sweeps around; the B sits inside it, sized and placed so the
+      // two never touch (fitted with a clear gap all round)
       const logo = new THREE.Group();
       const S = 2.3;
-      const ow = ((glyphs.g.O[1] as number[])[2] - (glyphs.g.O[1] as number[])[0]) / U;
       const O = letter('O', 150);
       O.scale.setScalar(S * 1.25);
-      O.position.set(0, 0, -0.12);
-      const B = letter('B', 190);
-      B.scale.setScalar(S);
-      B.position.set(-0.25 * ow * S, 0, 0.12);
+      const B = letter('B', 170);
+      B.scale.setScalar(S * 0.64);
+      B.position.set((20 / U) * S, (40 / U) * S, 0.04);
       logo.add(O, B);
       scene.add(logo);
 
