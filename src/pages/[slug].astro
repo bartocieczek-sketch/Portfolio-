@@ -22,11 +22,48 @@ const index = list.findIndex((p) => p.slug === project.slug);
 const next = list.length > 1 ? list[(index + 1) % list.length] : undefined;
 const number = (n: number) => String(n).padStart(2, '0');
 
+// ---------- Laying the pictures out without cropping any ----------
+// Every picture keeps its own shape. Tall or squarish ones (narrower than
+// 1.2:1) go in pairs, side by side, scaled to the same height (each row's
+// widths follow the two shapes); wide ones get a row of their own. The one
+// closest to the cover's 4:5 sits beside the cover the same way.
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const ratioOf = (g: any): number | null => {
+  const d = (g?.kind === 'image' ? g.image : g?.poster)?.asset?.metadata?.dimensions;
+  return d?.width && d?.height ? d.width / d.height : null;
+};
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const shaped = (g: any) => ({ g, r: ratioOf(g) ?? (g.size === 'full' ? (g.kind === 'lottie' ? 1.66 : 16 / 9) : 0.82) });
+
+
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 // The cover opens the gallery, so skip a gallery image that is the same file
 const gallery: any[] = (project.gallery ?? []).filter(
   (g: any) => !(project.cover?.asset?._id && g?.image?.asset?._id === project.cover.asset._id),
 );
+const pics = gallery.map(shaped);
+const TALL = 1.2;
+const tallOnes = pics.filter((x) => x.r < TALL);
+const near = tallOnes.find((x) => Math.abs(x.r - 0.8) < 0.08) ?? tallOnes.sort((a, b) => Math.abs(a.r - 0.8) - Math.abs(b.r - 0.8))[0];
+const beside = near ?? null;
+const rows: { items: typeof pics; single?: boolean }[] = [];
+{
+  // a tall picture opens a row where it appears; the next tall one joins it
+  let open: (typeof rows)[number] | null = null;
+  for (const x of pics) {
+    if (x === beside) continue;
+    if (x.r >= TALL) rows.push({ items: [x] });
+    else if (open) {
+      open.items.push(x);
+      open = null;
+    } else {
+      open = { items: [x] };
+      rows.push(open);
+    }
+  }
+  if (open) open.single = true;
+}
+
 // First graphic: the card cover in the same 4:5 crop as the home carousel,
 // so the thumbnail can morph straight into it
 const coverSrc = project.cover?.asset ? urlFor(project.cover).width(1000).height(1250).fit('crop').quality(82).url() : undefined;
@@ -100,9 +137,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
           <img class="case__cover-hi" src={heroSrc} srcset={heroSet} sizes="(max-width: 809px) 100vw, 50vw" alt="" fetchpriority="high" decoding="async" data-cover-hi />
         </div>
       )}
-      {gallery.length > 0 && (
-        <div class="case__stack">
-          {gallery.slice(0, 1).map((item) => <Media item={item} eager />)}
+      {beside && (
+        <div class="case__stack" style={beside ? `--r:${beside.r.toFixed(4)}` : undefined}>
+          {beside && <Media item={beside.g} ratio={beside.r} eager />}
         </div>
       )}
       </div>
@@ -134,7 +171,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         </div>
       </aside>
       <div class="case__gallery">
-        {gallery.slice(1).map((item, i) => <Media item={item} eager={i < 2} />)}
+        {rows.map((row, i) => (
+          <div class:list={['case__grow', { 'is-single': row.single }]}>
+            {row.items.map((x) => <Media item={x.g} ratio={x.r} eager={i < 1} />)}
+          </div>
+        ))}
       </div>
     </section>
 
@@ -227,8 +268,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   /* the main visual in its own 4:5 shape, as big as the screen allows: the
      whole picture is visible (nothing cropped away), and the home pill only
      has to grow, not change shape, on the way in */
-  /* The cover and one more picture beside it, the very same size: the top
-     row is two equal columns, exactly like the pairs in the gallery below */
+  /* The cover and the picture beside it share one height, each in its own
+     shape (widths follow the two shapes: flex-grow = width / height), like
+     every pair in the gallery; nothing is cropped */
   .case__top {
     grid-area: top;
     display: flex;
@@ -237,25 +279,20 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   .case__cover {
     position: relative;
-    flex: none;
-    width: calc((100% - 8px) / 2);
+    flex: 0.8 1 0;
+    min-width: 0;
     aspect-ratio: 4 / 5;
     overflow: hidden;
     border-radius: var(--photo-radius);
   }
+  /* no picture to pair with: the cover takes a pair's half */
+  .case__cover:only-child {
+    flex: none;
+    width: calc((100% - 8px) / 2);
+  }
   .case__stack {
-    flex: 1;
+    flex: var(--r, 0.8) 1 0;
     min-width: 0;
-  }
-  .case__stack > :global(.media) {
-    /* the same frame as the cover, whatever the picture or video is */
-    aspect-ratio: 4 / 5 !important;
-  }
-  .case__stack :global(.media img),
-  .case__stack :global(.media video) {
-    height: 100% !important;
-    min-height: 0;
-    object-fit: cover;
   }
   .case__gallery {
     grid-area: gallery;
@@ -276,13 +313,18 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     opacity: 1;
   }
   .case__gallery {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-auto-flow: row dense;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
   }
-  .case__gallery :global(.media--full) {
-    grid-column: 1 / -1;
+  .case__grow {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  /* a tall picture with no partner left: half a pair's width */
+  .case__grow.is-single {
+    width: calc((100% - 8px) / 2);
   }
 
   /* ---------- Back to work (top left) ---------- */
@@ -627,15 +669,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     .case__top {
       flex-direction: column;
     }
-    .case__cover {
+    .case__cover,
+    .case__cover:only-child {
+      flex: none;
       width: 100%;
       aspect-ratio: 4 / 3;
     }
     .case__stack {
-      flex-direction: row;
-    }
-    .case__stack > :global(.media) {
-      aspect-ratio: 0.82;
+      flex: none;
+      width: 100%;
     }
     /* phones: one column — picture, story, then the rest of the pictures */
     .case__row {

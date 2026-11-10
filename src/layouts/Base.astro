@@ -449,6 +449,25 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       };
 
       afterFlight(() => document.querySelectorAll('video[data-autoplay]').forEach((v) => videoIo.observe(v)));
+      // a frame (and the slot holding it beside the cover) takes its
+      // content's real shape once known
+      function setShape(inner: Element, r: number) {
+        const fig = inner.closest<HTMLElement>('.media--fit');
+        if (!fig) return;
+        fig.style.setProperty('--r', r.toFixed(4));
+        const slot = fig.parentElement;
+        if (slot?.classList.contains('case__stack')) slot.style.setProperty('--r', r.toFixed(4));
+      }
+      // a video's frame takes the video's own shape once it is known
+      document.querySelectorAll<HTMLVideoElement>('.media--fit video').forEach((v) =>
+        v.addEventListener(
+          'loadedmetadata',
+          () => {
+            if (v.videoWidth && v.videoHeight) setShape(v, v.videoWidth / v.videoHeight);
+          },
+          { once: true },
+        ),
+      );
 
       // Lottie animations, loaded on demand
       const lottieEls = document.querySelectorAll<HTMLElement>('[data-lottie]');
@@ -460,13 +479,18 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
               lottieIo.unobserve(e.target);
               const el = e.target as HTMLElement;
               const { default: lottie } = await import('lottie-web/build/player/lottie_light');
-              lottie.loadAnimation({
+              const anim = lottie.loadAnimation({
                 container: el,
                 renderer: 'svg',
                 loop: true,
                 autoplay: !reduceMotion,
                 path: el.dataset.lottie,
-                rendererSettings: { preserveAspectRatio: 'xMidYMid slice' },
+                rendererSettings: { preserveAspectRatio: 'xMidYMid meet' },
+              });
+              anim.addEventListener('data_ready', () => {
+                // its frame takes the animation's own shape: shown whole
+                const d = (anim as unknown as { animationData?: { w?: number; h?: number } }).animationData;
+                if (d?.w && d?.h) setShape(el, d.w / d.h);
               });
             }
           },
