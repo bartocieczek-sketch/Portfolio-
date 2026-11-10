@@ -3,11 +3,15 @@
 // The page scrolls: the words light up one by one and the B turns.
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
-import { SETTINGS_QUERY } from '../lib/sanity';
+import { ABOUT_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
 import { load } from '../lib/load';
 
-const settings = await load(Astro.locals, SETTINGS_QUERY);
+const [settings, about] = await Promise.all([load(Astro.locals, SETTINGS_QUERY), load(Astro.locals, ABOUT_QUERY)]);
 if (!settings) return new Response('Content not found', { status: 500 });
+// the photos that rise onto the statement once it is fully lit (for now the
+// same portrait twice)
+const portrait = about?.portrait?.asset ? urlFor(about.portrait).width(700).height(875).fit('crop').quality(80).url() : null;
+const photos = portrait ? [portrait, portrait] : [];
 ---
 
 <Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
@@ -23,6 +27,11 @@ if (!settings) return new Response('Content not found', { status: 500 });
           Hi, I’m Bart — a designer &amp; developer pushing my horizons further with AI every day. Fuelled by sport and way too much coffee.
         </h1>
       </div>
+      {photos.map((src, k) => (
+        <figure class="about__photo" style={`--k:${k}`}>
+          <img src={src} alt={k === 0 ? settings.name : ''} width="700" height="875" loading="eager" decoding="async" />
+        </figure>
+      ))}
       <canvas class="about__mark" data-monogram aria-label="B monogram" role="img"></canvas>
       <span class="about__hint" aria-hidden="true">Scroll</span>
     </section>
@@ -38,7 +47,7 @@ if (!settings) return new Response('Content not found', { status: 500 });
   .about__top {
     position: fixed;
     inset: 0 0 auto;
-    z-index: 3;
+    z-index: 5;
     padding: var(--gutter);
   }
   .about__stage {
@@ -88,8 +97,63 @@ if (!settings) return new Response('Content not found', { status: 500 });
   .about__say.is-in :global(.swi) {
     transform: none;
   }
-  .about__mark {
+  /* two photos rise from below onto the text once it is fully lit; they
+     sink back if you scroll up */
+  .about__photo {
+    position: absolute;
     z-index: 2;
+    margin: 0;
+    width: clamp(150px, 17vw, 260px);
+    aspect-ratio: 4 / 5;
+    border-radius: var(--photo-radius);
+    overflow: hidden;
+    pointer-events: none;
+    transform: translateY(var(--from, 75svh)) rotate(var(--r0, 0deg));
+    transition: transform 1.2s var(--ease-expo);
+    transition-delay: calc(var(--k) * 220ms);
+  }
+  .about__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .about__photo:nth-of-type(1) {
+    left: 14%;
+    top: 46%;
+    --r0: -12deg;
+    --r1: -5deg;
+  }
+  .about__photo:nth-of-type(2) {
+    right: 13%;
+    top: 22%;
+    --r0: 12deg;
+    --r1: 4deg;
+    --from: 95svh;
+  }
+  .about__stage.is-full .about__photo {
+    transform: translateY(0) rotate(var(--r1));
+  }
+  /* going back down: no wait, the second goes first */
+  .about__stage:not(.is-full) .about__photo {
+    transition-duration: 0.7s;
+    transition-delay: calc((1 - var(--k)) * 80ms);
+  }
+  @media (max-width: 809px) {
+    .about__photo {
+      width: 38vw;
+    }
+    .about__photo:nth-of-type(1) {
+      left: 6%;
+      top: 58%;
+    }
+    .about__photo:nth-of-type(2) {
+      right: 6%;
+      top: 12%;
+    }
+  }
+  .about__mark {
+    z-index: 3;
     position: absolute;
     inset: 0;
     width: 100%;
@@ -100,7 +164,7 @@ if (!settings) return new Response('Content not found', { status: 500 });
     position: absolute;
     left: 50%;
     bottom: 28px;
-    z-index: 3;
+    z-index: 4;
     transform: translateX(-50%);
     font: 500 12px/1 var(--font-head);
     letter-spacing: 0.04em;
@@ -175,6 +239,8 @@ if (!settings) return new Response('Content not found', { status: 500 });
       });
       say.style.transform = `translateY(${(-p * 6).toFixed(2)}vh)`;
       wrap.parentElement!.style.setProperty('--p', p.toFixed(3));
+      // fully lit (the last word reaches full white at 85%): photos rise in
+      wrap.parentElement!.classList.toggle('is-full', p >= 0.86);
       (window as any).__aboutP = p;
     };
     addEventListener('scroll', onScroll, { passive: true });
