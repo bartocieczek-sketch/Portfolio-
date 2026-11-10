@@ -537,7 +537,7 @@ html:active-view-transition-type(cover-back)::view-transition-new(root) {
 }
 @keyframes vt-focus-in {
   from {
-    filter: blur(3px) brightness(0.98);
+    filter: blur(9px) brightness(0.97);
     transform: scale(1.04);
     opacity: 0;
   }
@@ -554,7 +554,7 @@ html:active-view-transition-type(cover-back)::view-transition-new(root) {
     opacity: 1;
   }
   to {
-    filter: blur(3px) brightness(0.98);
+    filter: blur(9px) brightness(0.97);
     transform: scale(1.04);
     opacity: 0;
   }
