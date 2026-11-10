@@ -248,17 +248,10 @@ const LAPS = 3;
       if (idx < 0) return;
       var step = (pills[1].parentNode).offsetTop - (pills[0].parentNode).offsetTop;
       var lap = (pills[N].parentNode).offsetTop - (pills[0].parentNode).offsetTop;
-      // where the column was when this project was clicked (else: centre it)
-      var from = null;
-      try {
-        from = JSON.parse(sessionStorage.getItem('vh-from') || 'null');
-      } catch (e) {}
+      // the project comes back exactly centred, on the line, whatever spot
+      // it was opened from
       var pos = idx * step;
       var p = pills[N + idx];
-      if (from && pills[from.i] && pills[from.i].getAttribute('href') === pills[N + idx].getAttribute('href')) {
-        pos = from.pos;
-        p = pills[from.i];
-      }
       var wrapped = ((pos % lap) + lap) % lap;
       window.__vhStart = pos;
       list.style.transform = 'translate3d(0,' + -(lap + wrapped) + 'px,0)';
@@ -855,16 +848,18 @@ const LAPS = 3;
         const slugOf = (el: HTMLElement) => el.getAttribute('href')?.replace(/\/$/, '').split('/').pop();
         let p = from ? pills[from.i] : null;
         if (back?.still) sessionStorage.removeItem('vt-back');
-        // came back from a different project than the one clicked here (e.g.
-        // via "Next project"): bring that project's pill to the middle first
-        if (back && !back.still && (!p || slugOf(p) !== back.slug)) {
+        // the project comes back exactly centred, on the line (also when it
+        // was opened off-centre, or reached via "Next project")
+        if (back) {
           const N = pills.length / 3;
           const idx = pills.slice(N, 2 * N).findIndex((el) => slugOf(el) === back.slug);
           if (idx >= 0) {
             pos = target = idx * step;
-            const lapH = (pills[N].parentNode as HTMLElement).offsetTop - (pills[0].parentNode as HTMLElement).offsetTop;
-            const wrapped = ((pos % lapH) + lapH) % lapH;
-            list.style.transform = `translate3d(0, ${(-(lapH + wrapped)).toFixed(2)}px, 0)`;
+            glideV = 0;
+            const wrapped = ((pos % lap) + lap) % lap;
+            list.style.transform = `translate3d(0, ${(-(lap + wrapped)).toFixed(2)}px, 0)`;
+            (window as unknown as { __vhFocus(p: HTMLElement[], s: number, l: number, w: number): void }).__vhFocus(pills, step, lap, wrapped);
+            details(wrapped / step);
             p = pills[N + idx];
           }
         }
