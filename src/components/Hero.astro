@@ -831,9 +831,9 @@ const LAPS = 3;
         releaseSrc?.stop();
       } catch (err) {}
       // the recordings are quiet (peaks ~0.1 press, ~0.06 release): bring the
-      // press up to ~0.5 and the release to ~0.2
-      play(presses[k], t, v * 7);
-      if (release) releaseSrc = play(release, t + 0.07, v * 5);
+      // press up to ~0.35 and the release to ~0.15
+      play(presses[k], t, v * 5);
+      if (release) releaseSrc = play(release, t + 0.07, v * 3.6);
     };
 
     // ---------- Easter egg: a lucky spin ----------
