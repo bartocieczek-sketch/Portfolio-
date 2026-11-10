@@ -150,7 +150,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
          panel that stays put (sticky) while the pictures scroll. The cover
          grows up to where the panel starts; the panel slides in once. -->
     <a class="case__back-btn" href={href(Astro.locals, '/')} aria-label="Back to work">
-      <svg class="case__back-arrow" viewBox="0 0 28 28" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 14H5.5M12.5 7l-7 7 7 7" /></svg>
+      <svg class="case__back-arrow" viewBox="0 0 28 28" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 14H5.5M12.5 7l-7 7 7 7" /></svg>
     </a>
 
     <section class="case__row">
@@ -368,9 +368,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     place-items: center;
     width: 52px;
     height: 52px;
+    border-radius: 50%;
     color: #fff;
-    filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.35));
-    transition: transform 0.25s var(--ease-out);
+    /* a round, dark frosted disc: the white arrow reads on any picture */
+    background: rgba(17, 17, 17, 0.42);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    transition:
+      transform 0.25s var(--ease-out),
+      background-color 0.25s ease;
   }
   .case__back-btn:active {
     transform: scale(0.92);
@@ -380,8 +386,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     transition: transform 0.35s var(--ease-out);
   }
   @media (hover: hover) and (pointer: fine) {
+    .case__back-btn:hover {
+      background-color: rgba(17, 17, 17, 0.62);
+    }
     .case__back-btn:hover .case__back-arrow {
-      transform: translateX(-4px);
+      transform: translateX(-3px);
     }
   }
 
