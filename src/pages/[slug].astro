@@ -107,10 +107,10 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
           </div>
 
           {meta.length > 0 && (
-            <dl class="case__meta">
+            <dl class="case__meta" data-pm-rule>
               {meta.map(([k, v]) => (
                 <div>
-                  <dt>{k}</dt>
+                  <dt data-pm-fade>{k}</dt>
                   <dd>{v}</dd>
                 </div>
               ))}
@@ -295,9 +295,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     height: calc(100svh - 48px);
     transition: transform 0.8s var(--ease-cover);
   }
-  .case__panel.is-out {
-    transform: translate3d(calc(100% + 40px), 0, 0);
-  }
+  /* the panel itself stays put; its text rises in line by line (below) */
   .case__panel-in {
     height: 100%;
     display: flex;
@@ -349,7 +347,25 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     grid-template-columns: 1fr 1fr;
     gap: 18px 16px;
     padding-top: 22px;
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    position: relative;
+  }
+  .case__meta::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.08);
+    opacity: 0;
+    transition: opacity 0.8s ease-out 0.3s;
+  }
+  .case__panel:not(.is-out) .case__meta::before {
+    opacity: 1;
+  }
+  .case.is-leaving .case__meta::before {
+    opacity: 0;
+    transition: opacity 0.4s ease;
   }
   .case__meta dt {
     margin-bottom: 4px;
@@ -379,20 +395,32 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
   }
 
-  /* the panel's contents settle in just after it slides out */
-  .case__panel-in > * {
-    transition: opacity 0.5s var(--ease-out), transform 0.7s var(--ease-out);
+  /* The story comes in like osply's: every line rises out of its own mask
+     (110% below, 1.1s, a long ease-out), the lines of one block 60ms apart
+     and each block 80ms after the one before; the small grey labels and the
+     rule just fade in, a beat later. Each word carries its line's delay. */
+  .case__panel :global(.ln) {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    /* room for descenders inside the mask */
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
   }
-  .case__panel.is-out .case__panel-in > * {
+  .case__panel :global(.ln-i) {
+    display: inline-block;
+    transform: translateY(110%);
+    transition: transform 1.1s var(--ease-out) var(--d, 0s);
+  }
+  .case__panel:not(.is-out) :global(.ln-i) {
+    transform: none;
+  }
+  .case__panel [data-pm-fade] {
     opacity: 0;
-    transform: translateX(24px);
-    transition-duration: 0.25s;
+    transition: opacity 0.8s ease-out var(--d, 0s);
   }
-  .case__panel:not(.is-out) .case__panel-in > :nth-child(2) {
-    transition-delay: 0.08s;
-  }
-  .case__panel:not(.is-out) .case__panel-in > :nth-child(3) {
-    transition-delay: 0.14s;
+  .case__panel:not(.is-out) [data-pm-fade] {
+    opacity: 1;
   }
 
   /* ---------- Next project (a home row) ---------- */
@@ -490,18 +518,13 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
      one after another, just a little quicker. The story fades out line by
      line, the side pictures slide back out to the right, pictures still in
      view below sink away, then the panel itself slides off. */
-  .case.is-leaving .case__panel-in > * {
+  .case.is-leaving .case__panel :global(.ln-i) {
+    transform: translateY(-110%);
+    transition: transform 0.6s var(--ease-in-out) calc(var(--d, 0s) * 0.4);
+  }
+  .case.is-leaving .case__panel [data-pm-fade] {
     opacity: 0;
-    transform: translateX(24px);
-    transition:
-      opacity 0.45s ease,
-      transform 0.55s var(--ease-in-out);
-  }
-  .case.is-leaving .case__panel-in > :nth-child(2) {
-    transition-delay: 0.08s;
-  }
-  .case.is-leaving .case__panel-in > :nth-child(3) {
-    transition-delay: 0.16s;
+    transition: opacity 0.4s ease;
   }
   .case.is-leaving .case__stack > :global(*) {
     opacity: 0;
@@ -522,10 +545,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   .case.is-leaving .case__gallery > :global(:nth-child(2)) {
     transition-delay: 0.08s;
-  }
-  .case.is-leaving .case__panel {
-    transform: translate3d(calc(100% + 40px), 0, 0);
-    transition: transform 0.6s var(--ease-in-out) 0.22s;
   }
   .case.is-leaving .case__back-btn {
     opacity: 0;
@@ -646,6 +665,65 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   // landed and turned sharp (from home) or just after the page shows, and
   // slides out again only when leaving for home.
   const panel = document.querySelector<HTMLElement>('[data-panel]');
+  // split the story into masked lines: each word is wrapped (inline
+  // elements such as links keep their own words), words are grouped into
+  // lines by where they sit, and each gets its line's delay
+  const splitPanel = () => {
+    if (!panel || panel.dataset.split) return;
+    panel.dataset.split = '1';
+    const blocks = [
+      ...panel.querySelectorAll<HTMLElement>('.case__title, .case__intro p, .case__intro li, .case__live, .case__meta dd'),
+    ];
+    const STEP = 0.08; // between blocks
+    const LINE = 0.06; // between lines of a block
+    const wrap = (node: Node, out: HTMLElement[]) => {
+      if (node.nodeType === 3) {
+        const parts = (node.textContent || '').split(/(\s+)/);
+        const frag = document.createDocumentFragment();
+        for (const part of parts) {
+          if (!part) continue;
+          if (/^\s+$/.test(part)) {
+            frag.append(document.createTextNode(part));
+            continue;
+          }
+          const o = document.createElement('span');
+          o.className = 'ln';
+          const i = document.createElement('span');
+          i.className = 'ln-i';
+          i.textContent = part;
+          o.append(i);
+          frag.append(o);
+          out.push(o);
+        }
+        node.parentNode?.replaceChild(frag, node);
+      } else if (node.nodeType === 1) {
+        [...node.childNodes].forEach((c) => wrap(c, out));
+      }
+    };
+    let t = 0;
+    blocks.forEach((b) => {
+      const words: HTMLElement[] = [];
+      [...b.childNodes].forEach((c) => wrap(c, words));
+      let line = -1;
+      let top = Number.NEGATIVE_INFINITY;
+      for (const w of words) {
+        const y = w.offsetTop;
+        if (y > top + 2) {
+          line++;
+          top = y;
+        }
+        (w.firstChild as HTMLElement).style.setProperty('--d', (t + line * LINE).toFixed(3) + 's');
+      }
+      t += STEP + Math.max(0, line) * LINE * 0.5;
+    });
+    // the grey labels fade in a beat after the values beside them
+    panel.querySelectorAll<HTMLElement>('[data-pm-fade]').forEach((el) => {
+      const dd = el.nextElementSibling?.querySelector<HTMLElement>('.ln-i');
+      const d = dd ? parseFloat(dd.style.getPropertyValue('--d')) : 0;
+      el.style.setProperty('--d', (d + 0.2).toFixed(3) + 's');
+    });
+  };
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) splitPanel();
   let setPanel: (open: boolean) => void = () => {};
   const startPanel = () => {
     if (!panel) return;
