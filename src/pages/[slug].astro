@@ -102,7 +102,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       )}
       {gallery.length > 0 && (
         <div class="case__stack">
-          {gallery.slice(0, 2).map((item) => <Media item={item} eager />)}
+          {gallery.slice(0, 1).map((item) => <Media item={item} eager />)}
         </div>
       )}
       </div>
@@ -134,7 +134,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         </div>
       </aside>
       <div class="case__gallery">
-        {gallery.slice(2).map((item, i) => <Media item={item} eager={i < 2} />)}
+        {gallery.slice(1).map((item, i) => <Media item={item} eager={i < 2} />)}
       </div>
     </section>
 
@@ -227,37 +227,28 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   /* the main visual in its own 4:5 shape, as big as the screen allows: the
      whole picture is visible (nothing cropped away), and the home pill only
      has to grow, not change shape, on the way in */
-  /* The cover and, beside it, two pictures one above the other in exactly
-     the shape of the paired pictures below (0.82), sized so the three end
-     flush with the gallery's right edge:
-       cover W (4:5, height 1.25W) + 8 + stack w, with
-       w = 0.82 * (1.25W - 8) / 2  →  W = (row - 4.72px) / 1.5125 */
+  /* The cover and one more picture beside it, the very same size: the top
+     row is two equal columns, exactly like the pairs in the gallery below */
   .case__top {
     grid-area: top;
     display: flex;
     gap: 8px;
     align-items: flex-start;
-    container-type: inline-size;
   }
   .case__cover {
     position: relative;
     flex: none;
-    width: calc((100cqw - 4.72px) / 1.5125);
+    width: calc((100% - 8px) / 2);
     aspect-ratio: 4 / 5;
     overflow: hidden;
     border-radius: var(--photo-radius);
   }
-  /* the next two pictures, one above the other, as tall as the cover */
   .case__stack {
     flex: 1;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
   }
   .case__stack > :global(.media) {
-    flex: none;
-    aspect-ratio: 0.82;
+    aspect-ratio: 4 / 5;
   }
   .case__stack :global(.media img),
   .case__stack :global(.media video) {
