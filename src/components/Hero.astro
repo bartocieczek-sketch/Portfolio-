@@ -193,12 +193,10 @@ const LAPS = 3;
       var y = (-(n + f) * rowH).toFixed(2);
       for (var i = 0; i < tracks.length; i++) tracks[i].style.transform = 'translate3d(0,' + y + 'px,0)';
       var k = n + Math.round(f);
-      if (k !== on) {
-        var names = document.querySelector('.vh__names .vh__track');
-        if (names) {
-          if (names.children[on]) names.children[on].classList.remove('is-on');
-          if (names.children[k]) names.children[k].classList.add('is-on');
-        }
+      var names = tracks[2];
+      if (k !== on && names && names.children[k]) {
+        if (names.children[on]) names.children[on].classList.remove('is-on');
+        names.children[k].classList.add('is-on');
         on = k;
       }
     };
