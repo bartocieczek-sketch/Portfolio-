@@ -46,8 +46,15 @@ const LAPS = 3;
     } catch (e) {}
   })();
 </script>
+<script>
+  // the preloader's chrome B: drawn in three.js once the module arrives, a
+  // slow turn while the name plays, torn down when the preloader leaves
+  import { mountPreloadMark } from '../lib/preload-mark';
+  mountPreloadMark();
+</script>
 
 <div class="preload" aria-hidden="true" data-preload>
+  <canvas class="preload__mark" data-preload-mark width="112" height="112"></canvas>
   <span class="preload__line">
     <span class="preload__word">Bart Ocieczek</span>
     <span class="preload__word">Designer &amp; Developer</span>
@@ -71,8 +78,22 @@ const LAPS = 3;
     var OUT = 'cubic-bezier(0.7, 0, 0.84, 0)';
     var down = 'translateY(-105%)', mid = 'translateY(0)', up = 'translateY(105%)';
     // one timeline per word (stacked fill:both animations would mask each other)
-    var T = 2670;
-    var at = function (ms) { return ms / T; };
+    // the little chrome B turns in first, then the name follows
+    var LEAD = 450;
+    var T = 2670 + LEAD;
+    var at = function (ms) { return (ms + LEAD) / T; };
+    var mark = el.querySelector('[data-preload-mark]');
+    if (mark) {
+      mark.animate(
+        [
+          { opacity: 0, transform: 'translateY(30%) scale(0.6)', offset: 0 },
+          { opacity: 1, transform: 'none', offset: at(300), easing: OUT },
+          { opacity: 1, transform: 'none', offset: at(2150) },
+          { opacity: 0, transform: 'translateY(60%) scale(0.8)', offset: 1 },
+        ].map(function (k, i) { if (i === 0) k.easing = IN; return k; }),
+        { duration: T, fill: 'both' },
+      );
+    }
     w[0].animate(
       [
         { transform: down, offset: 0 },
@@ -105,7 +126,7 @@ const LAPS = 3;
         el.remove();
       });
     };
-    setTimeout(finish, 2450);
+    setTimeout(finish, 2450 + LEAD);
     out.finished.then(finish, finish);
   })();
 </script>

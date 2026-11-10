@@ -844,8 +844,15 @@ html.is-preloading { overflow: hidden; }
   z-index: 200;
   display: grid;
   place-items: center;
+  align-content: center;
+  gap: 18px;
   background: var(--surface-dark);
   pointer-events: none;
+}
+.preload__mark {
+  width: 56px;
+  height: 56px;
+  opacity: 0;
 }
 .preload__line {
   position: relative;
