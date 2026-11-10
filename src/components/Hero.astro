@@ -582,8 +582,10 @@ const LAPS = 3;
     document.fonts?.ready.then(measure);
 
     // ---------- Endless scroll ----------
-    // `target` is where the column is going, `pos` eases towards it every frame,
-    // so every input glides to a stop wherever it ends (no snapping).
+    // `target` is where the column is going, `pos` eases towards it every frame.
+    // Like a deck of slides: one wheel or trackpad gesture (or key press, or
+    // flick) moves exactly one project on, on one long, soft glide that
+    // settles with that project centred.
     // coming back from a case study, the inline script below already placed
     // the column on that project
     let pos = (window as unknown as { __vhStart?: number }).__vhStart ?? 0;
@@ -593,17 +595,50 @@ const LAPS = 3;
     // any input pauses the idle drift (see Frame) for a while
     let lastInput = performance.now();
     const touchInput = () => (lastInput = performance.now());
-    const nudge = (d: number) => {
+    /** one project on (dir 1) or back (-1), from the project being headed to */
+    const stepBy = (dir: number) => {
       touchInput();
       if (opening) return;
-      target += d;
+      target = (Math.round(target / step) + dir) * step;
     };
+    // a gesture = a run of wheel events; a trackpad's momentum tail belongs
+    // to the swipe that started it, so it never moves a second project. A
+    // long, hard swipe can carry on through more projects.
+    let wheelT = 0;
+    let wheelMag = 0;
+    let wheelSum = 0;
+    let stepT = 0;
+    let stepped = 0;
     window.addEventListener(
       'wheel',
       (e) => {
         e.preventDefault();
         const unit = e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? window.innerHeight : 1;
-        nudge((Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX) * unit);
+        const d = (Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX) * unit;
+        const now = performance.now();
+        const mag = Math.abs(d);
+        // a pause, or a fresh push while a momentum tail was dying down
+        const fresh = now - wheelT > 200 || (mag > wheelMag * 1.8 && mag > 24 && now - stepT > 350);
+        if (fresh) {
+          wheelSum = 0;
+          stepped = 0;
+        }
+        wheelT = now;
+        wheelMag = mag;
+        if (!d) return;
+        if (stepped && Math.sign(d) !== Math.sign(wheelSum)) {
+          // turned around mid-gesture: start over that way
+          wheelSum = 0;
+          stepped = 0;
+        }
+        wheelSum += d;
+        touchInput();
+        const want = Math.abs(wheelSum) > 6 ? 1 + Math.floor(Math.abs(wheelSum) / 1400) : 0;
+        while (stepped < want) {
+          stepBy(Math.sign(wheelSum));
+          stepped++;
+          stepT = now;
+        }
       },
       { passive: false },
     );
@@ -630,7 +665,15 @@ const LAPS = 3;
     const endDrag = () => {
       if (dragY === null) return;
       dragY = null;
-      nudge(dragV * 14);
+      touchInput();
+      if (opening) return;
+      // land on the project the flick heads for (at least the next one, for
+      // a real flick)
+      const aim = pos + dragV * 14;
+      let k = Math.round(aim / step);
+      const here = Math.round(pos / step);
+      if (k === here && Math.abs(dragV) > 4) k += Math.sign(dragV);
+      target = k * step;
     };
     window.addEventListener('pointerup', endDrag);
     window.addEventListener('pointercancel', endDrag);
@@ -648,10 +691,10 @@ const LAPS = 3;
     window.addEventListener('keydown', (e) => {
       if (['ArrowDown', 'PageDown', ' '].includes(e.key)) {
         e.preventDefault();
-        nudge(step);
+        stepBy(1);
       } else if (['ArrowUp', 'PageUp'].includes(e.key)) {
         e.preventDefault();
-        nudge(-step);
+        stepBy(-1);
       }
     });
 
@@ -941,6 +984,7 @@ const LAPS = 3;
     const DRIFT = 16; // px per second
     const IDLE_AFTER = 2500; // ms without input
     let drift = 0;
+    let drifting = false;
     let lastT = performance.now();
     const frame = () => {
       requestAnimationFrame(frame);
@@ -965,6 +1009,11 @@ const LAPS = 3;
       if (Math.abs(drift) > 0.01) {
         target += drift * dt;
         pos += drift * dt;
+        drifting = true;
+      } else if (drifting && !idle) {
+        // the drift has let go: settle on the nearest project
+        drifting = false;
+        if (!opening && !centring && dragY === null) target = Math.round(target / step) * step;
       }
       // ease towards the target; 0.055 per frame ≈ a long, buttery glide
       if (centring) centring(performance.now());

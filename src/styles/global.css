@@ -514,15 +514,48 @@ html:active-view-transition-type(cover-back)::view-transition-image-pair(root),
 html:active-view-transition-type(card)::view-transition-image-pair(root) {
   isolation: isolate;
 }
-html:active-view-transition-type(cover-back)::view-transition-old(root),
+/* Opening a project: home goes soft behind the flying cover (blurs, dims a
+   touch, drifts back) while the case study fades in over it. Coming back,
+   home comes into focus from that same blur over the case study. */
 html:active-view-transition-type(card)::view-transition-old(root) {
-  animation: vt-fade-out 0.4s var(--ease-out) both;
-  mix-blend-mode: plus-lighter;
+  animation: vt-defocus 0.85s var(--ease-flight) both;
+  z-index: 1;
 }
-html:active-view-transition-type(cover-back)::view-transition-new(root),
 html:active-view-transition-type(card)::view-transition-new(root) {
-  animation: vt-fade-in 0.4s var(--ease-out) both;
-  mix-blend-mode: plus-lighter;
+  animation: vt-fade-in 0.55s var(--ease-out) 0.2s both;
+  z-index: 2;
+}
+html:active-view-transition-type(cover-back)::view-transition-old(root) {
+  animation: vt-fade-out 0.5s var(--ease-out) 0.25s both;
+  z-index: 1;
+}
+html:active-view-transition-type(cover-back)::view-transition-new(root) {
+  animation: vt-focus-in 0.85s var(--ease-flight) both;
+  z-index: 2;
+}
+@keyframes vt-focus-in {
+  from {
+    filter: blur(28px) brightness(0.92);
+    transform: scale(1.04);
+    opacity: 0;
+  }
+  to {
+    filter: blur(0) brightness(1);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes vt-defocus {
+  from {
+    filter: blur(0) brightness(1);
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    filter: blur(28px) brightness(0.92);
+    transform: scale(1.04);
+    opacity: 0;
+  }
 }
 
 /* After the WebGL flight the cover is already in place on both pages, so the
