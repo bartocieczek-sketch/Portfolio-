@@ -573,6 +573,24 @@ const LAPS = 3;
       }
     };
 
+    // ---------- Edge lens gate ----------
+    // The top/bottom lens eases away when a project opens (so home leaves
+    // flat, calm, matching the flat flying cover) and eases back in when home
+    // is shown again — it never cuts in or out.
+    const lensGate = { from: 1, to: 1, t0: 0, dur: 1 };
+    const gateAt = (now: number) => {
+      const k = Math.min(1, Math.max(0, (now - lensGate.t0) / lensGate.dur));
+      const e = 1 - (1 - k) * (1 - k) * (1 - k); // ease-out cubic
+      return lensGate.from + (lensGate.to - lensGate.from) * e;
+    };
+    const gateTo = (to: number, dur: number, from?: number) => {
+      const now = performance.now();
+      lensGate.from = from ?? gateAt(now);
+      lensGate.to = to;
+      lensGate.t0 = now;
+      lensGate.dur = dur;
+    };
+
     // ---------- Hover + opening a project ----------
     let hovered: HTMLElement | null = null;
     pills.forEach((p) => {
@@ -585,6 +603,7 @@ const LAPS = 3;
         e.preventDefault();
         if (opening) return;
         opening = true;
+        gateTo(0, 320);
         warm(p.href);
         const domImg = p.querySelector('img');
         if (domImg) domImg.loading = 'eager';
@@ -674,6 +693,8 @@ const LAPS = 3;
     }
     window.addEventListener('pageshow', (e) => {
       if (!(e as PageTransitionEvent).persisted) return;
+      // back on home: the lens grows back in, from flat
+      gateTo(1, 700, 0);
       opening = false;
       centring = null;
       // nothing is hovered any more: WebGL must take the cover back unzoomed
@@ -752,6 +773,9 @@ const LAPS = 3;
     const ARRIVE_STAGGER = 70;
     let arriveAt = -1;
     let arriving = root.classList.contains('is-arriving');
+    // shown again without the falling arrival (back from a project, or from
+    // another page): the lens eases in from flat
+    if (!arriving) gateTo(1, 700, 0);
     const endArrival = () => {
       arriving = false;
       arriveAt = -1;
@@ -853,7 +877,7 @@ const LAPS = 3;
         if (!a) return null;
         // falling covers stay clean: no stretch, smear or colour split while
         // they come in; the edge lens eases in only as each one settles
-        return { top: r.top + a.off, speed: a.k < 1 ? 0 : speed, lens: a.k * a.k * a.k };
+        return { top: r.top + a.off, speed: a.k < 1 ? 0 : speed * gateAt(performance.now()), lens: a.k * a.k * a.k * gateAt(performance.now()) };
       }, maxElong());
     };
     requestAnimationFrame(frame);
