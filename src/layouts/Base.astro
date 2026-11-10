@@ -163,7 +163,13 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
             transform:
               'translate(' + x + 'px,' + y + 'px) scale(' + sc + ') translate(' + P.nw / 2 + 'px,' + P.nh / 2 + 'px) perspective(' + persp + 'px) rotateX(' +
               (rx * env).toFixed(3) + 'deg) rotateY(' + (ry * env).toFixed(3) + 'deg) translate(' + -P.nw / 2 + 'px,' + -P.nh / 2 + 'px)',
-            clipPath: 'inset(' + L(P.c0.y, P.c1.y, e) + 'px ' + L(P.c0.x, P.c1.x, e) + 'px round ' + L(P.c0.r, P.c1.r, e) + 'px)',
+            // the corners (and the pill's side insets) change evenly as seen
+            // on screen: interpolate in screen px, then express them in the
+            // box's own px at this moment's scale (interpolating in the box's
+            // px made the rounding trail behind the growing picture)
+            clipPath:
+              'inset(' + L(P.c0.y * P.s, P.c1.y * P.s1, e) / sc + 'px ' + L(P.c0.x * P.s, P.c1.x * P.s1, e) / sc + 'px round ' +
+              L(P.c0.r * P.s, P.c1.r * P.s1, e) / sc + 'px)',
           });
         }
         // going home is a touch quicker than opening a project
