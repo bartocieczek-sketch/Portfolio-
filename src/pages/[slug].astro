@@ -226,6 +226,15 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     overflow: hidden;
     filter: blur(9px);
     opacity: 0.4;
+    transition: opacity 0.7s var(--ease-out);
+  }
+  /* while a cover is flying in (or out) the real home is what shows behind;
+     this stand-in only fades in once the cover has landed, and is gone
+     before the page leaves, so the two never show at once */
+  :global(html.from-card:not(.cover-landed)) .case__under,
+  .case.is-leaving .case__under {
+    opacity: 0;
+    transition-duration: 0.3s;
   }
   .case__under-pill {
     position: absolute;
