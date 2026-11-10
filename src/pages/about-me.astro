@@ -15,6 +15,7 @@ const experience: any[] = about.experience ?? [];
 
 <Base title={`About me – ${settings.name}`} description={stegaClean(about.introLead)} image={about.portrait}>
   <main class="about">
+    <div class="about__ghost" aria-hidden="true"><span>About</span></div>
     <header class="about__top">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
       <h1 class="t-display about__title" data-split>{about.title}</h1>
@@ -85,7 +86,61 @@ const experience: any[] = about.experience ?? [];
 
 <style>
   .about {
+    position: relative;
+    isolation: isolate;
     background: var(--surface-dark);
+  }
+  .about > :not(.about__ghost) {
+    position: relative;
+    z-index: 1;
+  }
+  /* The big word: it comes up as the page opens, then dims and stays put
+     behind the content as it scrolls past */
+  .about__ghost {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .about__ghost span {
+    display: block;
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: 31vw;
+    line-height: 0.8;
+    letter-spacing: -0.06em;
+    color: var(--text-primary);
+    white-space: nowrap;
+    animation:
+      about-ghost-in 1.2s var(--ease-expo) 0.35s both,
+      about-ghost-dim 1.3s var(--ease-in-out) 1.55s both;
+    will-change: transform, opacity, filter;
+  }
+  @keyframes about-ghost-in {
+    from {
+      opacity: 0;
+      transform: translateY(14%) scale(1.06);
+      filter: blur(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+      filter: blur(0);
+    }
+  }
+  @keyframes about-ghost-dim {
+    to {
+      opacity: 0.06;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .about__ghost span {
+      animation: none;
+      opacity: 0.06;
+    }
   }
   .about__top {
     padding: var(--gutter);
@@ -185,7 +240,7 @@ const experience: any[] = about.experience ?? [];
     height: 56px;
     border-radius: 4px;
     object-fit: cover;
-    background: #f2f2f2;
+    background: rgba(255, 255, 255, 0.08);
   }
   .job__company {
     font-family: var(--font-body2);

@@ -159,6 +159,21 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
             });
             return;
           }
+          // leaving About: the dark page folds shut into a line across the
+          // middle, over the page coming back
+          var act = window.navigation && navigation.activation;
+          var fromUrl = (act && act.from && act.from.url) || document.referrer || '';
+          var fromAbout = false;
+          try { fromAbout = new URL(fromUrl).pathname.indexOf('/about-me') === 0; } catch (err2) {}
+          if (fromAbout && !document.querySelector('main.about')) {
+            e.viewTransition.types.add('about-out');
+            return;
+          }
+          // opening About: it opens out of a line across the middle
+          if (document.querySelector('main.about') && !fromAbout) {
+            e.viewTransition.types.add('about-in');
+            return;
+          }
           // any other way back to the home column: a calm dissolve, never a slide
           if (document.querySelector('[data-vh]')) {
             e.viewTransition.types.add('home');
