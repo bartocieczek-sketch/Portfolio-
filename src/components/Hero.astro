@@ -595,50 +595,55 @@ const LAPS = 3;
     // any input pauses the idle drift (see Frame) for a while
     let lastInput = performance.now();
     const touchInput = () => (lastInput = performance.now());
-    /** one project on (dir 1) or back (-1), from the project being headed to */
-    const stepBy = (dir: number) => {
+    // The column moves like osply's: a critically damped glide (smooth-damp
+    // with a time constant, so it starts soft, carries real weight and lands
+    // without overshoot). The wheel or trackpad moves it 1:1 while it is
+    // being used; 140 ms after the last event it settles on a project: back
+    // to where it started for a nudge, otherwise as many projects on as it
+    // was moved (at least one).
+    let glideT = 0.45; // seconds: the glide's time constant
+    let glideV = 0; // px per second
+    const smoothDamp = (cur: number, to: number, dt: number) => {
+      const w = 2 / glideT;
+      const x = w * dt;
+      const k = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+      const d = cur - to;
+      const t = (glideV + w * d) * dt;
+      glideV = (glideV - w * t) * k;
+      return to + (d + t) * k;
+    };
+    /** settle on project index k, the glide's length scaled to the distance */
+    const glideTo = (k: number) => {
       touchInput();
       if (opening) return;
-      target = (Math.round(target / step) + dir) * step;
+      glideT = Math.min(0.8, 0.34 + 0.08 * Math.abs(k - pos / step));
+      target = k * step;
     };
-    // a gesture = a run of wheel events; a trackpad's momentum tail belongs
-    // to the swipe that started it, so it never moves a second project. A
-    // long, hard swipe can carry on through more projects.
-    let wheelT = 0;
-    let wheelMag = 0;
+    const stepBy = (dir: number) => glideTo(Math.round(target / step) + dir);
+    let wheelBase = 0;
     let wheelSum = 0;
-    let stepT = 0;
-    let stepped = 0;
+    let wheelTimer = 0;
     window.addEventListener(
       'wheel',
       (e) => {
         e.preventDefault();
-        const unit = e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? window.innerHeight : 1;
-        const d = (Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX) * unit;
-        const now = performance.now();
-        const mag = Math.abs(d);
-        // a pause, or a fresh push while a momentum tail was dying down
-        const fresh = now - wheelT > 200 || (mag > wheelMag * 1.8 && mag > 24 && now - stepT > 350);
-        if (fresh) {
-          wheelSum = 0;
-          stepped = 0;
-        }
-        wheelT = now;
-        wheelMag = mag;
-        if (!d) return;
-        if (stepped && Math.sign(d) !== Math.sign(wheelSum)) {
-          // turned around mid-gesture: start over that way
-          wheelSum = 0;
-          stepped = 0;
-        }
-        wheelSum += d;
+        if (opening) return;
         touchInput();
-        const want = Math.abs(wheelSum) > 6 ? 1 + Math.floor(Math.abs(wheelSum) / 1400) : 0;
-        while (stepped < want) {
-          stepBy(Math.sign(wheelSum));
-          stepped++;
-          stepT = now;
-        }
+        const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+        const d = (Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX) * unit;
+        if (!wheelTimer) wheelBase = Math.round(target / step);
+        wheelSum += d;
+        glideT = 0.42;
+        target = wheelBase * step + wheelSum;
+        window.clearTimeout(wheelTimer);
+        wheelTimer = window.setTimeout(() => {
+          const moved = (target - wheelBase * step) / step;
+          const n = Math.abs(moved) < 0.12 ? 0 : Math.max(1, Math.round(Math.abs(moved)));
+          target = (wheelBase + Math.sign(moved) * n) * step;
+          glideT = 0.36 + 0.04 * Math.min(n, 6);
+          wheelSum = 0;
+          wheelTimer = 0;
+        }, 140);
       },
       { passive: false },
     );
@@ -661,6 +666,7 @@ const LAPS = 3;
       dragV = d;
       target += d;
       pos += d; // follow the finger directly
+      glideV = 0;
     });
     const endDrag = () => {
       if (dragY === null) return;
@@ -673,7 +679,8 @@ const LAPS = 3;
       let k = Math.round(aim / step);
       const here = Math.round(pos / step);
       if (k === here && Math.abs(dragV) > 4) k += Math.sign(dragV);
-      target = k * step;
+      glideV = 0;
+      glideTo(k);
     };
     window.addEventListener('pointerup', endDrag);
     window.addEventListener('pointercancel', endDrag);
@@ -1013,11 +1020,11 @@ const LAPS = 3;
       } else if (drifting && !idle) {
         // the drift has let go: settle on the nearest project
         drifting = false;
-        if (!opening && !centring && dragY === null) target = Math.round(target / step) * step;
+        if (!opening && !centring && dragY === null && !wheelTimer) glideTo(Math.round(target / step));
       }
       // ease towards the target; 0.055 per frame ≈ a long, buttery glide
       if (centring) centring(performance.now());
-      else if (dragY === null) pos += (target - pos) * 0.055;
+      else if (dragY === null) pos = smoothDamp(pos, target, Math.max(dt, 1 / 240));
       // keep the middle lap in view, wrapping invisibly
       const wrapped = ((pos % lap) + lap) % lap;
       list.style.transform = `translate3d(0, ${(-(lap + wrapped)).toFixed(2)}px, 0)`;
