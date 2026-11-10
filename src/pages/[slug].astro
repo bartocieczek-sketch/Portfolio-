@@ -166,6 +166,14 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     background: var(--surface-dark);
   }
 
+  /* no visible scrollbar on a case study (scrolling still works) */
+  :global(html:has(main.case)) {
+    scrollbar-width: none;
+  }
+  :global(html:has(main.case)::-webkit-scrollbar) {
+    display: none;
+  }
+
   /* ---------- Pictures left, story right ---------- */
   .case {
     --panel-w: min(440px, 32vw);
@@ -327,10 +335,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     line-height: 1.42;
     letter-spacing: -0.01em;
   }
+  /* every paragraph alike, so all projects read the same whatever their
+     text is split into */
   .case__intro :global(p) {
-    color: var(--text-secondary);
-  }
-  .case__intro :global(p:first-child) {
     color: var(--text-primary);
   }
   .case__hint {
@@ -666,7 +673,10 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
           resolve();
         }).observe(root, { attributes: true, attributeFilter: ['class'] });
       });
-      Promise.all([landed, heroReady]).then(() => window.setTimeout(openOnce, fromCard ? 120 : 250));
+      // the sharp picture gets a short grace (never holds the panel back for
+      // long on a heavy image), so every project opens on the same beat
+      const sharp = Promise.race([heroReady, new Promise<void>((r) => window.setTimeout(r, 350))]);
+      Promise.all([landed, sharp]).then(() => window.setTimeout(openOnce, fromCard ? 120 : 250));
       // never wait forever (slow network)
       window.setTimeout(openOnce, 3500);
     });
