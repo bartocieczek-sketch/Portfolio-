@@ -146,6 +146,22 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       })}
       <span class="case__under-line"></span>
     </div>
+    <script is:inline>
+      // came from a home cover: put the stand-in's covers exactly where home's
+      // neighbours were (same screen size only)
+      (function () {
+        try {
+          var u = JSON.parse(sessionStorage.getItem('vh-under') || 'null');
+          if (!u || u.vw !== innerWidth || u.vh !== innerHeight) return;
+          var pills = document.querySelectorAll('.case__under-pill');
+          [u.prev, u.next].forEach(function (b, k) {
+            var el = pills[k];
+            if (!el || !b) return;
+            el.style.cssText += ';left:' + b.x + 'px;top:' + b.y + 'px;width:' + b.w + 'px;height:' + b.h + 'px;margin:0;transform:none';
+          });
+        } catch (e) {}
+      })();
+    </script>
     <!-- Two columns: the pictures on the left, the story on the right in a
          panel that stays put (sticky) while the pictures scroll. The cover
          grows up to where the panel starts; the panel slides in once. -->

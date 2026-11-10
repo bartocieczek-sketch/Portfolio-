@@ -937,6 +937,14 @@ const LAPS = 3;
               sessionStorage.setItem('vt-card', '1');
               // remember where it was, so coming back lands in the same spot
               sessionStorage.setItem('vh-from', JSON.stringify({ pos, i }));
+              // where its neighbours are on screen, so the blurred stand-in
+              // for home behind the case study sits exactly on them
+              const nb = [pills[i - 1], pills[i + 1]].map((q) => {
+                if (!q) return null;
+                const r = q.getBoundingClientRect();
+                return { x: r.left, y: r.top, w: r.width, h: r.height };
+              });
+              sessionStorage.setItem('vh-under', JSON.stringify({ prev: nb[0], next: nb[1], vw: innerWidth, vh: innerHeight }));
             } catch (err) {}
             // 3. go (after this frame has painted the DOM picture)
             requestAnimationFrame(() => (window.location.href = p.href));
