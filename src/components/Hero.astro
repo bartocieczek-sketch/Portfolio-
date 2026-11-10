@@ -567,6 +567,18 @@ const LAPS = 3;
     .vh__intro .badge {
       display: none;
     }
+    /* a soft wash of the page colour behind it, so it reads over the covers */
+    .vh__intro::before {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      left: calc(var(--gutter) * -1);
+      right: calc(var(--gutter) * -1);
+      bottom: calc(var(--gutter) * -1 - env(safe-area-inset-bottom, 0px));
+      height: calc(100% + 72px);
+      background: linear-gradient(to top, var(--surface-dark) 45%, transparent);
+      pointer-events: none;
+    }
   }
 
 </style>
