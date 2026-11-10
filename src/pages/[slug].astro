@@ -528,7 +528,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__panel :global(.ln-i) {
     display: inline-block;
     transform: translateY(110%);
-    transition: transform 0.8s var(--ease-out) var(--d, 0s);
+    transition: transform 0.95s var(--ease-out) var(--d, 0s);
   }
   .case__panel:not(.is-out) :global(.ln-i) {
     transform: none;
@@ -628,11 +628,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     opacity: 1;
     transform: none;
     transition:
-      opacity 0.5s var(--ease-out),
-      transform 0.8s var(--ease-out);
+      opacity 0.6s var(--ease-out),
+      transform 0.95s var(--ease-out);
   }
   :global(html.from-card.case-in .case__gallery > :nth-child(2)) {
-    transition-delay: 0.05s;
+    transition-delay: 0.07s;
   }
   /* Leaving for home: the entrance played back — the same fades and slides,
      one after another, just a little quicker. The story fades out line by
@@ -834,8 +834,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     const blocks = [
       ...panel.querySelectorAll<HTMLElement>('.case__title, .case__intro p, .case__intro li, .case__live, .case__meta dd'),
     ];
-    const STEP = 0.05; // between blocks
-    const LINE = 0.035; // between lines of a block
+    const STEP = 0.065; // between blocks
+    const LINE = 0.045; // between lines of a block
     const wrap = (node: Node, out: HTMLElement[]) => {
       if (node.nodeType === 3) {
         const parts = (node.textContent || '').split(/(\s+)/);
