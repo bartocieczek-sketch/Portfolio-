@@ -1,7 +1,8 @@
 ---
-// Preview of the BO monogram in three.js: a blackletter O with a B set
-// across it (UnifrakturCook, SIL OFL), extruded and bevelled, slowly turning
-// and following the pointer. Not linked anywhere yet.
+// Preview of the BO monogram in three.js: a flowing copperplate B written
+// inside the sweep of a large script O (Petit Formal Script, SIL OFL), cast
+// in polished black chrome, slowly turning and following the pointer.
+// Not linked anywhere yet.
 export const prerender = true;
 ---
 
@@ -16,7 +17,7 @@ export const prerender = true;
       body {
         margin: 0;
         height: 100%;
-        background: #ebe9e3;
+        background: #f4f4f2;
         overflow: hidden;
       }
       canvas {
@@ -50,7 +51,7 @@ export const prerender = true;
       const scene = new THREE.Scene();
       const pmrem = new THREE.PMREMGenerator(renderer);
       scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-      scene.environmentIntensity = 0.55;
+      scene.environmentIntensity = 1.25;
       const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
       camera.position.set(0, 0, 9);
 
@@ -62,15 +63,15 @@ export const prerender = true;
       rim.position.set(4, -2, -3);
       scene.add(rim);
 
-      // a creamy, lacquered material, like a cast and polished letter
+
+      // polished black chrome: deep, with crisp reflections running along
+      // the strokes as it turns
       const mat = new THREE.MeshPhysicalMaterial({
-        color: 0xf6f3ec,
-        roughness: 0.28,
-        metalness: 0.0,
+        color: 0x16161a,
+        roughness: 0.18,
+        metalness: 1.0,
         clearcoat: 1,
-        clearcoatRoughness: 0.12,
-        sheen: 0.4,
-        sheenColor: new THREE.Color(0xfff6e8),
+        clearcoatRoughness: 0.05,
       });
 
       const U = glyphs.upm;
@@ -83,8 +84,8 @@ export const prerender = true;
         const geo = new THREE.ExtrudeGeometry(shapesOf(d), {
           depth,
           bevelEnabled: true,
-          bevelThickness: depth * 0.22,
-          bevelSize: 18,
+          bevelThickness: depth * 0.35,
+          bevelSize: 14,
           bevelSegments: 6,
           curveSegments: 28,
         });
@@ -96,15 +97,17 @@ export const prerender = true;
         return new THREE.Mesh(geo, mat);
       };
 
-      // the O, large, behind; the B across it, a little forward and right,
-      // so the two read as one interlaced monogram
+      // the O, a little larger, sweeps around and behind; the B is written
+      // inside it, slightly forward and to the left, so it reads as one mark
       const logo = new THREE.Group();
-      const O = letter('O', 420);
-      O.scale.setScalar(2.9);
-      O.position.set(-0.32, 0.05, -0.18);
-      const B = letter('B', 480);
-      B.scale.setScalar(2.4);
-      B.position.set(0.42, -0.08, 0.22);
+      const S = 2.3;
+      const ow = ((glyphs.g.O[1] as number[])[2] - (glyphs.g.O[1] as number[])[0]) / U;
+      const O = letter('O', 150);
+      O.scale.setScalar(S * 1.25);
+      O.position.set(0, 0, -0.12);
+      const B = letter('B', 190);
+      B.scale.setScalar(S);
+      B.position.set(-0.25 * ow * S, 0, 0.12);
       logo.add(O, B);
       scene.add(logo);
 
