@@ -1,306 +1,155 @@
 ---
+// About me, for now: just the B, in silver chrome on the dark page, rising
+// into place as the page opens out of its line (see global.css about-in).
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
-import Footer from '../components/Footer.astro';
-import { ABOUT_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+import { SETTINGS_QUERY } from '../lib/sanity';
 import { load } from '../lib/load';
-import { stegaClean } from '@sanity/client/stega';
 
-const [about, settings] = await Promise.all([load(Astro.locals, ABOUT_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
-if (!about || !settings) return new Response('Content not found', { status: 500 });
-
-// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
-const experience: any[] = about.experience ?? [];
+const settings = await load(Astro.locals, SETTINGS_QUERY);
+if (!settings) return new Response('Content not found', { status: 500 });
 ---
 
-<Base title={`About me – ${settings.name}`} description={stegaClean(about.introLead)} image={about.portrait}>
+<Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
   <main class="about">
-    <div class="about__ghost" aria-hidden="true"><span>About</span></div>
     <header class="about__top">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
-      <h1 class="t-display about__title" data-split>{about.title}</h1>
-      {about.quote && <p class="t-label-small about__quote" data-split style="--split-delay:250ms">{about.quote}</p>}
     </header>
-
-    <section class="about__intro" data-build>
-      {about.portrait?.asset && (
-        <img
-          class="about__portrait"
-          src={urlFor(about.portrait).width(320).url()}
-          alt={settings.name}
-          width="152"
-          height="146"
-          data-reveal
-        />
-      )}
-      <div class="about__col" data-reveal>
-        <p class="t-compact">
-          {about.introLead} <span class="muted">{about.introBody}</span>
-        </p>
-        {about.currentRole && <p class="t-compact muted">{about.currentRole}</p>}
-      </div>
-    </section>
-
-    {about.focus?.length > 0 && (
-      <section class="about__row" data-build>
-        <h2 class="about__label" data-split>Focus</h2>
-        <ul class="about__focus about__col" data-split>
-          {about.focus.map((f: string) => <li class="t-section">{f}</li>)}
-        </ul>
-      </section>
-    )}
-
-    <section class="about__row about__row--line" data-build>
-      <h2 class="about__label" data-split>Experience</h2>
-      <div class="about__col">
-        <p class="t-compact" data-split>
-        {about.experienceLead} <span class="muted">{about.experienceBody}</span>
-        </p>
-      </div>
-    </section>
-
-    {experience.length > 0 && (
-      <ul class="jobs" data-build>
-        {experience.map((job) => (
-          <li class="job" data-reveal>
-            <div class="job__who">
-              {job.logo?.asset ? (
-                <img src={urlFor(job.logo).width(112).height(112).url()} alt="" width="56" height="56" loading="lazy" />
-              ) : (
-                <span class="job__logo-empty" />
-              )}
-              <div>
-                <p class="job__company">{job.company}</p>
-                <p class="t-label-small">{job.role}</p>
-              </div>
-            </div>
-            <div class="job__when">{job.period && <span class="job__period t-label-small">{job.period}</span>}</div>
-          </li>
-        ))}
-      </ul>
-    )}
-
-    <Footer settings={settings} ctaText={about.ctaText} />
+    <canvas class="about__mark" data-monogram aria-label="B monogram" role="img"></canvas>
   </main>
 </Base>
 
 <style>
   .about {
     position: relative;
-    isolation: isolate;
+    height: 100svh;
+    overflow: hidden;
     background: var(--surface-dark);
   }
-  .about > :not(.about__ghost) {
-    position: relative;
-    z-index: 1;
-  }
-  /* The big word: it comes up as the page opens, then dims and stays put
-     behind the content as it scrolls past */
-  .about__ghost {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-    overflow: hidden;
-  }
-  .about__ghost span {
-    display: block;
-    font-family: var(--font-head);
-    font-weight: 500;
-    font-size: 31vw;
-    line-height: 0.8;
-    letter-spacing: -0.06em;
-    color: var(--text-primary);
-    white-space: nowrap;
-    animation:
-      about-ghost-in 1.2s var(--ease-expo) 0.35s both,
-      about-ghost-dim 1.3s var(--ease-in-out) 1.55s both;
-    will-change: transform, opacity, filter;
-  }
-  @keyframes about-ghost-in {
-    from {
-      opacity: 0;
-      transform: translateY(14%) scale(1.06);
-      filter: blur(14px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-      filter: blur(0);
-    }
-  }
-  @keyframes about-ghost-dim {
-    to {
-      opacity: 0.06;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .about__ghost span {
-      animation: none;
-      opacity: 0.06;
-    }
-  }
   .about__top {
-    padding: var(--gutter);
-    display: flex;
-    flex-direction: column;
-    gap: 64px;
-  }
-  .about__title {
-    font-size: 120px;
-  }
-  .about__quote {
-    max-width: 330px;
-    margin: 40px auto 80px;
-    text-align: center;
-    text-transform: none;
-  }
-  .about__intro,
-  .about__row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 24px;
-    padding: 0 var(--gutter);
-  }
-  .about__intro {
-    align-items: flex-start;
-    padding-bottom: 160px;
-  }
-  .about__portrait {
-    width: 152px;
-    height: auto;
-    filter: grayscale(1);
-  }
-  .about__col {
-    width: 30%;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  .about__row {
-    padding-bottom: 140px;
-  }
-  .about__row--line {
-    border-top: 1px solid var(--line);
-    margin: 0 var(--gutter);
-    padding: 40px 0 120px;
-  }
-  .about__label {
-    font-family: var(--font-head);
-    font-weight: 500;
-    font-size: 24px;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
-    color: var(--text-primary);
-  }
-  .about__focus {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    gap: 0;
-  }
-  .about__focus li {
-    line-height: 1.3;
-    white-space: nowrap;
-  }
-  .jobs {
-    list-style: none;
-    margin: 0;
-    padding: 0 var(--gutter) 120px;
-  }
-  .job {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 24px;
-    padding: 32px 0;
     position: relative;
+    z-index: 2;
+    padding: var(--gutter);
   }
-  .job + .job::before {
-    content: '';
+  .about__mark {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 260px;
-    max-width: 50%;
-    height: 1px;
-    background: var(--line);
-  }
-  .job__who {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .job__who img,
-  .job__logo-empty {
-    width: 56px;
-    height: 56px;
-    border-radius: 4px;
-    object-fit: cover;
-    background: rgba(255, 255, 255, 0.08);
-  }
-  .job__company {
-    font-family: var(--font-body2);
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 1.5;
-    letter-spacing: -0.01em;
-    color: var(--text-primary);
-  }
-  .job__when {
-    width: 30%;
-  }
-  .job__period {
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 12px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-  @media (max-width: 1199px) {
-    .about__title {
-      font-size: 96px;
-    }
-    .about__col,
-    .job__when {
-      width: 45%;
-    }
-  }
-  @media (max-width: 809px) {
-    .about__title {
-      font-size: 64px;
-    }
-    .about__quote {
-      margin: 0 auto 40px;
-    }
-    .about__intro,
-    .about__row {
-      flex-direction: column;
-    }
-    .about__intro {
-      padding-bottom: 80px;
-    }
-    .about__row {
-      padding-bottom: 80px;
-    }
-    .about__row--line {
-      padding: 32px 0 64px;
-    }
-    .about__col,
-    .job__when {
-      width: 100%;
-    }
-    .about__focus li {
-      white-space: normal;
-    }
-    .job {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 16px;
-    }
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
   }
 </style>
+
+<script>
+      import * as THREE from 'three';
+      import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+      import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+      import glyphs from '../lib/monogram-b.json';
+
+      const canvas = document.querySelector<HTMLCanvasElement>('[data-monogram]');
+      if (canvas) {
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      const scene = new THREE.Scene();
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 1.25;
+      const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+      camera.position.set(0, 0, 9);
+
+      // soft key light + a warm rim, on top of the room reflections
+      const key = new THREE.DirectionalLight(0xffffff, 2.4);
+      key.position.set(-3, 4, 6);
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0xffe2c4, 0.8);
+      rim.position.set(4, -2, -3);
+      scene.add(rim);
+
+
+      // polished black chrome: deep, with crisp reflections running along
+      // the strokes as it turns
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: 0xd9d9de,
+        roughness: 0.16,
+        metalness: 1.0,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05,
+        transparent: true,
+        opacity: 0,
+      });
+
+      const U = glyphs.upm;
+      const shapesOf = (d: string) => {
+        const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`);
+        return data.paths.flatMap((p) => p.toShapes(true));
+      };
+      const letter = (ch: 'B', depth: number) => {
+        const [d] = glyphs.g[ch] as [string, number[], number];
+        const geo = new THREE.ExtrudeGeometry(shapesOf(d), {
+          depth,
+          bevelEnabled: true,
+          bevelThickness: 22,
+          bevelSize: 6,
+          bevelSegments: 6,
+          curveSegments: 28,
+        });
+        geo.computeBoundingBox();
+        const bb = geo.boundingBox!;
+        geo.translate(-(bb.min.x + bb.max.x) / 2, -(bb.min.y + bb.max.y) / 2, -(bb.min.z + bb.max.z) / 2);
+        geo.scale(1 / U, 1 / U, 1 / U);
+        geo.computeVertexNormals();
+        return new THREE.Mesh(geo, mat);
+      };
+
+      // just the B, a slim slab: thin, with a fine bevel catching the light
+      const logo = new THREE.Group();
+      const B = letter('B', 150);
+      B.scale.setScalar(3.1);
+      logo.add(B);
+      scene.add(logo);
+
+      const resize = () => {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        camera.position.z = w < h ? 13 : 9;
+      };
+      addEventListener('resize', resize);
+      resize();
+
+      // slow idle turn; the pointer tilts it (eased, never snaps)
+      let px = 0;
+      let py = 0;
+      addEventListener('pointermove', (e) => {
+        px = (e.clientX / innerWidth) * 2 - 1;
+        py = (e.clientY / innerHeight) * 2 - 1;
+      });
+      let rx = 0;
+      let ry = 0;
+      const t0 = performance.now();
+      // entrance (as the dark page opens): it rises a little, turns in from a
+      // three-quarter view and grows to size on a long ease-out
+      const IN_DELAY = 0.45;
+      const IN_DUR = 1.8;
+      const easeOut = (x: number) => 1 - Math.pow(1 - x, 4);
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const tick = () => {
+        const t = (performance.now() - t0) / 1000;
+        const idle = calm ? 0 : Math.sin(t * 0.45) * 0.35;
+        ry += (idle + px * 0.5 - ry) * 0.05;
+        rx += (py * 0.3 - rx) * 0.05;
+        const k = calm ? 1 : easeOut(Math.min(1, Math.max(0, (t - IN_DELAY) / IN_DUR)));
+        logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6, (1 - k) * -0.15);
+        logo.position.y = (calm ? 0 : Math.sin(t * 0.8) * 0.05) - (1 - k) * 0.9;
+        logo.scale.setScalar(0.75 + 0.25 * k);
+        (mat as THREE.MeshPhysicalMaterial).opacity = k;
+        renderer.render(scene, camera);
+        requestAnimationFrame(tick);
+      };
+      tick();
+      }
+</script>
