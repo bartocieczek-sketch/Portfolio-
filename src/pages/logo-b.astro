@@ -84,8 +84,8 @@ export const prerender = true;
         const geo = new THREE.ExtrudeGeometry(shapesOf(d), {
           depth,
           bevelEnabled: true,
-          bevelThickness: 60,
-          bevelSize: 16,
+          bevelThickness: 22,
+          bevelSize: 6,
           bevelSegments: 6,
           curveSegments: 28,
         });
@@ -97,9 +97,9 @@ export const prerender = true;
         return new THREE.Mesh(geo, mat);
       };
 
-      // just the B, deep enough to read as a solid object as it turns
+      // just the B, a slim slab: thin, with a fine bevel catching the light
       const logo = new THREE.Group();
-      const B = letter('B', 520);
+      const B = letter('B', 150);
       B.scale.setScalar(3.1);
       logo.add(B);
       scene.add(logo);
