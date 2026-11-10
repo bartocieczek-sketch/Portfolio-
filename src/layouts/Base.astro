@@ -285,7 +285,11 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       // else (smooth scroll, the home column) sees them.
       {
         const html = document.documentElement;
-        const since = performance.now();
+        // (a safety cap from when the page was shown: prerendered and
+        // back/forward-cached pages are shown long after this runs)
+        let since = performance.now();
+        window.addEventListener('pagereveal', () => (since = performance.now()));
+        window.addEventListener('pageshow', () => (since = performance.now()));
         const locked = () =>
           performance.now() - since < 4000 &&
           ((html.classList.contains('from-card') && !html.classList.contains('cover-landed')) || html.classList.contains('is-cover-back'));
