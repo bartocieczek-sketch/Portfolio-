@@ -4,6 +4,7 @@ import { stegaClean } from '@sanity/client/stega';
 import Base from '../layouts/Base.astro';
 import Media from '../components/Media.astro';
 import { PROJECT_ORDER_QUERY, PROJECT_QUERY, SETTINGS_QUERY, srcset, urlFor } from '../lib/sanity';
+import { hashDistance, lqipHash } from '../lib/dhash';
 import { load } from '../lib/load';
 import { href } from '../lib/preview';
 
@@ -38,9 +39,20 @@ const shaped = (g: any) => ({ g, r: ratioOf(g) ?? (g.size === 'full' ? (g.kind =
 
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 // The cover opens the gallery, so skip a gallery image that is the same file
-const gallery: any[] = (project.gallery ?? []).filter(
-  (g: any) => !(project.cover?.asset?._id && g?.image?.asset?._id === project.cover.asset._id),
-);
+// No picture twice: neither the cover again (same file, or the same photo
+// uploaded another time) nor two copies of one photo in the gallery. A video
+// counts by its poster, when it has one.
+const seen: string[] = [];
+const coverHash = lqipHash(project.cover?.asset?.metadata?.lqip);
+if (coverHash) seen.push(coverHash);
+const gallery: any[] = (project.gallery ?? []).filter((g: any) => {
+  if (project.cover?.asset?._id && g?.image?.asset?._id === project.cover.asset._id) return false;
+  const h = lqipHash((g?.kind === 'image' ? g.image : g?.poster)?.asset?.metadata?.lqip);
+  if (!h) return true;
+  if (seen.some((x) => hashDistance(x, h) <= 6)) return false;
+  seen.push(h);
+  return true;
+});
 const pics = gallery.map(shaped);
 const TALL = 1.2;
 const tallOnes = pics.filter((x) => x.r < TALL);
