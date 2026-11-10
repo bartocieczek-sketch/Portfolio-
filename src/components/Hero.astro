@@ -770,6 +770,7 @@ const LAPS = 3;
       try {
         if (!actx) actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         if (actx.state === 'suspended') actx.resume();
+        loadKeys();
       } catch (err) {}
     };
     ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'].forEach((t) => window.addEventListener(t, unlock, { passive: true, capture: true }));
@@ -780,50 +781,57 @@ const LAPS = 3;
     unlock();
     ['wheel', 'pointermove', 'touchstart', 'scroll'].forEach((t) => window.addEventListener(t, () => { if (!actx || actx.state !== 'running') unlock(); }, { passive: true, capture: true }));
     document.addEventListener('visibilitychange', () => { if (!document.hidden && actx?.state === 'suspended') unlock(); });
-    // An ASMR crinkle, close-miked and quiet: a 45 ms grain of fine, crisp
-    // texture, like a fingertip brushing paper or a page edge, made of tiny
-    // crackles (sparse, uneven noise) instead of a smooth hiss, filtered to
-    // the airy, detailed band (nothing low, so it never thuds), with a soft
-    // onset and a natural fade. The same every time, no pitch changes.
+    // Alpaca switch (smooth linear) recordings, from the Typersguild key
+    // sound tester, kept in Sanity: each project reaching the middle is one
+    // keystroke, a press (one of three takes, so it sounds like a real key,
+    // not a loop) and its softer release just after.
+    const ALPACA = 'https://cdn.sanity.io/files/jf65lv25/production/';
+    const PRESS = ['2f3933a6a9a47bcc2b1d14965444fc15ec03c814', '0f9fc80630f9eed74f00c5971fa1f227eee6025c', '2517db4bf9ccae4306737fc710f0caa7ec182408'];
+    const RELEASE = '5ce24c1d74b1905ae29ee313f5b6092cd024ed7b';
+    let presses: AudioBuffer[] = [];
+    let release: AudioBuffer | null = null;
+    let loading = false;
+    let lastPress = -1;
+    let releaseSrc: AudioBufferSourceNode | null = null;
+    const loadKeys = () => {
+      if (loading || !actx) return;
+      loading = true;
+      const get = (id: string) =>
+        fetch(`${ALPACA}${id}.mp3`)
+          .then((r) => r.arrayBuffer())
+          .then((b) => new Promise<AudioBuffer>((res, rej) => actx!.decodeAudioData(b, res, rej)));
+      Promise.all(PRESS.map(get)).then((b) => (presses = b), () => (loading = false));
+      get(RELEASE).then((b) => (release = b), () => {});
+    };
+    const play = (buf: AudioBuffer, at: number, gain: number) => {
+      const src = actx!.createBufferSource();
+      src.buffer = buf;
+      const g = actx!.createGain();
+      g.gain.value = gain;
+      src.connect(g);
+      g.connect(actx!.destination);
+      src.start(at);
+      return src;
+    };
     const tick = (_i: number) => {
-      if (!actx || actx.state !== 'running' || reduceMotion) return;
+      if (!actx || reduceMotion) return;
+      loadKeys();
+      if (actx.state !== 'running' || !presses.length) return;
       const now = performance.now();
       if (now - lastTick < 60) return;
       const v = VOLUME * Math.min(1, Math.max(0.6, (now - lastTick) / 220));
       lastTick = now;
       const t = actx.currentTime + 0.002;
-      const len = Math.floor(actx.sampleRate * 0.045);
-      const buf = actx.createBuffer(1, len, actx.sampleRate);
-      const ch = buf.getChannelData(0);
-      for (let k = 0; k < len; k++) {
-        const x = k / len;
-        // a quiet bed plus little crackles that thin out as it fades
-        const crackle = Math.random() < 0.06 * (1 - x) + 0.01 ? (Math.random() * 2 - 1) * 2.2 : 0;
-        const bed = (Math.random() * 2 - 1) * 0.35;
-        ch[k] = (bed + crackle) * Math.min(1, x / 0.14) * Math.exp(-x * 4.5);
-      }
-      const src = actx.createBufferSource();
-      src.buffer = buf;
-      const hp = actx.createBiquadFilter();
-      hp.type = 'highpass';
-      hp.frequency.value = 2400;
-      hp.Q.value = 0.5;
-      const bp = actx.createBiquadFilter();
-      bp.type = 'peaking';
-      bp.frequency.value = 5200;
-      bp.Q.value = 0.8;
-      bp.gain.value = 4;
-      const lp = actx.createBiquadFilter();
-      lp.type = 'lowpass';
-      lp.frequency.value = 11000;
-      const g = actx.createGain();
-      g.gain.value = v * 0.55;
-      src.connect(hp);
-      hp.connect(bp);
-      bp.connect(lp);
-      lp.connect(g);
-      g.connect(actx.destination);
-      src.start(t);
+      // never the same take twice in a row
+      let k = Math.floor(Math.random() * presses.length);
+      if (k === lastPress) k = (k + 1) % presses.length;
+      lastPress = k;
+      // a new press cuts the previous key's release short, like a real key
+      try {
+        releaseSrc?.stop();
+      } catch (err) {}
+      play(presses[k], t, v * 0.55);
+      if (release) releaseSrc = play(release, t + 0.07, v * 0.35);
     };
 
     // ---------- Easter egg: a lucky spin ----------
