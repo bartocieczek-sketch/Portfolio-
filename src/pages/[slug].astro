@@ -248,7 +248,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     min-width: 0;
   }
   .case__stack > :global(.media) {
-    aspect-ratio: 4 / 5;
+    /* the same frame as the cover, whatever the picture or video is */
+    aspect-ratio: 4 / 5 !important;
   }
   .case__stack :global(.media img),
   .case__stack :global(.media video) {
