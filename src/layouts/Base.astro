@@ -93,14 +93,18 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       // in each end's own px. Returns false when the shapes differ.
       window.__vtFlight = function (from, to, clipFrom, clipTo) {
         if (Math.abs(from.w / from.h - to.w / to.h) > 0.01) return false;
-        var s = from.w / to.w; // start scale against the final (to) size
+        // the group's own size is the landing element's layout size (to.nw
+        // when it is drawn scaled, e.g. the enlarged middle cover on home)
+        var nw = to.nw || to.w;
+        var s = from.w / nw; // start scale against that size
+        var s1 = to.w / nw;
         var st = document.documentElement.style;
         st.setProperty('--vt-g0', 'translate(' + from.x + 'px, ' + from.y + 'px) scale(' + s + ')');
-        st.setProperty('--vt-g1', 'translate(' + to.x + 'px, ' + to.y + 'px)');
+        st.setProperty('--vt-g1', 'translate(' + to.x + 'px, ' + to.y + 'px)' + (s1 !== 1 ? ' scale(' + s1 + ')' : ''));
         // clip insets live in the final box's px; at the start they are seen
         // through the start scale, so divide by it
         st.setProperty('--vt-c0', 'inset(' + clipFrom.y / s + 'px ' + clipFrom.x / s + 'px round ' + clipFrom.r / s + 'px)');
-        st.setProperty('--vt-c1', 'inset(' + clipTo.y + 'px ' + clipTo.x + 'px round ' + clipTo.r + 'px)');
+        st.setProperty('--vt-c1', 'inset(' + clipTo.y / s1 + 'px ' + clipTo.x / s1 + 'px round ' + clipTo.r / s1 + 'px)');
         document.documentElement.classList.add('vt-uniform');
         return true;
       };
@@ -144,8 +148,16 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
         r.setProperty('--vt-pill-r', w / 2 + 'px');
         r.setProperty('--vt-pill-clip', (W - w) / 2 + 'px');
         r.setProperty('--vt-pill-clip-y', (H - h) / 2 + 'px');
+        // the pill may be drawn scaled (the middle cover on home is a little
+        // larger): everything handed to the flight is in on-screen px
+        var k = p.getBoundingClientRect().width / w || 1;
+        if (k !== 1) {
+          r.setProperty('--vt-pill-r', (w / 2) * k + 'px');
+          r.setProperty('--vt-pill-clip', ((W - w) / 2) * k + 'px');
+          r.setProperty('--vt-pill-clip-y', ((H - h) / 2) * k + 'px');
+        }
         var b = img.getBoundingClientRect();
-        return { w: W, h: H, cx: (W - w) / 2, cy: (H - h) / 2, r: w / 2, x: b.left, y: b.top };
+        return { w: W * k, h: H * k, nw: W, cx: ((W - w) / 2) * k, cy: ((H - h) / 2) * k, r: (w / 2) * k, x: b.left, y: b.top };
       };
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;

@@ -174,6 +174,33 @@ const LAPS = 3;
 </section>
 
 <script is:inline>
+  // The cover in the middle of the screen is drawn a little larger than the
+  // ones coming in; its neighbours move out by just as much, so every gap
+  // stays the same. Driven by the column's position (layout px, never by
+  // measured, already-scaled boxes); desktop only.
+  (function () {
+    var big = matchMedia('(min-width: 810px) and (hover: hover) and (pointer: fine)');
+    var FOCUS = 0.12;
+    var last = [];
+    window.__vhFocus = function (pills, step, lap, wrapped) {
+      var K = big.matches ? FOCUS : 0;
+      var h = pills[0].offsetHeight;
+      var G = (K * h) / 2;
+      var base = pills[0].offsetTop;
+      for (var i = 0; i < pills.length; i++) {
+        var d = (pills[i].offsetTop - base - (lap + wrapped)) / step;
+        var a = Math.min(1, Math.abs(d));
+        var w = (1 + Math.cos(Math.PI * a)) / 2;
+        var t = K ? 'translate3d(0,' + ((d < 0 ? -1 : 1) * G * (1 - w)).toFixed(2) + 'px,0) scale(' + (1 + K * w).toFixed(4) + ')' : '';
+        if (last[i] !== t) {
+          last[i] = t;
+          pills[i].parentNode.style.transform = t;
+        }
+      }
+    };
+  })();
+</script>
+<script is:inline>
   // Back from a case study (see [slug].astro): the column is put back exactly
   // where it was when the project was opened, and the case study's cover flies
   // into the very pill that was clicked.
@@ -207,6 +234,7 @@ const LAPS = 3;
       var wrapped = ((pos % lap) + lap) % lap;
       window.__vhStart = pos;
       list.style.transform = 'translate3d(0,' + -(lap + wrapped) + 'px,0)';
+      window.__vhFocus(pills, step, lap, wrapped);
       var hero = document.querySelector('[data-vh]');
       // the side texts are already showing this project in the first frame
       hero.classList.add('is-instant');
@@ -233,7 +261,7 @@ const LAPS = 3;
           d.frame.x != null &&
           window.__vtFlight(
             { x: d.frame.x, y: d.frame.y, w: d.frame.w, h: d.frame.h },
-            { x: box.x, y: box.y, w: box.w, h: box.h },
+            { x: box.x, y: box.y, w: box.w, h: box.h, nw: box.nw },
             { x: 0, y: 0, r: d.frame.r || 20 },
             { x: box.cx, y: box.cy, r: box.r },
           );
@@ -849,10 +877,10 @@ const LAPS = 3;
           const sizes = (window as unknown as { __vtSizes?: (a: object, b: object, f: boolean, focus?: object) => void }).__vtSizes;
           const fl = (window as unknown as { __vtFlight?: (a: object, b: object, c: object, d: object) => boolean }).__vtFlight;
           const fb = frame as { w: number; h: number; x?: number; y?: number; r?: number } | undefined;
-          const bx = box as { w: number; h: number; x: number; y: number; cx: number; cy: number; r: number } | null;
+          const bx = box as { w: number; h: number; nw?: number; x: number; y: number; cx: number; cy: number; r: number } | null;
           const u =
             !!fb && !!bx && fb.x != null && !!fl &&
-            fl({ x: fb.x, y: fb.y, w: fb.w, h: fb.h }, { x: bx.x, y: bx.y, w: bx.w, h: bx.h }, { x: 0, y: 0, r: fb.r || 20 }, { x: bx.cx, y: bx.cy, r: bx.r });
+            fl({ x: fb.x, y: fb.y, w: fb.w, h: fb.h }, { x: bx.x, y: bx.y, w: bx.w, h: bx.h, nw: bx.nw }, { x: 0, y: 0, r: fb.r || 20 }, { x: bx.cx, y: bx.cy, r: bx.r });
           if (!u && frame && sizes && box) sizes(box, frame, false, (back as { focus?: object }).focus);
           handBack();
         }
@@ -992,6 +1020,7 @@ const LAPS = 3;
       // keep the middle lap in view, wrapping invisibly
       const wrapped = ((pos % lap) + lap) % lap;
       list.style.transform = `translate3d(0, ${(-(lap + wrapped)).toFixed(2)}px, 0)`;
+      (window as unknown as { __vhFocus(p: HTMLElement[], s: number, l: number, w: number): void }).__vhFocus(pills, step, lap, wrapped);
       vel += (pos - lastPos - vel) * 0.25;
       lastPos = pos;
 
