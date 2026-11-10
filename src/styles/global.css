@@ -470,8 +470,14 @@ html.vt-uniform::view-transition-group(project-cover) {
   transform-origin: 0 0;
   animation: vt-fly 0.85s var(--ease-flight) both;
 }
+/* The corners never animate (a clip-path animation runs on the main thread
+   and lags behind the move): each end keeps its own fixed shape — the pill's
+   round ends on one picture, the frame's corners on the other — and the two
+   cross-fade (plus-lighter, so the shared photo stays solid), all on the
+   compositor together with the move */
 html.vt-uniform::view-transition-image-pair(project-cover) {
-  animation: vt-fly-clip 0.85s var(--ease-flight) both;
+  animation: none;
+  isolation: isolate;
 }
 html.vt-uniform::view-transition-old(project-cover),
 html.vt-uniform::view-transition-new(project-cover) {
@@ -482,7 +488,18 @@ html.vt-uniform::view-transition-new(project-cover) {
   margin: 0;
   scale: none;
   translate: none;
-  animation: none;
+  mix-blend-mode: plus-lighter;
+  animation-duration: 0.85s;
+  animation-timing-function: var(--ease-flight);
+  animation-fill-mode: both;
+}
+html.vt-uniform::view-transition-old(project-cover) {
+  clip-path: var(--vt-c0);
+  animation-name: vt-fade-out;
+}
+html.vt-uniform::view-transition-new(project-cover) {
+  clip-path: var(--vt-c1);
+  animation-name: vt-fade-in;
 }
 @keyframes vt-fly {
   from {
@@ -490,14 +507,6 @@ html.vt-uniform::view-transition-new(project-cover) {
   }
   to {
     transform: var(--vt-g1);
-  }
-}
-@keyframes vt-fly-clip {
-  from {
-    clip-path: var(--vt-c0);
-  }
-  to {
-    clip-path: var(--vt-c1);
   }
 }
 html:active-view-transition-type(home)::view-transition-group(root) {
