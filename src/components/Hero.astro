@@ -121,20 +121,18 @@ const LAPS = 3;
        the column, with the centred project's details hanging under it -->
   <div class="vh__line" aria-hidden="true"></div>
   <div class="vh__details vh__fade" aria-hidden="true">
-    <span class="vh__stack vh__num">
-      {projects.map((_: any, i: number) => <span class="vh__roll">{String(i + 1).padStart(2, '0')}</span>)}
-    </span>
-    <span class="vh__stack vh__tags">
-      {projects.map((p: any) => <span class="vh__roll">{p.tags.join(', ')}</span>)}
-    </span>
-    <span class="vh__names" data-vh-names>
-      <span class="vh__names-track" data-vh-names-track>
-        {Array.from({ length: 3 }, () => projects.map((p: any) => <span class="vh__name">{p.title}</span>))}
-      </span>
-    </span>
-    <span class="vh__stack vh__year">
-      {projects.map((p: any) => <span class="vh__roll">{p.year}</span>)}
-    </span>
+    <span class="vh__col vh__num"><span class="vh__track" data-vh-track>
+      {Array.from({ length: 3 }, () => projects.map((_: any, i: number) => <span class="vh__cell">{String(i + 1).padStart(2, '0')}</span>))}
+    </span></span>
+    <span class="vh__col vh__tags"><span class="vh__track" data-vh-track>
+      {Array.from({ length: 3 }, () => projects.map((p: any) => <span class="vh__cell">{p.tags.join(', ')}</span>))}
+    </span></span>
+    <span class="vh__col vh__names"><span class="vh__track" data-vh-track>
+      {Array.from({ length: 3 }, () => projects.map((p: any) => <span class="vh__cell vh__name">{p.title}</span>))}
+    </span></span>
+    <span class="vh__col vh__year"><span class="vh__track" data-vh-track>
+      {Array.from({ length: 3 }, () => projects.map((p: any) => <span class="vh__cell">{p.year}</span>))}
+    </span></span>
   </div>
 
   <div class="vh__intro vh__fade">
@@ -182,6 +180,29 @@ const LAPS = 3;
     var big = matchMedia('(min-width: 810px) and (hover: hover) and (pointer: fine)');
     var FOCUS = 0.12;
     var last = [];
+    // the details under the line: f = which project is centred, as a
+    // fraction (0..N) of the way along the column
+    var tracks = null, rowH = 18, on = -1;
+    window.__vhDetails = function (f) {
+      if (!tracks) {
+        tracks = [].slice.call(document.querySelectorAll('[data-vh-track]'));
+        if (!tracks.length) return;
+        rowH = tracks[0].firstElementChild.offsetHeight || 18;
+      }
+      var n = tracks[0].children.length / 3;
+      var y = (-(n + f) * rowH).toFixed(2);
+      for (var i = 0; i < tracks.length; i++) tracks[i].style.transform = 'translate3d(0,' + y + 'px,0)';
+      var k = n + Math.round(f);
+      if (k !== on) {
+        var names = document.querySelector('.vh__names .vh__track');
+        if (names) {
+          if (names.children[on]) names.children[on].classList.remove('is-on');
+          if (names.children[k]) names.children[k].classList.add('is-on');
+        }
+        on = k;
+      }
+    };
+    window.addEventListener('resize', function () { tracks = null; });
     window.__vhFocus = function (pills, step, lap, wrapped) {
       var K = big.matches ? FOCUS : 0;
       var h = pills[0].offsetHeight;
@@ -236,16 +257,8 @@ const LAPS = 3;
       list.style.transform = 'translate3d(0,' + -(lap + wrapped) + 'px,0)';
       window.__vhFocus(pills, step, lap, wrapped);
       var hero = document.querySelector('[data-vh]');
-      // the side texts are already showing this project in the first frame
-      hero.classList.add('is-instant');
-      [].forEach.call(hero.querySelectorAll('.vh__stack'), function (g) {
-        if (g.children[idx]) g.children[idx].classList.add('is-active');
-      });
-      var track = hero.querySelector('[data-vh-names-track]');
-      if (track) {
-        track.style.setProperty('--at', String(N + idx));
-        if (track.children[N + idx]) track.children[N + idx].classList.add('is-on');
-      }
+      // the details under the line already show this project in the first frame
+      window.__vhDetails(wrapped / step);
       // the cover was off screen on the case study: nothing flies, home simply
       // dissolves in with the column where it was
       if (d.still) return;
@@ -388,54 +401,38 @@ const LAPS = 3;
     color: var(--text-primary);
     pointer-events: none;
   }
-  /* rows share one grid cell; the active one sits in place, the rest wait
-     above or below and roll through */
-  .vh__stack {
-    display: grid;
+  /* Each column is the list of every project's value, moved with the
+     column itself (not on a trigger): mid-scroll the outgoing row slides up
+     under the line while the next one rises into place. Values sit just
+     below the hairline; the names column lets the next names trail below. */
+  .vh__col {
+    position: relative;
+    display: block;
+    height: var(--row);
     overflow: hidden;
   }
-  .vh__roll {
-    grid-area: 1 / 1;
+  .vh__track {
+    display: flex;
+    flex-direction: column;
+    will-change: transform;
+  }
+  .vh__cell {
+    display: block;
+    height: var(--row);
     white-space: nowrap;
-    transform: translateY(105%);
-    opacity: 0;
-    transition: transform 0.6s var(--ease-out), opacity 0.4s ease;
-  }
-  .vh.is-instant :is(.vh__roll, .vh__names-track, .vh__name) {
-    transition: none;
-  }
-  .vh__roll.is-past {
-    transform: translateY(-105%);
-  }
-  .vh__roll.is-active {
-    transform: none;
-    opacity: 1;
   }
   .vh__year {
     justify-self: end;
+    text-align: right;
   }
-  .vh__year .vh__roll {
-    justify-self: end;
-  }
-  /* every project's name in a list: the centred one sits on the row, the
-     next ones trail below it and fade out */
   .vh__names {
-    position: relative;
-    height: calc(var(--row) * 4);
-    overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, #000 0 calc(var(--row) * 1.5), rgba(0, 0, 0, 0.55) calc(var(--row) * 2.5), transparent);
-    mask-image: linear-gradient(to bottom, #000 0 calc(var(--row) * 1.5), rgba(0, 0, 0, 0.55) calc(var(--row) * 2.5), transparent);
-  }
-  .vh__names-track {
-    display: flex;
-    flex-direction: column;
-    transform: translateY(calc(var(--at, 0) * var(--row) * -1));
-    transition: transform 0.6s var(--ease-out);
+    height: calc(var(--row) * 4.5);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0 var(--row), rgba(0, 0, 0, 0.6) calc(var(--row) * 2), transparent);
+    mask-image: linear-gradient(to bottom, #000 0 var(--row), rgba(0, 0, 0, 0.6) calc(var(--row) * 2), transparent);
   }
   .vh__name {
-    white-space: nowrap;
     color: var(--text-secondary);
-    transition: color 0.4s ease;
+    transition: color 0.35s ease;
   }
   .vh__name.is-on {
     color: var(--text-primary);
@@ -486,27 +483,26 @@ const LAPS = 3;
 
   /* Texts come in once the covers have landed: the side rows roll up into
      place one after another, the corner texts rise in */
-  .vh.is-entering .vh__num .vh__roll {
-    transition-duration: 0.9s;
+  .vh__col {
+    transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
   }
-  .vh.is-entering .vh__tags .vh__roll {
-    transition-duration: 0.9s;
+  .vh__tags {
     transition-delay: 70ms;
   }
-  .vh.is-entering .vh__names {
-    transition: opacity 0.9s var(--ease-out) 140ms, transform 0.9s var(--ease-out) 140ms;
+  .vh__names {
+    transition-delay: 140ms;
   }
-  .vh.is-entering .vh__year .vh__roll {
-    transition-duration: 0.9s;
+  .vh__year {
     transition-delay: 210ms;
   }
-  /* the hairline draws out from the middle as the covers land */
+  /* the hairline draws out from the middle as the covers land; the details
+     rise in under it */
   :global(html.is-arriving) .vh__line {
     transform: scaleX(0);
   }
-  :global(html.is-arriving) .vh__names {
+  :global(html.is-arriving) .vh__col {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   .vh__intro > *,
   .vh__hint {
@@ -544,12 +540,7 @@ const LAPS = 3;
       display: none;
     }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .vh__roll {
-      transition: opacity 0.2s ease;
-      transform: none !important;
-    }
-  }
+
 </style>
 
 <script>
@@ -567,7 +558,6 @@ const LAPS = 3;
   if (hero && list) {
     const pills = [...hero.querySelectorAll<HTMLElement>('[data-media]')];
     const N = pills.length / 3;
-    const groups = [...hero.querySelectorAll<HTMLElement>('.vh__stack')];
 
     // ---------- Geometry ----------
     let step = 1; // distance between two covers
@@ -654,61 +644,9 @@ const LAPS = 3;
       }
     });
 
-    // ---------- Side texts ----------
-    let active = -1;
-    if (hero.classList.contains('is-instant')) {
-      requestAnimationFrame(() => requestAnimationFrame(() => hero.classList.remove('is-instant')));
-    }
-    const setActive = (i: number) => {
-      if (i === active) return;
-      const prev = active;
-      active = i;
-      // roll in the direction of travel, even across the loop seam
-      const forward = prev < 0 || (i - prev + N) % N <= N / 2;
-      for (const g of groups) {
-        [...g.children].forEach((el, k) => {
-          el.classList.toggle('is-active', k === i);
-          el.classList.toggle('is-past', k !== i && forward);
-        });
-      }
-      moveNames(i, prev, forward);
-    };
-    // the name list keeps moving the way the column does: across the loop
-    // seam it carries on into the next copy, then quietly jumps back to the
-    // middle copy once it has settled
-    const namesTrack = hero.querySelector<HTMLElement>('[data-vh-names-track]');
-    const names = namesTrack ? [...namesTrack.children] : [];
-    let namesAt = -1;
-    let namesFix = 0;
-    const moveNames = (i: number, prev: number, forward: boolean) => {
-      if (!namesTrack) return;
-      if (namesAt < 0) {
-        const fromInline = Number(namesTrack.style.getPropertyValue('--at'));
-        namesAt = Number.isFinite(fromInline) && fromInline >= N ? fromInline : N + i;
-      }
-      if (prev >= 0) {
-        let d = (i - prev + N) % N;
-        if (!forward) d -= N;
-        namesAt += d;
-      } else namesAt = N + i;
-      namesTrack.style.setProperty('--at', String(namesAt));
-      names.forEach((el, k) => el.classList.toggle('is-on', k === namesAt));
-      window.clearTimeout(namesFix);
-      namesFix = window.setTimeout(() => {
-        const home = N + (((namesAt % N) + N) % N);
-        if (home === namesAt) return;
-        namesTrack.style.transition = 'none';
-        names.forEach((el) => ((el as HTMLElement).style.transition = 'none'));
-        namesAt = home;
-        namesTrack.style.setProperty('--at', String(namesAt));
-        names.forEach((el, k) => el.classList.toggle('is-on', k === namesAt));
-        namesTrack.getBoundingClientRect();
-        requestAnimationFrame(() => {
-          namesTrack.style.transition = '';
-          names.forEach((el) => ((el as HTMLElement).style.transition = ''));
-        });
-      }, 700);
-    };
+    // ---------- Project details ----------
+    // (drawn from the column's position every frame, see __vhDetails)
+    const details = (window as unknown as { __vhDetails(f: number): void }).__vhDetails;
 
     // ---------- Edge lens gate ----------
     // The top/bottom lens eases away when a project opens (so home leaves
@@ -1036,8 +974,7 @@ const LAPS = 3;
         }
         hover[i] += ((hovered === pills[i] ? 1 : 0) - hover[i]) * 0.12;
       }
-      // the side texts wait below their line until the covers have landed
-      if (!arriving) setActive(Number(pills[best].dataset.index));
+      details(wrapped / step);
 
       if (!gl) return;
       const speed = clamp(Math.abs(vel) / 45);
