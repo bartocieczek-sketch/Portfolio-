@@ -609,7 +609,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
      view below sink away, then the panel itself slides off. */
   .case.is-leaving .case__panel :global(.ln-i) {
     transform: translateY(-110%);
-    transition: transform 0.5s var(--ease-in-out) calc(var(--d, 0s) * 0.3);
+    transition: transform 0.36s var(--ease-in-out) calc(var(--d, 0s) * 0.15);
   }
   .case.is-leaving .case__panel [data-pm-fade] {
     opacity: 0;
@@ -887,7 +887,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       main.querySelectorAll<HTMLElement>('.case__panel .ln-i').forEach((el) => {
         last = Math.max(last, parseFloat(el.style.getPropertyValue('--d')) || 0);
       });
-      window.setTimeout(() => leave(a.href), Math.round((last * 0.3 + 0.5) * 1000) + 40);
+      window.setTimeout(() => leave(a.href), Math.round((last * 0.15 + 0.36) * 1000) + 20);
     });
   });
   // ---------- Next project: its pill flies into that project's cover ----------

@@ -454,7 +454,7 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 html:active-view-transition-type(cover-back)::view-transition-image-pair(project-cover) {
-  animation: vt-pill-close 0.85s var(--ease-flight) both;
+  animation: vt-pill-close 0.68s var(--ease-flight) both;
 }
 @keyframes vt-pill-close {
   from {
@@ -528,11 +528,11 @@ html:active-view-transition-type(card)::view-transition-new(root) {
   z-index: 2;
 }
 html:active-view-transition-type(cover-back)::view-transition-old(root) {
-  animation: vt-fade-out 0.5s var(--ease-out) 0.25s both;
+  animation: vt-fade-out 0.4s var(--ease-out) 0.18s both;
   z-index: 1;
 }
 html:active-view-transition-type(cover-back)::view-transition-new(root) {
-  animation: vt-focus-in 0.85s var(--ease-flight) both;
+  animation: vt-focus-in 0.68s var(--ease-flight) both;
   z-index: 2;
 }
 @keyframes vt-focus-in {
@@ -925,4 +925,9 @@ html:has(main.about) {
   to {
     transform: none;
   }
+}
+
+/* going home is a touch quicker than opening a project */
+html:active-view-transition-type(cover-back)::view-transition-group(project-cover) {
+  animation-duration: 0.68s;
 }

@@ -166,7 +166,9 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
             clipPath: 'inset(' + L(P.c0.y, P.c1.y, e) + 'px ' + L(P.c0.x, P.c1.x, e) + 'px round ' + L(P.c0.r, P.c1.r, e) + 'px)',
           });
         }
-        var a = document.documentElement.animate(kf, { duration: 850, easing: 'linear', fill: 'both', pseudoElement: pe });
+        // going home is a touch quicker than opening a project
+        var back = document.documentElement.classList.contains('is-cover-back');
+        var a = document.documentElement.animate(kf, { duration: back ? 680 : 850, easing: 'linear', fill: 'both', pseudoElement: pe });
         if (css) {
           a.currentTime = css.currentTime || 0;
           css.cancel();
