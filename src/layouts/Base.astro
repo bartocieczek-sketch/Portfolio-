@@ -240,7 +240,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
                   window.__vtFlight(
                     { x: pill.x, y: pill.y, w: pill.w, h: pill.h },
                     { x: f.left, y: f.top, w: f.width, h: f.height },
-                    { x: pill.cx || 0, y: pill.cy || 0, r: pill.r || pill.w / 2 },
+                    { x: pill.cx || 0, y: pill.cy || 0, r: pill.r != null ? pill.r : pill.w / 2 },
                     { x: 0, y: 0, r: fr },
                   );
                 if (!uniform) window.__vtSizes(pill, { w: f.width, h: f.height }, true, focus);
