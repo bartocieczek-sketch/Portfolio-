@@ -302,7 +302,7 @@ const LAPS = 3;
 
   .vh {
     --pill-w: clamp(240px, 21vw, 370px);
-    --pill-h: calc(var(--pill-w) / 0.75);
+    --pill-h: var(--pill-w);
     --gap: 28px;
     position: relative;
     height: 100vh;
@@ -346,8 +346,8 @@ const LAPS = 3;
     position: relative;
     display: block;
     width: var(--pill-w);
-    aspect-ratio: 0.75;
-    border-radius: 999px;
+    aspect-ratio: 1;
+    border-radius: 0;
     overflow: hidden;
     background: #f2f2f2;
     -webkit-user-drag: none;
@@ -1072,7 +1072,7 @@ const LAPS = 3;
       }
       void main() {
         vec2 size = uRect.zw;
-        float r = size.x * 0.5;
+        float r = 0.0; // square covers, crisp corners
         vec2 q = abs(vUv * size - size * 0.5) - (size * 0.5 - r);
         float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
         float mask = 1.0 - smoothstep(-1.0, 1.0, d);

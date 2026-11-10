@@ -134,7 +134,10 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
           zoom = m && m !== 'none' ? parseFloat(m.split('(')[1]) || 1 : 1;
         }
         var w = p.offsetWidth, h = p.offsetHeight;
-        var H = h * zoom, W = H * 0.8;
+        // the whole 4:5 photo, just covering the cover's box (a square one
+        // shows its full width)
+        var W = Math.max(w, h * 0.8) * zoom, H = W / 0.8;
+        var rad = Math.min(parseFloat(getComputedStyle(p).borderTopLeftRadius) || 0, w / 2);
         st.transition = 'none';
         st.transform = 'none';
         st.position = 'absolute';
@@ -145,19 +148,19 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
         st.maxWidth = 'none';
         st.viewTransitionName = 'project-cover';
         var r = document.documentElement.style;
-        r.setProperty('--vt-pill-r', w / 2 + 'px');
+        r.setProperty('--vt-pill-r', rad + 'px');
         r.setProperty('--vt-pill-clip', (W - w) / 2 + 'px');
         r.setProperty('--vt-pill-clip-y', (H - h) / 2 + 'px');
         // the pill may be drawn scaled (the middle cover on home is a little
         // larger): everything handed to the flight is in on-screen px
         var k = p.getBoundingClientRect().width / w || 1;
         if (k !== 1) {
-          r.setProperty('--vt-pill-r', (w / 2) * k + 'px');
+          r.setProperty('--vt-pill-r', rad * k + 'px');
           r.setProperty('--vt-pill-clip', ((W - w) / 2) * k + 'px');
           r.setProperty('--vt-pill-clip-y', ((H - h) / 2) * k + 'px');
         }
         var b = img.getBoundingClientRect();
-        return { w: W * k, h: H * k, nw: W, cx: ((W - w) / 2) * k, cy: ((H - h) / 2) * k, r: (w / 2) * k, x: b.left, y: b.top };
+        return { w: W * k, h: H * k, nw: W, cx: ((W - w) / 2) * k, cy: ((H - h) / 2) * k, r: rad * k, x: b.left, y: b.top };
       };
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
