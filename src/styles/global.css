@@ -560,6 +560,19 @@ html:active-view-transition-type(cover-back)::view-transition-new(root) {
     opacity: 0;
   }
 }
+/* Phones: no blur at all. Opening a project, the case page is there at once
+   on white and the cover flies over it; coming back, home simply fades in. */
+@media (max-width: 809px) {
+  html:active-view-transition-type(card)::view-transition-old(root) {
+    animation: vt-fade-out 0.2s var(--ease-out) both;
+  }
+  html:active-view-transition-type(card)::view-transition-new(root) {
+    animation: none;
+  }
+  html:active-view-transition-type(cover-back)::view-transition-new(root) {
+    animation: vt-fade-in 0.45s var(--ease-out) both;
+  }
+}
 
 /* After the WebGL flight the cover is already in place on both pages, so the
    case study simply fades in over the home page around it */
