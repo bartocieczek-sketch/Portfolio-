@@ -1002,10 +1002,10 @@ const LAPS = 3;
         e.preventDefault();
         if (opening) return;
         opening = true;
-        // the edge lens flattens out (300ms, eased both ends) before home is captured, so the
+        // the edge lens flattens out (220ms, eased both ends) before home is captured, so the
         // home left behind (blurred under the case study) matches the flat
         // stand-in for it there exactly
-        gateTo(0, 300);
+        gateTo(0, 220);
         warm(p.href);
         const domImg = p.querySelector('img');
         if (domImg) domImg.loading = 'eager';
@@ -1018,7 +1018,7 @@ const LAPS = 3;
           //    takes over from WebGL in the same frame, framed identically
           const flat = new Promise<void>((res) => {
             const t0 = performance.now();
-            const wait = () => (gateAt(performance.now()) < 0.01 || performance.now() - t0 > 360 ? res() : requestAnimationFrame(wait));
+            const wait = () => (gateAt(performance.now()) < 0.01 || performance.now() - t0 > 280 ? res() : requestAnimationFrame(wait));
             wait();
           });
           Promise.all([decoded, flat]).then(() => {
