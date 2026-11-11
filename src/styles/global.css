@@ -864,10 +864,16 @@ html.is-preloading { overflow: hidden; }
   pointer-events: none;
 }
 .preload__mark {
-  width: clamp(112px, 11vw, 168px);
-  height: clamp(112px, 11vw, 168px);
+  width: 112px;
+  height: 112px;
   opacity: 0;
   will-change: transform, opacity;
+}
+@media (min-width: 810px) {
+  .preload__mark {
+    width: 96px;
+    height: 96px;
+  }
 }
 /* ---------- About: dark ---------- */
 html:has(main.about) {
