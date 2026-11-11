@@ -6,10 +6,10 @@ import '@fontsource/inter/latin-500.css';
 
 export const prerender = true;
 export function getStaticPaths() {
-  return [1, 2, 3, 4, 5].map((n) => ({ params: { n: String(n) } }));
+  return [1, 2, 3, 4, 5, 6].map((n) => ({ params: { n: String(n) } }));
 }
 const n = Number(Astro.params.n);
-const names = ['', 'Lockup', 'B opens into the name', 'B as the first letter', 'Stacked', 'B in the background'];
+const names = ['', 'Lockup', 'B opens into the name', 'B as the first letter', 'Stacked', 'B in the background', 'Bart · B · Ocieczek'];
 ---
 
 <html lang="en">
@@ -22,7 +22,13 @@ const names = ['', 'Lockup', 'B opens into the name', 'B as the first letter', '
   <body data-v={n}>
     <div class="stage">
       {n === 5 && <canvas class="big" data-mark></canvas>}
-      {n === 3 ? (
+      {n === 6 ? (
+        <div class="lock6">
+          <span class="side left"><span class="w a">Bart</span><span class="w b">Designer</span></span>
+          <canvas class="mark" data-mark></canvas>
+          <span class="side right"><span class="w a">Ocieczek</span><span class="w b">Developer</span></span>
+        </div>
+      ) : n === 3 ? (
         <div class="lock3">
           <div class="row">
             <canvas class="mark" data-mark></canvas>
@@ -42,7 +48,7 @@ const names = ['', 'Lockup', 'B opens into the name', 'B as the first letter', '
       )}
     </div>
     <nav class="lab">
-      {[1, 2, 3, 4, 5].map((k) => <a href={`/preloader-${k}`} aria-current={k === n ? 'page' : undefined}>{k}</a>)}
+      {[1, 2, 3, 4, 5, 6].map((k) => <a href={`/preloader-${k}`} aria-current={k === n ? 'page' : undefined}>{k}</a>)}
       <button type="button" data-replay>Replay</button>
       <span class="lab__name">{names[n]}</span>
     </nav>
@@ -172,6 +178,47 @@ const names = ['', 'Lockup', 'B opens into the name', 'B as the first letter', '
         flex-direction: column;
         align-items: center;
         gap: 2px;
+      }
+
+      /* 6: B in the middle; Bart slides out to its left, Ocieczek to its
+         right, then they roll over to Designer · Developer (the B is the &) */
+      .lock6 {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        width: 100%;
+        font-weight: 500;
+        font-size: clamp(20px, 1.9vw, 28px);
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+      }
+      .lock6 .side {
+        display: grid;
+        overflow: hidden;
+        padding-bottom: 0.08em;
+        margin-bottom: -0.08em;
+      }
+      .lock6 .left {
+        justify-items: end;
+        margin-right: 4px;
+      }
+      .lock6 .right {
+        justify-items: start;
+        margin-left: 4px;
+      }
+      .lock6 .w {
+        grid-area: 1 / 1;
+        white-space: nowrap;
+        will-change: transform;
+      }
+      .lock6 .left .a {
+        transform: translateX(105%);
+      }
+      .lock6 .right .a {
+        transform: translateX(-105%);
+      }
+      .lock6 .b {
+        transform: translateY(130%);
       }
 
       /* 5: a big, faint B turning behind the name */
@@ -346,6 +393,40 @@ const names = ['', 'Lockup', 'B opens into the name', 'B as the first letter', '
               [Math.min(T, 2980 + k * 30), { transform: 'translateY(110%)' }],
             ]),
           );
+        }
+
+        if (v === 6) {
+          // B lands; Bart and Ocieczek slide out from behind it to either
+          // side, then roll up and over to Designer · Developer; at the end
+          // the words slide back into the B and it falls away
+          const T = 3750;
+          mountMark(canvas, turn(3150));
+          track(markEl, T, [
+            [0, { opacity: 0, transform: 'translateY(-12px) scale(0.9)' }, OUT],
+            [750, { opacity: 1, transform: 'none' }],
+            [3150, { opacity: 1, transform: 'none' }, MOVE],
+            [T, { opacity: 0, transform: 'translateY(22%) scale(0.94)' }],
+          ]);
+          const side = (sel: string, dir: 1 | -1, lag: number) => {
+            const a = $(`.lock6 ${sel} .a`);
+            const b = $(`.lock6 ${sel} .b`);
+            track(a, T, [
+              [0, { transform: `translateX(${105 * dir}%)` }],
+              [820 + lag, { transform: `translateX(${105 * dir}%)` }, EXPO],
+              [1600 + lag, { transform: 'none' }],
+              [1950 + lag, { transform: 'none' }, MOVE],
+              [2550 + lag, { transform: 'translateY(-130%)' }],
+            ]);
+            track(b, T, [
+              [0, { transform: 'translateY(130%)' }],
+              [1950 + lag, { transform: 'translateY(130%)' }, MOVE],
+              [2550 + lag, { transform: 'none' }],
+              [2950 + lag, { transform: 'none' }, MOVE],
+              [3400 + lag, { transform: `translateX(${105 * dir}%)` }],
+            ]);
+          };
+          side('.left', 1, 0);
+          side('.right', -1, 70);
         }
 
         if (v === 5) {
