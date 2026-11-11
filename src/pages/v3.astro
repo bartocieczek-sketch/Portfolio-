@@ -415,7 +415,7 @@ const clients = projects.map((p: { title: string }) => p.title);
       // 2. the real middle card takes over; the others slide out from behind
       const land = () => {
         cards[0].style.opacity = '1';
-        flip.style.visibility = 'hidden';
+        flip.style.display = 'none'; // (visibility would be overridden by the shown picture)
         introStart = performance.now();
         window.setTimeout(() => page.classList.add('is-done'), 900);
       };
