@@ -806,11 +806,11 @@ const LAPS = 3;
     let lastTick = 0;
     let tickAt: number | null = null;
     const VOLUME = 0.7;
+    const SCROLL_SOUND_OFF = true;
     const unlock = () => {
       try {
         if (!actx) actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         if (actx.state === 'suspended') actx.resume();
-        loadKeys();
       } catch (err) {}
     };
     ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'].forEach((t) => window.addEventListener(t, unlock, { passive: true, capture: true }));
@@ -854,7 +854,8 @@ const LAPS = 3;
       return src;
     };
     const tick = (_i: number) => {
-      if (!actx || reduceMotion) return;
+      // scroll sound switched off for now (the samples are never loaded)
+      if (SCROLL_SOUND_OFF || !actx || reduceMotion) return;
       loadKeys();
       if (actx.state !== 'running' || !presses.length) return;
       const now = performance.now();
