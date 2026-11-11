@@ -320,14 +320,14 @@ const clients = projects.map((p: { title: string }) => p.title);
       (e) => {
         e.preventDefault();
         const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-        target += d / 420;
+        target += d / 240;
         settle();
       },
       { passive: false },
     );
     addEventListener('wheel', (e) => {
       if (!row.contains(e.target as Node)) {
-        target += (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) / 420;
+        target += (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) / 240;
         settle();
       }
     });
