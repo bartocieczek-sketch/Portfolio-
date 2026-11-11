@@ -3,6 +3,7 @@
 // on its own link (/preloader-1 … /preloader-5). Not linked anywhere.
 import '@fontsource/inter/latin-400.css';
 import '@fontsource/inter/latin-500.css';
+import '../styles/fonts.css';
 
 export const prerender = true;
 export function getStaticPaths() {
@@ -60,7 +61,8 @@ const names = ['', 'Lockup', 'B opens into the name', 'B as the first letter', '
         height: 100%;
         background: #fff;
         color: #0b0b0b;
-        font-family: Inter, system-ui, sans-serif;
+        /* the site's own stack (Neue Montreal, Inter until it's added) */
+        font-family: 'PP Neue Montreal', 'Neue Montreal', 'Inter', 'Helvetica Neue', Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
       .stage {
@@ -188,9 +190,9 @@ const names = ['', 'Lockup', 'B opens into the name', 'B as the first letter', '
         align-items: center;
         width: 100%;
         font-weight: 500;
-        font-size: clamp(20px, 1.9vw, 28px);
+        font-size: clamp(15px, 1.2vw, 18px);
         line-height: 1.2;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.04em;
       }
       .lock6 .side {
         display: grid;
