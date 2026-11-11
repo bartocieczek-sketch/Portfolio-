@@ -960,7 +960,13 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       el.style.setProperty('--d', (d + 0.2).toFixed(3) + 's');
     });
   };
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) splitPanel();
+  // split once the font is in: lines are found by where words sit, so a
+  // late font swap would leave words of one line with different delays
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (document.fonts && document.fonts.status !== 'loaded') {
+      Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 600))]).then(splitPanel);
+    } else splitPanel();
+  }
   let setPanel: (open: boolean) => void = () => {};
   const startPanel = () => {
     if (!panel) return;
@@ -980,7 +986,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         fromCard ||= !!sessionStorage.getItem('vt-card');
       } catch (err) {}
       const landed = new Promise<void>((resolve) => {
-        const ready = () => root.classList.contains('case-in') || root.classList.contains('cover-landed');
+        // phones: wait for the whole flight to end (the story is above the
+        // cover there, and starting it mid-transition made it hitch as the
+        // transition handed over to the live page)
+        const phone = matchMedia('(max-width: 809px)').matches;
+        const ready = () => (!phone && root.classList.contains('case-in')) || root.classList.contains('cover-landed');
         if (!fromCard || ready()) return resolve();
         new MutationObserver((_, mo) => {
           if (!ready()) return;
@@ -991,7 +1001,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       // the sharp picture gets a short grace (never holds the panel back for
       // long on a heavy image), so every project opens on the same beat
       // (straight away: the story rises in with the pictures, mid-flight)
-      landed.then(() => window.setTimeout(openOnce, fromCard ? 0 : 150));
+      // and for the font, so the lines never re-flow while rising
+      const fonts = Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 600))]);
+      Promise.all([landed, fonts]).then(() => window.setTimeout(openOnce, fromCard ? 0 : 150));
       // never wait forever (slow network)
       window.setTimeout(openOnce, 3500);
     });
