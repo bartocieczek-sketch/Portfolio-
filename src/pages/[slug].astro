@@ -561,6 +561,13 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
      (110% below, 1.1s, a long ease-out), the lines of one block 60ms apart
      and each block 80ms after the one before; the small grey labels and the
      rule just fade in, a beat later. Each word carries its line's delay. */
+  /* nothing of the story shows before it has been split into its masked
+     lines (otherwise it flashes in whole for a frame, then rises again) */
+  @media (prefers-reduced-motion: no-preference) {
+    .case__panel:not([data-split]) .case__panel-in {
+      visibility: hidden;
+    }
+  }
   .case__panel :global(.ln) {
     display: inline-block;
     overflow: hidden;
