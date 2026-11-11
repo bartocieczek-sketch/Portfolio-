@@ -693,7 +693,7 @@ const LAPS = 3;
     // being used; 140 ms after the last event it settles on a project: back
     // to where it started for a nudge, otherwise as many projects on as it
     // was moved (at least one).
-    let glideT = 0.45; // seconds: the glide's time constant
+    let glideT = 0.32; // seconds: the glide's time constant
     let glideV = 0; // px per second
     const smoothDamp = (cur: number, to: number, dt: number) => {
       const w = 2 / glideT;
@@ -708,7 +708,7 @@ const LAPS = 3;
     const glideTo = (k: number) => {
       touchInput();
       if (opening) return;
-      glideT = Math.min(0.8, 0.34 + 0.08 * Math.abs(k - pos / step));
+      glideT = Math.min(0.58, 0.24 + 0.06 * Math.abs(k - pos / step));
       target = k * step;
     };
     const stepBy = (dir: number) => glideTo(Math.round(target / step) + dir);
@@ -725,14 +725,14 @@ const LAPS = 3;
         const d = (Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX) * unit;
         if (!wheelTimer) wheelBase = Math.round(target / step);
         wheelSum += d;
-        glideT = 0.42;
+        glideT = 0.3;
         target = wheelBase * step + wheelSum;
         window.clearTimeout(wheelTimer);
         wheelTimer = window.setTimeout(() => {
           const moved = (target - wheelBase * step) / step;
           const n = Math.abs(moved) < 0.12 ? 0 : Math.max(1, Math.round(Math.abs(moved)));
           target = (wheelBase + Math.sign(moved) * n) * step;
-          glideT = 0.36 + 0.04 * Math.min(n, 6);
+          glideT = 0.26 + 0.03 * Math.min(n, 6);
           wheelSum = 0;
           wheelTimer = 0;
         }, 140);
