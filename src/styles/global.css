@@ -36,6 +36,7 @@
   --ease-flight: cubic-bezier(0.2, 0, 0, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* things travelling across the screen */
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);      /* long, cinematic reveals */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);   /* iOS-like drawer (menu panel) */
 }
 
 *,

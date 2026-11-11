@@ -1463,7 +1463,8 @@ const LAPS = 3;
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
         textures.set(src, { tex, w: img.naturalWidth, h: img.naturalHeight, at: performance.now() });
       };
-      img.src = coarse ? src.replace(/([?&])w=\d+/, '$1w=600').replace(/([?&])h=\d+/, '$1h=750') : src;
+      // phones: big enough for the enlarged middle cover at 2x
+      img.src = coarse ? src.replace(/([?&])w=\d+/, '$1w=900').replace(/([?&])h=\d+/, '$1h=1125') : src;
     };
     const get = (el: HTMLElement) => textures.get(el.dataset.src!);
 
@@ -1486,7 +1487,8 @@ const LAPS = 3;
           between covers), so neighbours never touch */
       draw(els: HTMLElement[], hover: number[], place: (i: number, r: DOMRect) => { top: number; speed: number; lens: number; sat: number } | null, maxElong = 0.04) {
         const cr = canvas.getBoundingClientRect();
-        const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1 : 1.5);
+        // phones draw at 2x (at 1x a 3x screen upscales the covers into pixels)
+        const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 2 : 1.5);
         const W = Math.round(cr.width * dpr);
         const H = Math.round(cr.height * dpr);
         if (canvas.width !== W || canvas.height !== H) {
