@@ -58,12 +58,19 @@ const LAPS = 3;
 </script>
 
 <div class="preload" aria-hidden="true" data-preload>
-  <canvas class="preload__mark" data-preload-mark></canvas>
+  <div class="preload__lock">
+    <span class="preload__side preload__side--l"><span class="preload__w">Bart</span><span class="preload__w">Designer</span></span>
+    <canvas class="preload__mark" data-preload-mark></canvas>
+    <span class="preload__side preload__side--r"><span class="preload__w">Ocieczek</span><span class="preload__w">Developer</span></span>
+  </div>
 </div>
 <script is:inline>
-  // Preloader: just the chrome B. It drops in (the 3D side turns it to face
-  // you as it lands), holds a beat, then falls out the way the covers fall
-  // while its 3D side spins it away; the column streams in underneath.
+  // Preloader: the chrome B lands in the middle (its 3D side turns it to face
+  // you); then, word by word as in the first preloader, Bart drops in to its
+  // left and Ocieczek to its right, they fall on down while Designer and
+  // Developer drop into their places, and those fall away with the B as the
+  // column streams in. One timeline per element, so a busy main thread can
+  // never skip a beat.
   (function () {
     var root = document.documentElement;
     var el = document.querySelector('[data-preload]');
@@ -74,9 +81,26 @@ const LAPS = 3;
       return;
     }
     var mark = el.querySelector('[data-preload-mark]');
+    var words = el.querySelectorAll('.preload__w');
     var OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
-    var MOVE = 'cubic-bezier(0.77, 0, 0.175, 1)';
-    var HOLD = 1050; // from landing to leaving
+    var IN = 'cubic-bezier(0.16, 1, 0.3, 1)';
+    var SWAP = 'cubic-bezier(0.77, 0, 0.175, 1)';
+    var FALL = 'cubic-bezier(0.7, 0, 0.84, 0)';
+    var down = 'translateY(-115%)', mid = 'none', up = 'translateY(115%)';
+    var L = 650; // the B lands first
+    var T = L + 2670;
+    var LEAVE = L + 2150;
+    var track = function (node, steps) {
+      return node.animate(
+        steps.map(function (s) {
+          var f = Object.assign({}, s[1]);
+          f.offset = s[0] / T;
+          f.easing = s[2] || 'linear';
+          return f;
+        }),
+        { duration: T, fill: 'both' },
+      );
+    };
     var started = false;
     var done = false;
     var finish = function () {
@@ -84,35 +108,51 @@ const LAPS = 3;
       done = true;
       root.classList.remove('is-preloading');
       window.dispatchEvent(new Event('preload:done'));
-      el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, easing: 'ease-out', fill: 'both' }).finished.then(function () {
+      el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, easing: 'ease-out', fill: 'both' }).finished.then(function () {
         el.remove();
       });
     };
-    // one timeline, so a busy main thread can never skip the hold:
-    // in 750ms (drops a little and settles from 0.9, strong ease-out),
-    // hold, out 520ms (falls on down with the column, ease-in-out)
-    var IN_MS = 750;
-    var OUT_MS = 520;
-    var T = IN_MS + HOLD + OUT_MS;
     var start = function () {
       if (started) return;
       started = true;
-      var a = mark.animate(
-        [
-          { opacity: 0, transform: 'translateY(-14%) scale(0.9)', offset: 0, easing: OUT },
-          { opacity: 1, transform: 'none', offset: IN_MS / T },
-          { opacity: 1, transform: 'none', offset: (IN_MS + HOLD) / T, easing: MOVE },
-          { opacity: 0, transform: 'translateY(22%) scale(0.94)', offset: 1 },
-        ],
-        { duration: T, fill: 'both' },
-      );
+      var a = track(mark, [
+        [0, { opacity: 0, transform: 'translateY(-12px) scale(0.9)' }, OUT],
+        [750, { opacity: 1, transform: 'none' }],
+        [LEAVE, { opacity: 1, transform: 'none' }, FALL],
+        [T, { opacity: 0, transform: 'translateY(22%) scale(0.94)' }],
+      ]);
       // the 3D side reads this timeline to spin away in step with the fall
-      window.__preloadMark = { anim: a, leave: IN_MS + HOLD, out: OUT_MS };
+      window.__preloadMark = { anim: a, leave: LEAVE, out: 520 };
+      // [Bart, Designer] on the left, [Ocieczek, Developer] 60ms behind
+      [0, 2].forEach(function (i, side) {
+        var lag = side * 60;
+        track(words[i], [
+          [0, { transform: down }],
+          [L + 120 + lag, { transform: down }, IN],
+          [L + 920 + lag, { transform: mid }],
+          [L + 1150 + lag, { transform: mid }, SWAP],
+          [L + 1850 + lag, { transform: up }],
+          [T, { transform: up }],
+        ]);
+        track(words[i + 1], [
+          [0, { transform: down }],
+          [L + 1150 + lag, { transform: down }, SWAP],
+          [L + 1850 + lag, { transform: mid }],
+          [LEAVE + lag, { transform: mid }, FALL],
+          [Math.min(T, L + 2670 + lag), { transform: up }],
+        ]);
+      });
+      // the column starts falling as the words leave (read off the timeline)
+      var watch = function () {
+        if (done) return;
+        if (Number(a.currentTime) >= LEAVE + 300 || a.playState === 'finished') finish();
+        else requestAnimationFrame(watch);
+      };
+      requestAnimationFrame(watch);
       a.finished.then(finish, finish);
       setTimeout(finish, T + 4000); // only if the timeline never ends
     };
     // wait for the 3D to be drawn (it signals) but never hold the page long
-    mark.style.opacity = '0';
     window.addEventListener('preload:mark-ready', start, { once: true });
     setTimeout(start, 900);
   })();

@@ -863,18 +863,44 @@ html.is-preloading { overflow: hidden; }
   background: var(--surface-dark);
   pointer-events: none;
 }
+.preload__lock {
+  justify-self: stretch;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  width: 100%;
+  font: 500 clamp(15px, 1.2vw, 18px) / 1.2 var(--font-head);
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+}
+.preload__side {
+  display: grid;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.preload__side--l {
+  justify-items: end;
+  margin-right: 4px;
+}
+.preload__side--r {
+  justify-items: start;
+  margin-left: 4px;
+}
+.preload__w {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  transform: translateY(-115%);
+  will-change: transform;
+}
 .preload__mark {
-  width: 112px;
-  height: 112px;
+  display: block;
+  width: 88px;
+  height: 88px;
   opacity: 0;
   will-change: transform, opacity;
 }
-@media (min-width: 810px) {
-  .preload__mark {
-    width: 96px;
-    height: 96px;
-  }
-}
+
 /* ---------- About: dark ---------- */
 html:has(main.about) {
   --surface-dark: rgb(11, 11, 11);
