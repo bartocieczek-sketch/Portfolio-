@@ -977,7 +977,9 @@ const LAPS = 3;
     const lensGate = { from: 1, to: 1, t0: 0, dur: 1 };
     const gateAt = (now: number) => {
       const k = Math.min(1, Math.max(0, (now - lensGate.t0) / lensGate.dur));
-      const e = 1 - (1 - k) * (1 - k) * (1 - k); // ease-out cubic
+      // ease-out cubic growing back in; flattening (going to 0) eases in and
+      // out instead, so the neighbours' shapes settle rather than snap
+      const e = lensGate.to < lensGate.from ? (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2) : 1 - (1 - k) * (1 - k) * (1 - k);
       return lensGate.from + (lensGate.to - lensGate.from) * e;
     };
     const gateTo = (to: number, dur: number, from?: number) => {
@@ -1000,10 +1002,10 @@ const LAPS = 3;
         e.preventDefault();
         if (opening) return;
         opening = true;
-        // the edge lens flattens out quickly before home is captured, so the
+        // the edge lens flattens out (300ms, eased both ends) before home is captured, so the
         // home left behind (blurred under the case study) matches the flat
         // stand-in for it there exactly
-        gateTo(0, 140);
+        gateTo(0, 300);
         warm(p.href);
         const domImg = p.querySelector('img');
         if (domImg) domImg.loading = 'eager';
@@ -1016,7 +1018,7 @@ const LAPS = 3;
           //    takes over from WebGL in the same frame, framed identically
           const flat = new Promise<void>((res) => {
             const t0 = performance.now();
-            const wait = () => (gateAt(performance.now()) < 0.02 || performance.now() - t0 > 200 ? res() : requestAnimationFrame(wait));
+            const wait = () => (gateAt(performance.now()) < 0.01 || performance.now() - t0 > 360 ? res() : requestAnimationFrame(wait));
             wait();
           });
           Promise.all([decoded, flat]).then(() => {
