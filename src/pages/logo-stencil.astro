@@ -1,0 +1,92 @@
+---
+// Test: the B as a stencil blackletter — a heavy gothic B (Grenze Gotisch
+// Black / UnifrakturCook Bold, SIL OFL) cut through by parallel diagonal
+// slits, in the spirit of the reference. Not linked anywhere.
+import glyphs from '../lib/monogram-stencil.json';
+export const prerender = true;
+
+type G = { d: string; box: [number, number, number, number] };
+let uid = 0;
+const mark = (k: 'grenze' | 'cook', o: { cuts?: number[]; ang?: number; gap?: number; fg?: string } = {}) => {
+  const { cuts = [0.32, 0.5, 0.68], ang = 50, gap = 0.028, fg = '#000' } = o;
+  const { d, box } = (glyphs as Record<string, G>)[k];
+  const [x0, y0, x1, y1] = box;
+  const w = x1 - x0;
+  const h = y1 - y0;
+  const S = Math.max(w, h) * 1.22;
+  const cx = (x0 + x1) / 2;
+  const cy = -(y0 + y1) / 2;
+  const a = (ang * Math.PI) / 180;
+  const dx = Math.cos(a);
+  const dy = -Math.sin(a);
+  const nx = -dy;
+  const ny = dx;
+  const L = S * 2;
+  const id = `m${uid++}`;
+  const lines = cuts
+    .map((t) => {
+      const off = (t - 0.5) * h * 1.2;
+      const px = cx + nx * off;
+      const py = cy + ny * off;
+      return `<line x1="${px - dx * L}" y1="${py - dy * L}" x2="${px + dx * L}" y2="${py + dy * L}" stroke="black" stroke-width="${gap * h}"/>`;
+    })
+    .join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${cx - S / 2} ${cy - S / 2} ${S} ${S}"><defs><mask id="${id}" maskUnits="userSpaceOnUse" x="${cx - S}" y="${cy - S}" width="${2 * S}" height="${2 * S}"><rect x="${cx - S}" y="${cy - S}" width="${2 * S}" height="${2 * S}" fill="white"/>${lines}</mask></defs><g mask="url(#${id})"><path transform="scale(1,-1)" d="${d}" fill="${fg}"/></g></svg>`;
+};
+const tiles = [
+  { label: 'Gothic Black · 3 cuts', bg: '#F79B9B', svg: mark('grenze') },
+  { label: 'Gothic Black · 2 cuts', bg: '#F79B9B', svg: mark('grenze', { cuts: [0.38, 0.62], gap: 0.032 }) },
+  { label: 'Gothic Black · 4 cuts, steeper', bg: '#F79B9B', svg: mark('grenze', { cuts: [0.25, 0.42, 0.58, 0.75], ang: 58, gap: 0.022 }) },
+  { label: 'Gothic Black · on white', bg: '#f4f4f2', svg: mark('grenze') },
+  { label: 'Gothic Black · on black', bg: '#0b0b0b', svg: mark('grenze', { fg: '#fff' }) },
+  { label: 'Fraktur Bold · 3 cuts', bg: '#F79B9B', svg: mark('cook') },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>B stencil monogram</title>
+    <style>
+      body {
+        margin: 0;
+        background: #fff;
+        font: 500 13px/1.2 system-ui, sans-serif;
+        color: #777;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+        gap: 12px;
+        padding: 12px;
+      }
+      figure {
+        margin: 0;
+      }
+      .tile {
+        aspect-ratio: 1;
+        display: grid;
+        place-items: center;
+      }
+      .tile :global(svg) {
+        width: 78%;
+        height: 78%;
+      }
+      figcaption {
+        padding: 8px 2px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid">
+      {tiles.map((t) => (
+        <figure>
+          <div class="tile" style={`background:${t.bg}`} set:html={t.svg} />
+          <figcaption>{t.label}</figcaption>
+        </figure>
+      ))}
+    </div>
+  </body>
+</html>
