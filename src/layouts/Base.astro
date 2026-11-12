@@ -361,6 +361,10 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
     {preview && <VisualEditing enabled zIndex={1000} />}
 
     <script>
+      import { startAnalytics } from '../lib/analytics';
+      startAnalytics();
+    </script>
+    <script>
       import Lenis from 'lenis';
       // build must run before motion: it claims blocks in [data-build] sections first
       import '../scripts/motion';

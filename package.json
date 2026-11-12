@@ -30,6 +30,7 @@
     "lottie-web": "^5.13.0",
     "matter-js": "^0.20.0",
     "pngjs": "^7.0.0",
+    "posthog-js": "^1.447.14",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-is": "^19.3.1",
