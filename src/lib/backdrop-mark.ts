@@ -5,10 +5,11 @@ import * as THREE from 'three';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import glyphs from './monogram-b.json';
+import { hasGPU } from './gpu';
 
 export function mountBackdropMark() {
   const canvas = document.querySelector<HTMLCanvasElement>('[data-backdrop]');
-  if (!canvas) return;
+  if (!canvas || !hasGPU()) return;
   let renderer: THREE.WebGLRenderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });

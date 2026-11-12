@@ -53,11 +53,8 @@ export function mountMark(canvas: HTMLCanvasElement, pose: (ms: number) => Pose,
   tick();
 }
 
-export const quartOut = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 4);
-export const inOut = (x: number) => {
-  const v = Math.min(1, Math.max(0, x));
-  return v < 0.5 ? 8 * v ** 4 : 1 - Math.pow(-2 * v + 2, 4) / 2;
-};
+import { quartOut, inOut } from './ease';
+export { quartOut, inOut };
 /** the usual turn: in from three-quarters, a gentle rock, a half spin away from `out` ms */
 export const turn = (out: number, outDur = 600) => (ms: number): Pose => {
   const t = ms / 1000;

@@ -51,10 +51,28 @@ const LAPS = 3;
 <script>
   // the preloader's chrome B, drawn in three.js; it signals once drawn so the
   // drop-in waits for it, and is torn down when the preloader leaves
-  import { mountPreloadMark } from '../lib/preload-mark';
-  import { mountBackdropMark } from '../lib/backdrop-mark';
-  mountPreloadMark();
-  mountBackdropMark();
+  // three.js is only fetched when it will actually be used (a real GPU and a
+  // preloader to play, or the /v2 backdrop), so it never weighs on a plain load
+  import { hasGPU } from '../lib/gpu';
+  import glyphs from '../lib/monogram-b.json';
+  const preloading = document.documentElement.classList.contains('is-preloading');
+  const markEl = document.querySelector<HTMLCanvasElement>('[data-preload-mark]');
+  if (preloading && markEl) {
+    if (hasGPU()) import('../lib/preload-mark').then((m) => m.mountPreloadMark());
+    else {
+      // no GPU: a flat B in the canvas's place
+      const [d, b] = glyphs.g.B as [string, number[], number];
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', `${b[0]} ${-b[3]} ${b[2] - b[0]} ${b[3] - b[1]}`);
+      svg.setAttribute('class', markEl.className);
+      svg.setAttribute('data-preload-mark', '');
+      svg.style.cssText = 'padding:22%;box-sizing:border-box';
+      svg.innerHTML = `<path transform="scale(1,-1)" d="${d}" fill="currentColor"/>`;
+      markEl.replaceWith(svg);
+      dispatchEvent(new Event('preload:mark-ready'));
+    }
+  }
+  if (document.querySelector('[data-backdrop]') && hasGPU()) import('../lib/backdrop-mark').then((m) => m.mountBackdropMark());
 </script>
 
 <div class="preload" aria-hidden="true" data-preload>
@@ -115,6 +133,8 @@ const LAPS = 3;
     var start = function () {
       if (started) return;
       started = true;
+      // (looked up again: without a GPU the canvas is swapped for a flat B)
+      mark = el.querySelector('[data-preload-mark]') || mark;
       var a = track(mark, [
         [0, { opacity: 0, transform: 'translateY(-12px) scale(0.9)' }, OUT],
         [750, { opacity: 1, transform: 'none' }],
@@ -659,6 +679,7 @@ const LAPS = 3;
 </style>
 
 <script>
+  import { hasGPU } from '../lib/gpu';
   const root = document.documentElement;
   const hero = document.querySelector<HTMLElement>('[data-vh]');
   const list = document.querySelector<HTMLElement>('[data-vh-list]');
@@ -1323,6 +1344,7 @@ const LAPS = 3;
      - Covers fade in once their texture is ready; frames where nothing moved
        are skipped. */
   function setupGL(canvas: HTMLCanvasElement) {
+    if (!hasGPU()) return null; // software WebGL: keep the plain pictures
     const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: true });
     if (!gl) return null;
 

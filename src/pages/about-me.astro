@@ -187,9 +187,18 @@ if (!settings) return new Response('Content not found', { status: 500 });
       import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
       import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
       import glyphs from '../lib/monogram-b.json';
+      import { hasGPU } from '../lib/gpu';
 
       const canvas = document.querySelector<HTMLCanvasElement>('[data-monogram]');
-      if (canvas) {
+      // no real GPU: a flat silver B instead of the 3D one
+      if (canvas && !hasGPU()) {
+        const [d, b] = glyphs.g.B as [string, number[], number];
+        const box = document.createElement('div');
+        box.className = canvas.className;
+        box.style.cssText = 'display:grid;place-items:center;pointer-events:none';
+        box.innerHTML = `<svg viewBox="${b[0]} ${-b[3]} ${b[2] - b[0]} ${b[3] - b[1]}" style="width:min(46vmin,420px);height:auto" aria-hidden="true"><path transform="scale(1,-1)" d="${d}" fill="#d9d9de"/></svg>`;
+        canvas.replaceWith(box);
+      } else if (canvas) {
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;

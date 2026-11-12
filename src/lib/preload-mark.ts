@@ -5,10 +5,25 @@ import * as THREE from 'three';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import glyphs from './monogram-b.json';
+import { hasGPU } from './gpu';
 
 export function mountPreloadMark() {
   const canvas = document.querySelector<HTMLCanvasElement>('[data-preload-mark]');
   if (!canvas || !document.documentElement.classList.contains('is-preloading')) return;
+  // no real GPU: a flat B in its place, no 3D
+  if (!hasGPU()) {
+    const [d, b] = glyphs.g.B as [string, number[], number];
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', `${b[0]} ${-b[3]} ${b[2] - b[0]} ${b[3] - b[1]}`);
+    svg.setAttribute('class', canvas.className);
+    svg.setAttribute('data-preload-mark', '');
+    svg.style.padding = '22%';
+    svg.style.boxSizing = 'border-box';
+    svg.innerHTML = `<path transform="scale(1,-1)" d="${d}" fill="currentColor"/>`;
+    canvas.replaceWith(svg);
+    dispatchEvent(new Event('preload:mark-ready'));
+    return;
+  }
 
   let renderer: THREE.WebGLRenderer;
   try {

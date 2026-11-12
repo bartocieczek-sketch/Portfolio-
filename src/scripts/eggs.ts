@@ -1,7 +1,6 @@
 // Easter-egg candidates for home, one per preview link (/egg-1 … /egg-5).
 import glyphs from '../lib/monogram-b.json';
-import { mountMark, inOut } from '../lib/lab-mark';
-import { createStage } from './fall-physics';
+import { inOut } from '../lib/ease';
 
 const OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 const [B_PATH, B_BOX] = glyphs.g.B as [string, number[], number];
@@ -37,10 +36,10 @@ export function eggLogoSpin() {
     layer.append(c);
     const DUR = 1900;
     // one full turn and a bit, fast in the middle, settling face-on, then away
-    mountMark(c, (ms) => {
+    import('../lib/lab-mark').then(({ mountMark }) => mountMark(c, (ms) => {
       const k = inOut(ms / 1500);
       return { rx: Math.sin(k * Math.PI) * 0.35, ry: -Math.PI + k * Math.PI * 3, rz: Math.sin(k * Math.PI) * -0.12 };
-    }, { z: 6.4 });
+    }, { z: 6.4 }));
     c.animate(
       [
         { opacity: 0, transform: 'scale(0.7)' },
@@ -335,8 +334,10 @@ export function eggTypeBehind() {
  *  them back. */
 export function eggTypeAndFall() {
   const host = document.querySelector<HTMLElement>('[data-vh]') ?? document.body;
-  let stage: ReturnType<typeof createStage> | null = null;
-  const world = () => (stage ??= createStage());
+  // the physics (Matter.js) loads only the first time something falls
+  type Stage = ReturnType<typeof import('./fall-physics').createStage>;
+  let stage: Promise<Stage> | null = null;
+  const world = () => (stage ??= import('./fall-physics').then((m) => m.createStage()));
   let row: HTMLElement | null = null;
   let letters: HTMLElement[] = [];
   let t = 0;
@@ -365,11 +366,11 @@ export function eggTypeAndFall() {
       row = null;
       letters = [];
       if (!r || !ls.length) return;
-      world().add(ls, 0.06);
+      world().then((w) => w.add(ls, 0.06));
       // the pile clears itself after a while
       window.setTimeout(() => {
         r.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: OUT, fill: 'forwards' }).finished.then(() => {
-          world().remove(ls);
+          world().then((w) => w.remove(ls));
           r.remove();
         });
       }, 12000);
@@ -387,9 +388,10 @@ export function eggTypeAndFall() {
         const r = n.getBoundingClientRect();
         return r.width > 0 && r.bottom > 0 && r.top < innerHeight && getComputedStyle(n).visibility !== 'hidden' && getComputedStyle(n).display !== 'none';
       });
-      world().add(down, 0.08);
+      world().then((w) => w.add(down, 0.08));
     } else {
-      world().restore(down);
+      const back = down;
+      world().then((w) => w.restore(back));
       down = [];
     }
   });

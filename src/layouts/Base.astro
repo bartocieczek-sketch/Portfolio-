@@ -361,8 +361,12 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
     {preview && <VisualEditing enabled zIndex={1000} />}
 
     <script>
-      import { startAnalytics } from '../lib/analytics';
-      startAnalytics();
+      // analytics (PostHog) is fetched only once the page has loaded and the
+      // main thread is idle, so its weight never touches the first paint
+      const later = () => import('../lib/analytics').then((m) => m.startAnalytics());
+      const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(later, { timeout: 5000 }) : setTimeout(later, 3000));
+      if (document.readyState === 'complete') idle();
+      else addEventListener('load', idle, { once: true });
     </script>
     <script>
       import Lenis from 'lenis';
