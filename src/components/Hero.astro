@@ -913,9 +913,13 @@ const LAPS = 3;
       // get the case study ready while the pointer is on its cover
       p.addEventListener('pointerenter', () => warm(p.href));
       p.addEventListener('click', (e) => {
-        if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || !('startViewTransition' in document)) return;
+        if (e.defaultPrevented || opening) return;
+        const projectSlug = p.getAttribute('href')?.replace(/\/$/, '').split('/').pop();
+        (window as unknown as { posthog?: { capture: (event: string, properties: { project_slug?: string }) => void } }).posthog?.capture('project_case_study_opened', {
+          project_slug: projectSlug,
+        });
+        if (e.metaKey || e.ctrlKey || e.shiftKey || !('startViewTransition' in document)) return;
         e.preventDefault();
-        if (opening) return;
         opening = true;
         // the edge lens flattens out (220ms, eased both ends) before home is captured, so the
         // home left behind (blurred under the case study) matches the flat

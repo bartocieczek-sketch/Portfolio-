@@ -197,7 +197,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
               </div>
             )}
             {project.liveUrl && (
-              <a class="case__live" href={project.liveUrl} target="_blank" rel="noopener">Live site ↗</a>
+              <a class="case__live" href={project.liveUrl} target="_blank" rel="noopener" data-live-site data-project-slug={project.slug}>Live site ↗</a>
             )}
           </div>
 
@@ -880,6 +880,12 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   // - the big cover, when it's still in view (corners round off into the pill)
   // - otherwise the small pill in the story column (pill to pill, no reshape)
   const slug = location.pathname.replace(/\/$/, '').split('/').pop();
+  const liveSiteLink = document.querySelector<HTMLElement>('[data-live-site]');
+  liveSiteLink?.addEventListener('click', () => {
+    (window as unknown as { posthog?: { capture: (event: string, properties: { project_slug?: string }) => void } }).posthog?.capture('project_live_site_opened', {
+      project_slug: liveSiteLink.dataset.projectSlug,
+    });
+  });
   const cover = document.querySelector<HTMLElement>('[data-vt-cover]');
   // this site's home only (an outside link like https://kfc.pl/ has a "/" path too)
   const isHome = (url: string) => {

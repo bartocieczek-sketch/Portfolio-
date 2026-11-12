@@ -203,6 +203,7 @@ const thumb = testimonial?.thumbnail?.asset
     btn.addEventListener('click', () => {
       if (!modal || !modalVideo || !btn.dataset.videoOpen) return;
       modalVideo.src = btn.dataset.videoOpen;
+      (window as unknown as { posthog?: { capture: (event: string) => void } }).posthog?.capture('testimonial_video_opened');
       modal.showModal();
       (window as unknown as { lenis?: { stop(): void } }).lenis?.stop();
       modalVideo.play().catch(() => {});
