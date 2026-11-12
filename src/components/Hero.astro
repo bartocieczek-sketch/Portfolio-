@@ -729,6 +729,9 @@ const LAPS = 3;
     // and the column glides to it (counted from the name at the top, the
     // project in the middle now)
     const names = hero.querySelector<HTMLElement>('.vh__names');
+    // (keep the column's own drag from capturing the pointer, or the click
+    // would land on the column instead of the name)
+    names?.addEventListener('pointerdown', (e) => e.stopPropagation());
     names?.addEventListener('click', (e) => {
       const cell = (e.target as Element).closest<HTMLElement>('.vh__cell');
       if (!cell || !names) return;
