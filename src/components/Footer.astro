@@ -14,10 +14,10 @@ interface Props {
 }
 const { settings, ctaText } = Astro.props;
 const links = [
-  settings.callUrl && { label: '30 min intro call', url: settings.callUrl, external: true },
+  settings.callUrl && { label: '30 min intro call', url: settings.callUrl, external: true, kind: 'intro_call' },
   settings.email && { label: settings.email, url: `mailto:${settings.email}`, external: false },
   ...(settings.socials ?? []).map((s) => ({ label: s.label, url: s.url, external: true })),
-].filter(Boolean) as { label: string; url: string; external: boolean }[];
+].filter(Boolean) as { label: string; url: string; external: boolean; kind?: 'intro_call' }[];
 ---
 
 <footer class="footer" data-build>
@@ -30,7 +30,7 @@ const links = [
       {ctaText && <p class="t-compact muted footer__cta" data-split style="--split-delay:200ms">{ctaText}</p>}
       <div class="footer__list" data-build-item>
         {links.map((l) => (
-          <a class="line-button" href={l.url} target={l.external ? '_blank' : undefined} rel={l.external ? 'noopener' : undefined}>
+          <a class="line-button" href={l.url} target={l.external ? '_blank' : undefined} rel={l.external ? 'noopener' : undefined} data-intro-call={l.kind === 'intro_call' ? '' : undefined}>
             <span>{l.label}</span>
           </a>
         ))}
@@ -109,3 +109,16 @@ const links = [
     }
   }
 </style>
+
+<script>
+  const posthog = (window as unknown as {
+    posthog?: {
+      capture: (event: string) => void;
+      logger?: { info: (message: string, attributes: Record<string, string>) => void };
+    };
+  }).posthog;
+  document.querySelector('[data-intro-call]')?.addEventListener('click', () => {
+    posthog?.capture('intro_call_clicked');
+    posthog?.logger?.info('introductory call selected', { surface: 'footer' });
+  });
+</script>

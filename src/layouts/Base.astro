@@ -9,6 +9,7 @@ import '../styles/global.css';
 import { urlFor } from '../lib/sanity';
 import { stegaClean } from '@sanity/client/stega';
 import { VisualEditing } from '@sanity/astro/visual-editing';
+import PostHog from '../components/posthog.astro';
 
 interface Props {
   title?: string;
@@ -45,6 +46,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" />
     <link rel="icon" href="/favicon-dark-32.png" type="image/png" sizes="32x32" media="(prefers-color-scheme: dark)" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <PostHog />
     <script is:inline>
       // Page transitions: tell the CSS whether we're going back or forward
       // so the slide runs in the matching direction.

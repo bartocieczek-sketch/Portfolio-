@@ -25,7 +25,7 @@ const to = (p: string) => href(Astro.locals, p);
   </a>
   <div class="nav__links">
     <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
-    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's cooperate</a>}
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label" data-cooperation-cta>Let's cooperate</a>}
   </div>
   <button class="nav__toggle t-label" type="button" aria-expanded="false" aria-controls="mobile-menu">
     <span class="nav__toggle-open">Menu</span>
@@ -37,7 +37,7 @@ const to = (p: string) => href(Astro.locals, p);
   <div class="mobile-menu__links">
     <a href={to("/")} class="t-display" style="--n:0"><span>Home</span></a>
     <a href={to("/about-me")} class="t-display" style="--n:1"><span>About me</span></a>
-    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display" style="--n:2"><span>Let's cooperate</span></a>}
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display" style="--n:2" data-cooperation-cta><span>Let's cooperate</span></a>}
   </div>
   <div class="mobile-menu__bottom">
     {role && <p class="t-body2 muted">{role}</p>}
@@ -228,6 +228,18 @@ const to = (p: string) => href(Astro.locals, p);
     }
   };
   toggle?.addEventListener('click', () => set(toggle.getAttribute('aria-expanded') !== 'true'));
+  const posthog = (window as unknown as {
+    posthog?: {
+      capture: (event: string) => void;
+      logger?: { info: (message: string, attributes: Record<string, string>) => void };
+    };
+  }).posthog;
+  document.querySelectorAll('[data-cooperation-cta]').forEach((cta) =>
+    cta.addEventListener('click', () => {
+      posthog?.capture('cooperation_cta_clicked');
+      posthog?.logger?.info('cooperation call to action selected', { surface: 'navigation' });
+    }),
+  );
   addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') set(false);
   });

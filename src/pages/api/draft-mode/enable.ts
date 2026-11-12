@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { sanityClient } from 'sanity:client';
 import { validatePreviewUrl } from '@sanity/preview-url-secret';
 import { PREVIEW_COOKIE, PREVIEW_PREFIX, previewCookieValue, readToken } from '../../../lib/preview';
+import { flushPostHogPreviewLogs, getPostHogPreviewLogger } from '../../../lib/posthog-server-logs';
 
 export const prerender = false;
 
@@ -28,5 +29,11 @@ export const GET: APIRoute = async ({ request, cookies, redirect }) => {
     : redirectTo === '/'
       ? PREVIEW_PREFIX
       : `${PREVIEW_PREFIX}${redirectTo}`;
+  getPostHogPreviewLogger()?.emit({
+    severityText: 'INFO',
+    body: 'Sanity preview enabled',
+    attributes: { route: 'draft_mode_enable' },
+  });
+  await flushPostHogPreviewLogs();
   return redirect(target, 307);
 };
