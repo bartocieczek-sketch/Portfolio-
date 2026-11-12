@@ -6,7 +6,7 @@ import { HOME_QUERY, SETTINGS_QUERY } from '../lib/sanity';
 import { load } from '../lib/load';
 
 const n = Number(Astro.params.n);
-if (!(n >= 1 && n <= 10)) return new Response('Not found', { status: 404 });
+if (!(n >= 1 && n <= 11)) return new Response('Not found', { status: 404 });
 const [home, settings] = await Promise.all([load(Astro.locals, HOME_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
 if (!home || !settings) return new Response('Content not found', { status: 500 });
 const hints = [
@@ -21,6 +21,7 @@ const hints = [
   'Press and hold on the empty white',
   'Shake the column: scroll up, down, up, down quickly',
   'Just start typing',
+  'Type a word and stop · double-click the white to drop the page too',
 ];
 ---
 
@@ -206,6 +207,25 @@ const hints = [
     opacity: 1;
     transition-duration: 0.15s;
   }
+  /* 11 */
+  .egg-fall {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    font: 500 clamp(90px, 22vw, 380px) / 1 var(--font-head);
+    letter-spacing: -0.06em;
+    color: transparent;
+    -webkit-text-stroke: 1.2px rgba(17, 17, 17, 0.42);
+    white-space: nowrap;
+  }
+  .egg-fall span {
+    display: inline-block;
+    will-change: transform;
+  }
   /* 5 */
   html.egg-night {
     --surface-dark: rgb(11, 11, 11);
@@ -233,7 +253,7 @@ const hints = [
 </style>
 
 <script>
-  import { eggLogoSpin, eggSeenAll, eggHi, eggIdleCursor, eggNight, eggTrail, eggGravity, eggTorch, eggJelly, eggTypeBehind } from '../scripts/eggs';
+  import { eggLogoSpin, eggSeenAll, eggHi, eggIdleCursor, eggNight, eggTrail, eggGravity, eggTorch, eggJelly, eggTypeBehind, eggTypeAndFall } from '../scripts/eggs';
   const main = document.querySelector<HTMLElement>('[data-egg]')!;
   const n = Number(main.dataset.egg);
   if (n === 1) eggLogoSpin();
@@ -246,4 +266,5 @@ const hints = [
   if (n === 8) eggTorch();
   if (n === 9) eggJelly();
   if (n === 10) eggTypeBehind();
+  if (n === 11) eggTypeAndFall();
 </script>
