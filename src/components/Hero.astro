@@ -1244,6 +1244,7 @@ const LAPS = 3;
       if (nowAt !== tickAt) {
         if (tickAt !== null) {
           tick(((nowAt % N) + N) % N);
+          window.dispatchEvent(new CustomEvent('vh:project', { detail: { i: ((nowAt % N) + N) % N, n: N } }));
         }
         tickAt = nowAt;
       }
