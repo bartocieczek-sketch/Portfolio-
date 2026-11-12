@@ -39,7 +39,12 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#ffffff" />
     {preview && <meta name="robots" content="noindex" />}
+    <!-- the B: dark on light browser chrome, white on dark (the SVG switches
+         itself; PNGs for browsers that don't take SVG icons) -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/favicon-dark-32.png" type="image/png" sizes="32x32" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script is:inline>
       // Page transitions: tell the CSS whether we're going back or forward
       // so the slide runs in the matching direction.

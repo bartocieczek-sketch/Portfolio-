@@ -16,7 +16,12 @@ const to = (p: string) => href(Astro.locals, p);
 
 <nav class="nav" aria-label="Main">
   <a href={to("/")} class="nav__home" aria-label="Home" aria-current={path === '/' ? 'page' : undefined}>
-    <svg viewBox={mView} aria-hidden="true"><path transform="scale(1,-1)" d={mPath} fill="currentColor" /></svg>
+    <span class="nav__home-3d">
+      {/* a few copies stepped back in depth give the flat B some thickness when it turns */}
+      {[0, 1, 2, 3, 4, 5].map((k) => (
+        <svg viewBox={mView} aria-hidden="true" style={`--z:${k}`} class={k === 0 ? 'is-face' : 'is-side'}><path transform="scale(1,-1)" d={mPath} fill="currentColor" /></svg>
+      ))}
+    </span>
   </a>
   <div class="nav__links">
     <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
@@ -66,14 +71,30 @@ const to = (p: string) => href(Astro.locals, p);
     height: 26px;
     color: var(--text-primary);
   }
+  .nav__home {
+    transform-style: preserve-3d;
+  }
+  .nav__home-3d {
+    position: relative;
+    display: block;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.25s var(--ease-out);
+  }
   .nav__home svg {
     display: block;
     height: 100%;
     width: auto;
-    transition: transform 0.25s var(--ease-out);
+  }
+  .nav__home svg.is-side {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translateZ(calc(var(--z) * -0.55px));
+    filter: brightness(0.55);
   }
   @media (hover: hover) and (pointer: fine) {
-    .nav__home:hover svg {
+    .nav__home:hover .nav__home-3d {
       transform: rotate(-8deg) scale(1.06);
     }
   }
