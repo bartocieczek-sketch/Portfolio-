@@ -17,3 +17,9 @@ const projects: any[] = (home.projects ?? []).filter(Boolean);
     <Hero home={home} settings={settings} />
   </main>
 </Base>
+
+<script>
+  // easter egg: type a word and it falls; double-click the white and the page falls too
+  import { eggTypeAndFall } from '../scripts/eggs';
+  eggTypeAndFall();
+</script>

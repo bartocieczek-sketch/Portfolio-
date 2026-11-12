@@ -930,3 +930,23 @@ html:active-view-transition-type(cover-back)::view-transition-group(project-cove
 ::view-transition-old(case-back) {
   animation: vt-fade-out 0.3s ease both;
 }
+
+/* ---------- Home easter egg: typed letters (and the page) fall ---------- */
+.egg-fall {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font: 500 clamp(90px, 22vw, 380px) / 1 var(--font-head);
+  letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 1.2px rgba(17, 17, 17, 0.42);
+  white-space: nowrap;
+}
+.egg-fall span {
+  display: inline-block;
+  will-change: transform;
+}
