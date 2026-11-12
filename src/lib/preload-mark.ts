@@ -72,7 +72,7 @@ export function mountPreloadMark() {
   const B = new THREE.Mesh(geo, mat);
   scene.add(B);
 
-  // in: turned away, swings round to face you (1.1s, quart out) and rocks
+  // in: turned away, swings round to face you (0.75s, quart out) and rocks
   // gently; out: spins on through a half turn as it falls (0.6s, in-out)
   const quartOut = (x: number) => 1 - Math.pow(1 - x, 4);
   const inOut = (x: number) => (x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2);
@@ -81,7 +81,7 @@ export function mountPreloadMark() {
   const tick = () => {
     const now = performance.now();
     const t = (now - t0) / 1000;
-    const k = quartOut(Math.min(1, t / 1.1));
+    const k = quartOut(Math.min(1, t / 0.75));
     // follow the preloader's own timeline (set up in Hero) for the exit
     const m = (window as any).__preloadMark;
     const ct = m ? Number(m.anim.currentTime ?? 0) : 0;
