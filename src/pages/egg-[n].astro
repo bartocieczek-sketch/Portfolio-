@@ -6,7 +6,7 @@ import { HOME_QUERY, SETTINGS_QUERY } from '../lib/sanity';
 import { load } from '../lib/load';
 
 const n = Number(Astro.params.n);
-if (!(n >= 1 && n <= 5)) return new Response('Not found', { status: 404 });
+if (!(n >= 1 && n <= 10)) return new Response('Not found', { status: 404 });
 const [home, settings] = await Promise.all([load(Astro.locals, HOME_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
 if (!home || !settings) return new Response('Content not found', { status: 500 });
 const hints = [
@@ -16,6 +16,11 @@ const hints = [
   'Type “hi” on your keyboard',
   'Leave the mouse still for 3 seconds',
   'Night mode — forced on here (normally 22:00–06:00)',
+  'Press B, then move the mouse (B again to stop)',
+  'Double-click the empty white (again to put it back)',
+  'Press and hold on the empty white',
+  'Shake the column: scroll up, down, up, down quickly',
+  'Just start typing',
 ];
 ---
 
@@ -140,6 +145,67 @@ const hints = [
       transform: rotateY(360deg);
     }
   }
+  /* 6 */
+  .egg-trail {
+    position: fixed;
+    z-index: 55;
+    width: 150px;
+    height: 190px;
+    object-fit: cover;
+    border-radius: 6px;
+    pointer-events: none;
+  }
+  .egg-mode {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    z-index: 60;
+    transform: translateX(-50%);
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: var(--text-primary);
+    color: var(--surface-dark);
+    font: 500 13px/1 var(--font-head);
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-out);
+    pointer-events: none;
+  }
+  .egg-mode.is-on {
+    opacity: 1;
+  }
+  /* 8 */
+  .egg-dark {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    background: radial-gradient(circle 180px at var(--x, 50%) var(--y, 50%), transparent 0, transparent 40%, rgba(5, 5, 5, 0.94) 100%);
+    opacity: 0;
+    transition: opacity 0.5s var(--ease-out);
+  }
+  .egg-dark.is-on {
+    opacity: 1;
+  }
+  /* 10 */
+  .egg-type {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    font: 500 clamp(80px, 17vw, 300px) / 1 var(--font-head);
+    letter-spacing: -0.06em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(17, 17, 17, 0.22);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.6s var(--ease-out);
+  }
+  .egg-type.is-on {
+    opacity: 1;
+    transition-duration: 0.15s;
+  }
   /* 5 */
   html.egg-night {
     --surface-dark: rgb(11, 11, 11);
@@ -167,7 +233,7 @@ const hints = [
 </style>
 
 <script>
-  import { eggLogoSpin, eggSeenAll, eggHi, eggIdleCursor, eggNight } from '../scripts/eggs';
+  import { eggLogoSpin, eggSeenAll, eggHi, eggIdleCursor, eggNight, eggTrail, eggGravity, eggTorch, eggJelly, eggTypeBehind } from '../scripts/eggs';
   const main = document.querySelector<HTMLElement>('[data-egg]')!;
   const n = Number(main.dataset.egg);
   if (n === 1) eggLogoSpin();
@@ -175,4 +241,9 @@ const hints = [
   if (n === 3) eggHi(main.dataset.call ?? '#');
   if (n === 4) eggIdleCursor();
   if (n === 5) eggNight(true);
+  if (n === 6) eggTrail();
+  if (n === 7) eggGravity();
+  if (n === 8) eggTorch();
+  if (n === 9) eggJelly();
+  if (n === 10) eggTypeBehind();
 </script>

@@ -148,3 +148,181 @@ export function eggNight(force: boolean) {
   note.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 900, delay: 2600, easing: OUT, fill: 'both' });
 }
 
+
+// ---------------------------------------------------------------- round two
+
+const coverUrls = () => {
+  const seen = new Set<string>();
+  document.querySelectorAll<HTMLElement>('.vh__pill').forEach((p) => {
+    const img = p.querySelector('img');
+    const u = img?.currentSrc || img?.src || p.dataset.src;
+    if (u) seen.add(u);
+  });
+  return [...seen];
+};
+const onEmpty = (t: EventTarget | null) => !(t as Element)?.closest?.('a, button, .vh__pill, input');
+
+/** 6 — press B: the cursor leaves a trail of project pictures (B again to stop) */
+export function eggTrail() {
+  let on = false;
+  let urls: string[] = [];
+  let k = 0;
+  let lx = -1e3;
+  let ly = -1e3;
+  const badge = el('egg-mode', 'Trail on — press <b>B</b> to stop');
+  addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() !== 'b' || e.metaKey || e.ctrlKey) return;
+    on = !on;
+    if (on && !urls.length) urls = coverUrls();
+    badge.classList.toggle('is-on', on);
+  });
+  addEventListener('pointermove', (e) => {
+    if (!on || !urls.length) return;
+    if (Math.hypot(e.clientX - lx, e.clientY - ly) < 70) return;
+    lx = e.clientX;
+    ly = e.clientY;
+    const im = document.createElement('img');
+    im.src = urls[k++ % urls.length];
+    im.className = 'egg-trail';
+    im.style.left = `${e.clientX}px`;
+    im.style.top = `${e.clientY}px`;
+    document.body.append(im);
+    const r = (Math.random() - 0.5) * 10;
+    im.animate(
+      [
+        { opacity: 0, transform: `translate(-50%,-50%) scale(0.6) rotate(${r}deg)` },
+        { opacity: 1, transform: `translate(-50%,-50%) scale(1) rotate(${r}deg)`, offset: 0.15 },
+        { opacity: 1, transform: `translate(-50%,-50%) scale(1) rotate(${r}deg)`, offset: 0.6 },
+        { opacity: 0, transform: `translate(-50%,-30%) scale(0.92) rotate(${r}deg)` },
+      ],
+      { duration: 1100, easing: OUT, fill: 'both' },
+    ).finished.then(() => im.remove());
+  });
+}
+
+/** 7 — double-click the empty white: every word on the page drops to the floor; again to put it back */
+export function eggGravity() {
+  let down = false;
+  const targets = () =>
+    [...document.querySelectorAll<HTMLElement>('.nav a, .vh__intro > *, .vh__details .vh__col, .vh__hint, .vh__line')].filter(
+      (n) => n.getBoundingClientRect().width > 0,
+    );
+  let anims: Animation[] = [];
+  addEventListener('dblclick', (e) => {
+    if (!onEmpty(e.target)) return;
+    getSelection()?.removeAllRanges();
+    if (!down) {
+      anims = targets().map((n, i) => {
+        const r = n.getBoundingClientRect();
+        const fall = innerHeight - r.bottom - 6 - Math.random() * 10;
+        const rot = (Math.random() - 0.5) * 28;
+        return n.animate(
+          [
+            { transform: 'none' },
+            { transform: `translateY(${fall}px) rotate(${rot}deg)`, offset: 0.62, easing: 'cubic-bezier(0.3, 0, 0.6, 0.4)' },
+            { transform: `translateY(${fall - 26}px) rotate(${rot * 0.8}deg)`, offset: 0.78, easing: 'cubic-bezier(0.3, 0, 0.6, 0.4)' },
+            { transform: `translateY(${fall}px) rotate(${rot}deg)`, offset: 0.9 },
+            { transform: `translateY(${fall - 5}px) rotate(${rot}deg)`, offset: 0.95 },
+            { transform: `translateY(${fall}px) rotate(${rot}deg)` },
+          ],
+          { duration: 1100 + Math.random() * 300, delay: i * 25 + Math.random() * 80, easing: 'cubic-bezier(0.55, 0, 1, 0.45)', fill: 'forwards' },
+        );
+      });
+    } else {
+      anims.forEach((a) => {
+        a.playbackRate = -1.6;
+        a.finished.then(() => a.cancel());
+      });
+    }
+    down = !down;
+  });
+}
+
+/** 8 — press and hold on the white: lights out, a soft torch follows the cursor */
+export function eggTorch() {
+  const dark = el('egg-dark');
+  let x = innerWidth / 2;
+  let y = innerHeight / 2;
+  const put = () => dark.style.setProperty('--x', `${x}px`) || dark.style.setProperty('--y', `${y}px`);
+  let hold = 0;
+  addEventListener('pointermove', (e) => {
+    x = e.clientX;
+    y = e.clientY;
+    put();
+  });
+  addEventListener('pointerdown', (e) => {
+    if (!onEmpty(e.target)) return;
+    x = e.clientX;
+    y = e.clientY;
+    put();
+    hold = window.setTimeout(() => dark.classList.add('is-on'), 450);
+  });
+  const off = () => {
+    clearTimeout(hold);
+    dark.classList.remove('is-on');
+  };
+  addEventListener('pointerup', off);
+  addEventListener('pointercancel', off);
+  addEventListener('blur', off);
+}
+
+/** 9 — shake the column (quick up-down-up): the covers wobble like jelly */
+export function eggJelly() {
+  const vp = document.querySelector<HTMLElement>('[data-vh-viewport]');
+  if (!vp) return;
+  let dirs: { d: number; t: number }[] = [];
+  let busy = false;
+  const note = (d: number) => {
+    const now = performance.now();
+    const last = dirs[dirs.length - 1];
+    if (!last || Math.sign(last.d) !== Math.sign(d)) dirs.push({ d, t: now });
+    dirs = dirs.filter((x) => now - x.t < 1100);
+    if (dirs.length >= 4 && !busy) {
+      dirs = [];
+      busy = true;
+      vp.animate(
+        [
+          { transform: 'none' },
+          { transform: 'skewY(5deg) scaleX(1.04)' },
+          { transform: 'skewY(-4deg) scaleX(0.97)' },
+          { transform: 'skewY(3deg) scaleX(1.02)' },
+          { transform: 'skewY(-1.6deg) scaleX(0.99)' },
+          { transform: 'skewY(0.6deg)' },
+          { transform: 'none' },
+        ],
+        { duration: 1100, easing: 'ease-out' },
+      ).finished.then(() => (busy = false));
+    }
+  };
+  addEventListener('wheel', (e) => Math.abs(e.deltaY) > 4 && note(e.deltaY), { passive: true });
+  let ly = 0;
+  addEventListener('touchmove', (e) => {
+    const y = e.touches[0].clientY;
+    if (Math.abs(y - ly) > 12) note(ly - y);
+    ly = y;
+  }, { passive: true });
+  addEventListener('keydown', (e) => (e.key === 'ArrowUp' ? note(-1) : e.key === 'ArrowDown' ? note(1) : 0));
+}
+
+/** 10 — just start typing: the letters appear huge behind the column and fade */
+export function eggTypeBehind() {
+  // inside the home section, under the covers (they're drawn on a canvas above)
+  const layer = el('egg-type');
+  document.querySelector('[data-vh]')?.prepend(layer);
+  let word = '';
+  let t = 0;
+  addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'Backspace') word = word.slice(0, -1);
+    else if (/^[\p{L}\p{N} &!?.]$/u.test(e.key)) word = (word + e.key).slice(-14);
+    else return;
+    layer.textContent = word;
+    layer.classList.add('is-on');
+    layer.animate([{ letterSpacing: '-0.02em' }, { letterSpacing: '-0.06em' }], { duration: 400, easing: OUT });
+    clearTimeout(t);
+    t = window.setTimeout(() => {
+      layer.classList.remove('is-on');
+      window.setTimeout(() => (word = ''), 600);
+    }, 1800);
+  });
+}
