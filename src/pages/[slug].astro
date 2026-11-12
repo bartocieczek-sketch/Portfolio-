@@ -881,7 +881,11 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   // - otherwise the small pill in the story column (pill to pill, no reshape)
   const slug = location.pathname.replace(/\/$/, '').split('/').pop();
   const cover = document.querySelector<HTMLElement>('[data-vt-cover]');
-  const isHome = (url: string) => /^\/(preview\/?)?$/.test(new URL(url).pathname);
+  // this site's home only (an outside link like https://kfc.pl/ has a "/" path too)
+  const isHome = (url: string) => {
+    const u = new URL(url, location.href);
+    return u.origin === location.origin && /^\/(preview\/?)?$/.test(u.pathname);
+  };
 
   // ---------- Cover: sharp picture over the flight picture ----------
   const hi = document.querySelector<HTMLImageElement>('[data-cover-hi]');
