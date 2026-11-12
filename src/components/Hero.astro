@@ -494,11 +494,23 @@ const LAPS = 3;
     height: var(--row);
     white-space: nowrap;
   }
+  /* the names are clickable: the one under the pointer comes up to full */
+  @media (hover: hover) and (pointer: fine) {
+    .vh__names .vh__cell {
+      transition: color 0.2s var(--ease-out);
+    }
+    .vh__names .vh__cell:hover {
+      color: var(--text-highlight);
+      opacity: 1 !important;
+    }
+  }
   .vh__year {
     justify-self: end;
     text-align: right;
   }
   .vh__names {
+    pointer-events: auto;
+    cursor: pointer;
     height: calc(var(--row) * 5);
     -webkit-mask-image: linear-gradient(to bottom, #000 0 calc(var(--row) * 4), transparent);
     mask-image: linear-gradient(to bottom, #000 0 calc(var(--row) * 4), transparent);
@@ -712,6 +724,28 @@ const LAPS = 3;
       target = k * step;
     };
     const stepBy = (dir: number) => glideTo(Math.round(target / step) + dir);
+
+    // the project names under the line are links into the column: click one
+    // and the column glides to it (counted from the name at the top, the
+    // project in the middle now)
+    const names = hero.querySelector<HTMLElement>('.vh__names');
+    names?.addEventListener('click', (e) => {
+      const cell = (e.target as Element).closest<HTMLElement>('.vh__cell');
+      if (!cell || !names) return;
+      const cells = [...names.querySelectorAll<HTMLElement>('.vh__cell')];
+      const top = names.getBoundingClientRect().top;
+      let cur = 0;
+      let best = Infinity;
+      cells.forEach((c, k) => {
+        const d = Math.abs(c.getBoundingClientRect().top - top);
+        if (d < best) {
+          best = d;
+          cur = k;
+        }
+      });
+      const delta = cells.indexOf(cell) - cur;
+      if (delta) glideTo(Math.round(target / step) + delta);
+    });
     let wheelBase = 0;
     let wheelSum = 0;
     let wheelTimer = 0;
