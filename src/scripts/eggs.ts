@@ -382,9 +382,12 @@ export function eggTypeAndFall() {
     if (!onEmpty(e.target)) return;
     getSelection()?.removeAllRanges();
     if (!down.length) {
-      down = [...document.querySelectorAll<HTMLElement>('.nav a, .vh__intro > *, .vh__details .vh__col, .vh__hint')].filter(
-        (n) => n.getBoundingClientRect().width > 0,
-      );
+      // everything on screen: the menu, the words, the line and the covers
+      // themselves (they're drawn where their boxes are, so they fall too)
+      down = [...document.querySelectorAll<HTMLElement>('.nav a, .nav button, .vh__intro > *, .vh__details .vh__col, .vh__hint, .vh__line, .vh__pill')].filter((n) => {
+        const r = n.getBoundingClientRect();
+        return r.width > 0 && r.bottom > 0 && r.top < innerHeight && getComputedStyle(n).visibility !== 'hidden' && getComputedStyle(n).display !== 'none';
+      });
       world().add(down, 0.08);
     } else {
       world().restore(down);

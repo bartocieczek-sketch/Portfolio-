@@ -60,6 +60,13 @@ export function createStage() {
     Composite.remove(world, grab);
     grab = null;
     document.documentElement.style.cursor = '';
+    // a thrown cover or link must not also open on release
+    const eat = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    addEventListener('click', eat, { capture: true, once: true });
+    setTimeout(() => removeEventListener('click', eat, { capture: true }), 350);
   };
   addEventListener('pointerup', drop);
   addEventListener('pointercancel', drop);
@@ -97,6 +104,8 @@ export function createStage() {
         const r = el.getBoundingClientRect();
         if (!r.width || !r.height) continue;
         el.style.transformOrigin = '50% 50%';
+        // no CSS transition may smooth (and so lag) the frame-by-frame transform
+        el.style.transition = 'none';
         el.style.willChange = 'transform';
         const ox = r.left + r.width / 2;
         const oy = r.top + r.height / 2;
@@ -122,6 +131,7 @@ export function createStage() {
         Composite.remove(world, p.body);
         const from = el.style.transform;
         el.style.transform = '';
+        el.style.transition = '';
         el.animate([{ transform: from }, { transform: 'none' }], { duration: 700 + Math.random() * 300, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
       }
     },
