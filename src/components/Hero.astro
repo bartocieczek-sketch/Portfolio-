@@ -881,6 +881,7 @@ const LAPS = 3;
     // ---------- Project details ----------
     // (drawn from the column's position every frame, see __vhDetails)
     const details = (window as unknown as { __vhDetails(f: number): void }).__vhDetails;
+    const logoMark = reduceMotion ? null : hero.querySelector<HTMLElement>('.nav__home');
 
     // ---------- Edge lens gate ----------
     // The top/bottom lens eases away when a project opens (so home leaves
@@ -1239,6 +1240,9 @@ const LAPS = 3;
         if (glow[i] > 0) glow[i] = pills[i].classList.contains('is-opening') ? 1 : Math.max(0, glow[i] - dt / 0.9);
       }
       details(wrapped / step);
+      // the B in the corner turns with the column: one full turn per project,
+      // so it always comes to rest facing front
+      if (logoMark) logoMark.style.transform = `perspective(240px) rotateY(${((pos / step) * 360).toFixed(2)}deg)`;
       // a soft tick each time a new project reaches the middle
       const nowAt = Math.round(pos / step);
       if (nowAt !== tickAt) {
