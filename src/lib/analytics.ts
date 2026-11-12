@@ -4,7 +4,7 @@
 // Sanity preview / Studio or while developing locally.
 import posthog from 'posthog-js';
 
-const KEY = import.meta.env.PUBLIC_POSTHOG_KEY as string | undefined;
+const KEY = (import.meta.env.PUBLIC_POSTHOG_KEY as string | undefined) || 'phc_qwLAF4juR5HdZTjP97u3XqjmeZMJXqCTnC5cQDSb4X2Q';
 const HOST = (import.meta.env.PUBLIC_POSTHOG_HOST as string | undefined) || 'https://eu.i.posthog.com';
 
 export function startAnalytics() {
