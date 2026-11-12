@@ -1,6 +1,7 @@
 // Easter-egg candidates for home, one per preview link (/egg-1 … /egg-5).
 import glyphs from '../lib/monogram-b.json';
 import { mountMark, inOut } from '../lib/lab-mark';
+import { createStage } from './fall-physics';
 
 const OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 const [B_PATH, B_BOX] = glyphs.g.B as [string, number[], number];
@@ -327,38 +328,18 @@ export function eggTypeBehind() {
   });
 }
 
-/** 11 — type and the word appears huge behind the column; stop and it drops,
- *  letter by letter, to the floor and lies there a while. Double-click the
- *  empty white and the page's own words fall too (again to put them back). */
+/** 11 — type and the word appears huge behind the column; stop and the
+ *  letters really fall: they tumble, stack on the floor and get shoved by the
+ *  cursor (press one to pick it up and throw it). Double-click the empty
+ *  white and the page's own words drop into the same pile; again to put
+ *  them back. */
 export function eggTypeAndFall() {
   const host = document.querySelector<HTMLElement>('[data-vh]') ?? document.body;
+  let stage: ReturnType<typeof createStage> | null = null;
+  const world = () => (stage ??= createStage());
   let row: HTMLElement | null = null;
   let letters: HTMLElement[] = [];
   let t = 0;
-  const drop = (r: HTMLElement, ls: HTMLElement[]) => {
-    const floor = host.getBoundingClientRect().bottom;
-    ls.forEach((s, i) => {
-      const b = s.getBoundingClientRect();
-      // land on the floor, a few letters a little higher as if on the pile
-      const fall = floor - b.bottom + b.height * 0.12 - Math.random() * b.height * 0.18;
-      const rot = (Math.random() - 0.5) * 50;
-      s.animate(
-        [
-          { transform: 'none' },
-          { transform: `translateY(${fall}px) rotate(${rot}deg)`, offset: 0.6, easing: 'cubic-bezier(0.3, 0, 0.6, 0.4)' },
-          { transform: `translateY(${fall - 40}px) rotate(${rot * 0.75}deg)`, offset: 0.76, easing: 'cubic-bezier(0.3, 0, 0.6, 0.4)' },
-          { transform: `translateY(${fall}px) rotate(${rot}deg)`, offset: 0.88 },
-          { transform: `translateY(${fall - 8}px) rotate(${rot}deg)`, offset: 0.94 },
-          { transform: `translateY(${fall}px) rotate(${rot}deg)` },
-        ],
-        { duration: 1000 + Math.random() * 250, delay: i * 55 + Math.random() * 60, easing: 'cubic-bezier(0.55, 0, 1, 0.45)', fill: 'forwards' },
-      );
-    });
-    // the pile clears itself after a while
-    window.setTimeout(() => {
-      r.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: OUT, fill: 'forwards' }).finished.then(() => r.remove());
-    }, 7000);
-  };
   addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'Backspace') {
@@ -372,17 +353,42 @@ export function eggTypeAndFall() {
       }
       if (letters.length >= 14) return;
       const s = document.createElement('span');
-      s.textContent = e.key === ' ' ? ' ' : e.key;
+      s.textContent = e.key === ' ' ? '\u00a0' : e.key;
       row.append(s);
       letters.push(s);
       s.animate([{ opacity: 0, transform: 'translateY(18%) scale(0.92)' }, { opacity: 1, transform: 'none' }], { duration: 380, easing: OUT });
     } else return;
     clearTimeout(t);
     t = window.setTimeout(() => {
-      if (row && letters.length) drop(row, letters.filter((l) => l.textContent !== ' '));
+      const r = row;
+      const ls = letters.filter((l) => l.textContent !== '\u00a0');
       row = null;
       letters = [];
+      if (!r || !ls.length) return;
+      world().add(ls, 0.06);
+      // the pile clears itself after a while
+      window.setTimeout(() => {
+        r.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: OUT, fill: 'forwards' }).finished.then(() => {
+          world().remove(ls);
+          r.remove();
+        });
+      }, 12000);
     }, 1100);
   });
-  eggGravity();
+
+  // the page's own words
+  let down: HTMLElement[] = [];
+  addEventListener('dblclick', (e) => {
+    if (!onEmpty(e.target)) return;
+    getSelection()?.removeAllRanges();
+    if (!down.length) {
+      down = [...document.querySelectorAll<HTMLElement>('.nav a, .vh__intro > *, .vh__details .vh__col, .vh__hint')].filter(
+        (n) => n.getBoundingClientRect().width > 0,
+      );
+      world().add(down, 0.08);
+    } else {
+      world().restore(down);
+      down = [];
+    }
+  });
 }
