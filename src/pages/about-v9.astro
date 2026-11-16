@@ -72,6 +72,25 @@ const services = [
   { t: 'Technology', d: 'Builds in no-code and in code — Astro, Sanity, WebGL and motion — fast, accessible and easy to edit.' },
   { t: 'AI & Play', d: 'AI in the workflow and in the product, plus game-design thinking for interfaces people want to play with.' },
 ];
+// about me, in four beats (the last two are DRAFT copy, to be edited)
+const abItems: { t: string; a: string; b?: string; pic?: boolean }[] = [
+  { t: 'Who I am.', a: about.introLead, b: about.introBody, pic: true },
+  {
+    t: 'Right now.',
+    a: nowJobs.length ? `${nowJobs.map((j) => `${nice(j.role ?? '')} at ${j.company}`).join(', and ')}.` : 'Open for new work.',
+    b: 'Based in Kraków, working with studios and brands wherever they are.',
+  },
+  {
+    t: 'How I work.',
+    a: 'Design and build in one loop: I prototype in code early, test it on real screens, and polish the motion until it feels right.',
+    b: 'AI is part of that loop — for research, generative UI and faster iterations — while the judgement stays human.',
+  },
+  {
+    t: 'Off-screen.',
+    a: 'Sport keeps me sharp and games keep me curious about how things should feel in the hand.',
+    b: 'Coffee keeps the rest going — there’s a monitor for that further down.',
+  },
+];
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
 const caps = [
@@ -104,24 +123,26 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     </section>
 
     <!-- 2 -->
-    <section class="a9__sec a9__who" data-who>
-      <div class="a9__who-c">
-        <p class="a9__lead" data-blur>{about.introLead}</p>
-        <div class="a9__beats">
-          <figure class="a9__who-pic" data-in>
-            {portrait ? <img src={portrait} alt="Bart Ocieczek" width="700" height="930" loading="lazy" /> : <span />}
-          </figure>
-          <div data-in>
-            <p class="a9__p">{about.introBody}</p>
-          </div>
-          {nowJobs.length > 0 && (
-            <div data-in>
-              <ul class="a9__now">
-                {nowJobs.map((j) => <li><span>{nice(j.role ?? '')}</span> <span class="a9__dim">{j.company}</span></li>)}
-              </ul>
-            </div>
-          )}
-        </div>
+    <!-- 2: about me — a held stage (after ref.digital/about): a list of
+         titles on the right, the one in play opens up to its two columns;
+         the left echoes its title. Scrolling moves through them. -->
+    <section class="a9__who a9__ab" data-who data-ab style={`--n:${abItems.length}`}>
+      <div class="a9__ab-pin">
+        <p class="a9__ab-side" aria-hidden="true"><i /><span class="a9__ab-cur"><span data-ab-cur>{abItems[0].t}</span></span></p>
+        <ol class="a9__ab-list">
+          {abItems.map((it, i) => (
+            <li class={`a9__ab-it${i === 0 ? ' is-on' : ''}`} data-ab-it={i}>
+              <h3>{it.t}</h3>
+              <div class="a9__ab-body">
+                <div class={`a9__ab-in${it.pic && portrait ? ' has-pic' : ''}`}>
+                  {it.pic && portrait && <img class="a9__ab-pic" src={portrait} alt="Bart Ocieczek" width="700" height="930" loading="lazy" />}
+                  <p>{it.a}</p>
+                  {it.b && <p>{it.b}</p>}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
 
@@ -389,6 +410,157 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .a9__who.is-flat {
     margin-top: 0;
   }
+  /* 2: about me — held stage, one beat open at a time */
+  .a9__ab {
+    height: calc(var(--n) * 75svh + 25svh);
+  }
+  .a9__ab-pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    display: grid;
+    grid-template-columns: var(--col) minmax(0, 1fr);
+    gap: var(--pad);
+    align-items: center;
+    padding: 0 var(--pad);
+  }
+  .a9__ab-side {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    align-self: start;
+    margin: 0;
+    padding-top: calc(50svh - 160px);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .a9__ab-side i {
+    width: 7px;
+    height: 7px;
+    background: var(--ink);
+  }
+  .a9__ab-cur {
+    display: block;
+    height: 1.3em;
+    overflow: hidden;
+  }
+  .a9__ab-cur span {
+    display: block;
+    line-height: 1.3em;
+  }
+  .a9__ab-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .a9__ab-it {
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .a9__ab-it h3 {
+    margin: 0;
+    padding: clamp(12px, 1.4vw, 20px) 0;
+    font: 500 clamp(30px, 3.6vw, 60px) / 1.02 var(--font-head);
+    letter-spacing: -0.04em;
+    color: rgba(240, 240, 238, 0.32);
+    transition: color 0.4s ease;
+  }
+  .a9__ab-it.is-on h3 {
+    color: var(--ink);
+  }
+  /* the body opens by its grid row (0fr → 1fr), so its real height animates */
+  .a9__ab-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.7s var(--e-expo);
+  }
+  .a9__ab-it.is-on .a9__ab-body {
+    grid-template-rows: 1fr;
+  }
+  .a9__ab-in {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(16px, 2.4vw, 40px);
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 0.4s ease,
+      transform 0.6s var(--e-out);
+  }
+  .a9__ab-in.has-pic {
+    grid-template-columns: clamp(72px, 7vw, 104px) repeat(2, minmax(0, 1fr));
+  }
+  .a9__ab-it.is-on .a9__ab-in {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.5s ease 0.15s,
+      transform 0.7s var(--e-out) 0.15s;
+  }
+  .a9__ab-in p {
+    margin: 0;
+    padding-bottom: clamp(28px, 3.4vw, 48px);
+    color: var(--grey);
+  }
+  .a9__ab-in p:first-of-type {
+    color: var(--ink);
+  }
+  .a9__ab-pic {
+    align-self: start;
+    width: 100%;
+    height: auto;
+    margin-bottom: clamp(28px, 3.4vw, 48px);
+    aspect-ratio: 0.8;
+    object-fit: cover;
+    border-radius: 999px;
+    filter: grayscale(1);
+  }
+  @media (max-width: 809px) {
+    .a9__ab {
+      height: auto;
+    }
+    .a9__ab-pin {
+      position: relative;
+      height: auto;
+      display: block;
+      padding: clamp(96px, 18vh, 200px) var(--pad);
+    }
+    .a9__ab-side {
+      display: none;
+    }
+    .a9__ab-it h3 {
+      color: var(--ink);
+    }
+    .a9__ab-body {
+      grid-template-rows: 1fr;
+    }
+    .a9__ab-in,
+    .a9__ab-in.has-pic {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      opacity: 1;
+      transform: none;
+    }
+    .a9__ab-in p {
+      padding-bottom: 8px;
+    }
+    .a9__ab-in p:last-child {
+      padding-bottom: 28px;
+    }
+    .a9__ab-pic {
+      width: 72px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__ab-body,
+    .a9__ab-in {
+      transition: none;
+    }
+  }
+
   /* 2: who — no scrubbing here (the hero has that); it simply arrives:
      the lead sharpens out of a blur word by word, the beats follow */
   .a9__who-c {
@@ -1491,6 +1663,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         if (k < ws.length - 1) el.append(' ');
       });
     });
+    const ab = root.querySelector<HTMLElement>('[data-ab]');
+    const abIts = [...root.querySelectorAll<HTMLElement>('[data-ab-it]')];
+    const abCur = root.querySelector<HTMLElement>('[data-ab-cur]');
+    const abWide = matchMedia('(min-width: 810px)');
+    let abIdx = 0;
     let heroPx = -1e4;
     let heroPy = -1e4;
     if (intro && matchMedia('(hover: hover) and (pointer: fine)').matches) {
@@ -1535,6 +1712,25 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         say.style.visibility = gone > 0.995 ? 'hidden' : '';
         sayWrap.parentElement!.style.setProperty('--p', p.toFixed(3));
         (window as any).__a9P = p;
+      }
+      if (ab && abIts.length && abWide.matches) {
+        const r = ab.getBoundingClientRect();
+        const max = ab.offsetHeight - innerHeight;
+        const p = max > 0 ? clamp(-r.top / max) : 0;
+        const idx = Math.min(abIts.length - 1, Math.floor(p * abIts.length * 0.999));
+        if (idx !== abIdx) {
+          const down = idx > abIdx;
+          abIdx = idx;
+          abIts.forEach((li, k) => li.classList.toggle('is-on', k === idx));
+          if (abCur) {
+            abCur.textContent = abIts[idx].querySelector('h3')?.textContent ?? '';
+            if (!calm)
+              abCur.animate([{ transform: `translateY(${down ? 100 : -100}%)` }, { transform: 'none' }], {
+                duration: 420,
+                easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+              });
+          }
+        }
       }
       // heart: caffeine wears off ~1 coffee per 40s; the rate eases toward its target
       caffeine = Math.max(0, caffeine - dt / 40);
