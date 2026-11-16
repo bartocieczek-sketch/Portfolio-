@@ -31,14 +31,18 @@ const jobs = ((about.experience ?? []) as any[]).map((e) => ({
   now: /present/i.test(e.period ?? ''),
   logo: e.logo?.asset ? urlFor(e.logo).width(160).height(160).fit('crop').url() : null,
 }));
-const focus: string[] = (about.focus ?? []).map((f: string) => f.toLowerCase());
+// "UX/UI DESIGN" → "UX/UI design", "AI IN DESIGN" → "AI in design"
+const focus: string[] = (about.focus ?? []).map((f: string) => {
+  const s = f.toLowerCase().replace(/\b(ux|ui|ai)\b/g, (m) => m.toUpperCase());
+  return s.charAt(0).toUpperCase() + s.slice(1);
+});
 const portrait = about.portrait?.asset ? urlFor(about.portrait).width(300).height(300).fit('crop').url() : null;
 const [bPath, bBox] = glyphs.g.B as [string, number[], number];
 const bView = `${bBox[0]} ${-bBox[3]} ${bBox[2] - bBox[0]} ${bBox[3] - bBox[1]}`;
 const chapters = ['Hello', 'Path', 'Craft', 'AI', 'Off-screen', 'Talk'];
 // the hero line with the name swapped for an inline portrait
 const lead: string = about.introLead ?? "Hi, I'm Bart, a digital designer.";
-const [leadA, leadB] = lead.split(/Bart,?/);
+const [leadA, leadB] = lead.split(/Bart/);
 ---
 
 <Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
@@ -82,6 +86,7 @@ const [leadA, leadB] = lead.split(/Bart,?/);
           <p class="ab__kicker" data-reveal>02 — Path</p>
           <p class="ab__h2" data-reveal>{about.experienceLead}</p>
         </div>
+        <div class="ab__track-wrap">
         <div class="ab__track" data-track>
           {jobs.map((j, i) => (
             <article class="ab__job" style={`--i:${i}`}>
@@ -95,6 +100,7 @@ const [leadA, leadB] = lead.split(/Bart,?/);
             </article>
           ))}
           <blockquote class="ab__quote">{about.quote}</blockquote>
+        </div>
         </div>
         <div class="ab__path-line"><span data-path-fill></span></div>
       </div>
@@ -303,9 +309,9 @@ const [leadA, leadB] = lead.split(/Bart,?/);
     justify-content: center;
   }
   .ab__lead {
-    max-width: 18ch;
+    max-width: 22ch;
     margin: 0 0 40px;
-    font: 500 clamp(40px, 6.4vw, 104px) / 0.98 var(--font-head);
+    font: 500 clamp(38px, 5.6vw, 88px) / 0.98 var(--font-head);
     letter-spacing: -0.05em;
   }
   /* the name as an inline portrait pill that opens on hover/focus */
@@ -392,6 +398,13 @@ const [leadA, leadB] = lead.split(/Bart,?/);
   }
   .ab__path-head .ab__h2 {
     margin-bottom: 36px;
+  }
+  /* cards fade out as they slide past the left edge (and the chapter index) */
+  .ab__track-wrap {
+    margin: 0 calc(var(--pad) * -1);
+    padding: 0 var(--pad);
+    -webkit-mask-image: linear-gradient(90deg, transparent calc(var(--pad) * 0.4), #000 var(--pad));
+    mask-image: linear-gradient(90deg, transparent calc(var(--pad) * 0.4), #000 var(--pad));
   }
   .ab__track {
     display: flex;
@@ -494,7 +507,6 @@ const [leadA, leadB] = lead.split(/Bart,?/);
   .ab__skill-t {
     font: 500 clamp(30px, 5vw, 76px) / 1 var(--font-head);
     letter-spacing: -0.05em;
-    text-transform: capitalize;
     transition:
       transform 0.45s var(--e-out),
       color 0.3s ease;
@@ -877,7 +889,11 @@ const [leadA, leadB] = lead.split(/Bart,?/);
         const r = path.getBoundingClientRect();
         const span = r.height - vh;
         const p = Math.min(1, Math.max(0, -r.top / span));
-        const max = track.scrollWidth - track.parentElement!.clientWidth + 0;
+        // how far the track overflows the pinned area's content box
+        const pin = track.parentElement!.parentElement!;
+        const cs = getComputedStyle(pin);
+        const inner = pin.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const max = track.scrollWidth - inner;
         track.style.transform = `translate3d(${(-p * Math.max(0, max)).toFixed(1)}px,0,0)`;
         fill.style.transform = `scaleX(${p.toFixed(4)})`;
       }
