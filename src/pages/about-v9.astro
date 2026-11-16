@@ -53,12 +53,15 @@ const projects = ((home?.projects ?? []) as any[]).filter(Boolean);
 const portrait = about.portrait?.asset ? urlFor(about.portrait).width(700).height(930).fit('crop').url() : null;
 // what I'm doing right now (the 'Now' beat)
 const nowJobs = jobs.filter((j) => j.now);
-// in numbers — PLACEHOLDER values, to be replaced with Bart's real ones.
+// years since the earliest role in the experience list
+const firstYear = Math.min(...((about.experience ?? []) as any[]).map((e) => Number(/\b(19|20)\d{2}\b/.exec(e.period ?? '')?.[0] ?? 9999)));
+const yearsIn = firstYear < 9999 ? new Date().getFullYear() - firstYear : 7;
+// in numbers — PLACEHOLDER values (except the years), to be replaced with Bart's real ones.
 // Boxes hang off one line across the page, some above it, some below,
 // offset like a timeline: c = grid columns (of 12), up = above the line,
 // h = height as a share of its half.
 const stats = [
-  { v: 8, suf: '+', l: 'Years in digital design', c: '1 / 5', up: true, h: 1 },
+  { v: yearsIn, suf: '+', l: 'Years in digital design', c: '1 / 5', up: true, h: 1 },
   { v: 120, suf: '+', l: 'Projects shipped', c: '3 / 7', up: false, h: 0.95 },
   { v: 30, suf: '+', l: 'Brands & studios', c: '6 / 9', up: true, h: 0.55 },
   { v: 1, suf: '', l: 'Seat on the Awwwards Young Jury', c: '8 / 11', up: false, h: 0.6 },
@@ -91,6 +94,8 @@ const abItems: { t: string; a: string; b?: string; pic?: boolean }[] = [
     b: 'Coffee keeps the rest going — there’s a monitor for that further down.',
   },
 ];
+// a company's logo from the experience list, by name
+const logoOf = (name: string) => jobs.find((j) => (j.company ?? '').toLowerCase().includes(name))?.logo ?? null;
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
 const caps = [
@@ -131,21 +136,20 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         {portrait ? <img class="ob ob--pic" src={portrait} alt="" width="700" height="930" /> : null}
         — a design engineer
         <span class="ob ob--b" aria-hidden="true" set:html={bSvg} />
-        from Kraków. By day I’m {nowJobs[0] ? `${nice(nowJobs[0].role ?? '')} at ${nowJobs[0].company}` : 'designing for the web'}
-        {nowJobs[0]?.logo ? <img class="ob ob--logo" src={nowJobs[0].logo} alt="" width="96" height="96" /> : <span class="ob ob--tag" aria-hidden="true">{nowJobs[0]?.company?.slice(0, 1) ?? 'B'}</span>}
-        and on the side I judge sites for the Awwwards Young Jury
-        <span class="ob ob--star" aria-hidden="true"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M20 8l3.2 8.1 8.6.6-6.6 5.5 2.1 8.4L20 26l-7.3 4.6 2.1-8.4-6.6-5.5 8.6-.6z" fill="currentColor" /></svg></span>.
-        I design and build in one loop — with AI
-        <span class="ob ob--spark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 2c1.4 9.6 4.4 14.6 18 18-13.6 3.4-16.6 8.4-18 18-1.4-9.6-4.4-14.6-18-18C15.6 16.6 18.6 11.6 20 2z" fill="currentColor" /><path d="M33 3c.5 3.4 1.6 5.2 6 6-4.4.8-5.5 2.6-6 6-.5-3.4-1.6-5.2-6-6 4.4-.8 5.5-2.6 6-6z" fill="currentColor" opacity=".55" /></svg></span>
-        in the loop, too. Off-screen it’s sport
+        from Kraków. Senior Web Designer at GRAFIT
+        {logoOf('grafit') && <img class="ob ob--logo" src={logoOf('grafit')} alt="" width="96" height="96" />}, Young Jury at Awwwards
+        {logoOf('awwwards') && <img class="ob ob--logo" src={logoOf('awwwards')} alt="" width="96" height="96" />}.
+        Building with AI
+        <span class="ob ob--spark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 2c1.4 9.6 4.4 14.6 18 18-13.6 3.4-16.6 8.4-18 18-1.4-9.6-4.4-14.6-18-18C15.6 16.6 18.6 11.6 20 2z" fill="currentColor" /><path d="M33 3c.5 3.4 1.6 5.2 6 6-4.4.8-5.5 2.6-6 6-.5-3.4-1.6-5.2-6-6 4.4-.8 5.5-2.6 6-6z" fill="currentColor" opacity=".55" /></svg></span>,
+        fuelled by sport
         <span class="ob ob--watch" aria-hidden="true"><svg viewBox="0 0 40 40"><rect x="16" y="1" width="8" height="4" rx="1.5" fill="currentColor" /><circle cx="20" cy="23" r="15" fill="none" stroke="currentColor" stroke-width="2.5" /><path class="ob-hand" d="M20 23V13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" /><circle cx="20" cy="23" r="2" fill="currentColor" /></svg></span>,
         games
         <span class="ob ob--pad" aria-hidden="true"><svg viewBox="0 0 56 36"><path d="M14 4h28c7 0 11 6 12.5 15S55 34 49 34c-4.5 0-6-6-11-6H18c-5 0-6.5 6-11 6S0 28 1.5 19 7 4 14 4z" fill="currentColor" /><path d="M14 13v10M9 18h10" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" /><circle cx="39" cy="15" r="2.6" fill="#0a0a0a" /><circle cx="44" cy="20" r="2.6" fill="#0a0a0a" /></svg></span>
-        and way too much coffee
+        and coffee
         <span class="ob ob--cup" aria-hidden="true"><svg viewBox="0 0 40 48"><path class="ob-steam" d="M14 12c-3-3 3-5 0-9M21 12c-3-3 3-5 0-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /><path d="M6 16h28l-3.5 29a3 3 0 0 1-3 2.6h-15a3 3 0 0 1-3-2.6z" fill="currentColor" /><rect x="4" y="14" width="32" height="5" rx="2" fill="currentColor" /><path d="M10 28h20" stroke="#0a0a0a" stroke-width="5" /></svg></span>
         — my pulse
         <span class="ob ob--ecg" aria-hidden="true"><svg viewBox="0 0 80 32"><path d="M0 18h20l4-5 4 5h6l3 10 5-26 5 22 3-6h30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" /></svg></span>
-        can prove it.
+        proves it.
       </p>
     </section>
 
@@ -469,8 +473,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .ob--logo,
   .ob--tag {
     width: 0.86em;
-    border-radius: 0.2em;
+    border-radius: 0.22em;
     object-fit: cover;
+  }
+  .ob--logo {
+    background: #fff;
   }
   .ob--tag {
     display: inline-grid;
