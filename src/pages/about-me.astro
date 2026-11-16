@@ -307,17 +307,37 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     </section>
 
     <!-- 6 -->
-    <section class="a9__end" data-end>
-      <a class="a9__cta" href={settings.callUrl ?? '#'} target="_blank" rel="noopener" data-cta>
-        <span class="a9__cta-q" data-in>{about.ctaText?.split('?')[0]}?</span>
-        <span class="a9__huge">
-          <span class="a9__huge-o">Let’s talk</span>
-          <span class="a9__huge-f" aria-hidden="true" data-fill>Let’s talk</span>
-        </span>
-        <span class="a9__orb" aria-hidden="true" data-orb><span>Book a call</span><i>↗</i></span>
+    <!-- 6: the close, bookending the hero: the same blackletter, rising
+         out of its masks; under it the ways to reach me as hairline rows like
+         the experience list; a live dot with the time in Kraków -->
+    <section class="a9__close" data-end>
+      <p class="a9__close-status" data-in><span class="a9__close-dot" aria-hidden="true" /><span data-clock>Kraków</span></p>
+      <p class="a9__close-q" data-in>{about.ctaText?.split('?')[0]}?</p>
+      <a class="a9__close-big" href={settings.callUrl ?? '#'} target="_blank" rel="noopener">
+        <span data-words>Let’s talk</span><i aria-hidden="true">↗</i>
       </a>
+      <ul class="a9__jobs a9__close-links">
+        {settings.callUrl && (
+          <li data-in>
+            <a href={settings.callUrl} target="_blank" rel="noopener">
+              <span>Book a call</span>
+              <span class="a9__dim">30 min, no strings</span>
+              <span class="a9__when">↗</span>
+            </a>
+          </li>
+        )}
+        {((settings.socials ?? []) as { _key: string; label: string; url: string }[]).map((so) => (
+          <li data-in>
+            <a href={so.url} target="_blank" rel="noopener">
+              <span>{so.label}</span>
+              <span class="a9__dim">{so.url.replace(/^(https?:\/\/|mailto:)(www\.)?/, '').replace(/\/$/, '')}</span>
+              <span class="a9__when">↗</span>
+            </a>
+          </li>
+        ))}
+      </ul>
       <div class="a9__foot">
-        <span data-clock>Kraków</span>
+        <span>© {new Date().getFullYear()} Bart Ocieczek</span>
         <button type="button" class="a9__top" data-top>Back to top ↑</button>
       </div>
     </section>
@@ -1379,6 +1399,86 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     font-weight: 500;
     color: var(--ink);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* 6: the close */
+  .a9__close {
+    display: grid;
+    gap: 0;
+    padding: clamp(120px, 22vh, 240px) var(--pad) var(--pad);
+  }
+  .a9__close-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: var(--grey);
+  }
+  .a9__close-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink);
+    animation: a9-live 2.4s var(--e-out) infinite;
+  }
+  @keyframes a9-live {
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45); }
+    70%, 100% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+  }
+  .a9__close-q {
+    max-width: 30ch;
+    margin: 0;
+    font-size: 15px;
+    color: var(--grey);
+  }
+  /* the hero's blackletter again, so the page opens and closes the same way */
+  .a9__close-big {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.06em;
+    width: fit-content;
+    margin: clamp(8px, 1vw, 16px) 0 clamp(48px, 7vw, 96px);
+    font: 400 clamp(88px, 15vw, 260px) / 0.95 'Pirata One', var(--font-display);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .a9__close-big :global(.w) {
+    padding: 0.12em 0.06em;
+    margin: -0.12em -0.06em;
+  }
+  .a9__close-big i {
+    font: 400 0.32em/1 var(--font-head);
+    font-style: normal;
+    margin-top: 0.4em;
+    color: var(--grey);
+    transition:
+      transform 0.35s var(--e-out),
+      color 0.2s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__close-big:hover i {
+      color: var(--ink);
+      transform: translate(0.12em, -0.12em);
+    }
+  }
+  .a9__close-links a {
+    display: contents;
+    color: inherit;
+    text-decoration: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__close-links li:hover .a9__when {
+      color: var(--ink);
+    }
+  }
+  .a9__close .a9__foot {
+    margin-top: clamp(64px, 9vw, 120px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__close-dot {
+      animation: none;
+    }
   }
 
   /* 3b: numbers — no boxes: each figure set as big as the pulse readout,
