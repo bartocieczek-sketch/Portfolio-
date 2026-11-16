@@ -265,41 +265,36 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     )}
 
     <!-- 5 -->
-    <section class="a9__heart" data-heart>
-      <div class="a9__hm-top">
-        <p class="a9__label" data-in>Off-screen</p>
-        <p class="a9__hm-live" data-in><span class="a9__beat" aria-hidden="true" data-beat />Live: my pulse, your coffee</p>
-      </div>
-      <!-- a monitor the width of the page: the trace runs edge to edge, the
-           rate sits on it big, and the pen dot leads the line -->
+    <!-- 5: the pulse, in the graph's language: one thin trace across the
+         page, a dot leading it with the rate beside it like a hub's label,
+         and a small line of text with the brew button underneath -->
+    <section class="a9__heart is-min" data-heart>
       <div class="a9__hm-mid" data-hm-mid>
-        <p class="a9__hm-bpm" data-bpm-big>
-          <strong data-bpm aria-label="62 beats per minute">
-            {[0, 1, 2].map(() => (
-              <span class="a9__dg" aria-hidden="true">
-                <span class="a9__dg-col">{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => <span>{d}</span>)}</span>
-              </span>
-            ))}
-          </strong>
-          <span class="a9__hm-unit">bpm</span>
-        </p>
         <div class="a9__hm-trace">
           <svg class="a9__ecg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-label="Heart rate trace"><path data-ecg d="" /></svg>
-          <span class="a9__pen" aria-hidden="true" data-pen />
+          <span class="a9__pen" aria-hidden="true" data-pen>
+            <span class="a9__pen-l" data-bpm-big>
+              <strong data-bpm aria-label="62 beats per minute">
+                {[0, 1, 2].map(() => (
+                  <span class="a9__dg" aria-hidden="true">
+                    <span class="a9__dg-col">{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => <span>{d}</span>)}</span>
+                  </span>
+                ))}
+              </strong>
+              <span>bpm</span>
+            </span>
+          </span>
         </div>
       </div>
       <div class="a9__hm-low">
-        <p class="a9__hm-say" data-words>Coffee in, sport out.</p>
-        <div class="a9__hm-ctrl" data-in>
-          <p class="a9__hm-hint">Every coffee you brew raises it. A run brings it back down.</p>
-          <div class="a9__brew-row">
-            <button class="a9__brew" type="button" data-brew>
-              <span class="a9__brew-fill" aria-hidden="true"></span>
-              <span class="a9__brew-t" data-brew-t>Hold to brew</span>
-            </button>
-            <p class="a9__cups"><span data-cups>0</span> today</p>
-            <span class="a9__cupdots" aria-hidden="true" data-cupdots>{Array.from({ length: 8 }, () => <i />)}</span>
-          </div>
+        <p class="a9__hm-say" data-in><span class="a9__beat" aria-hidden="true" data-beat />Coffee in, sport out. Every coffee you brew raises my pulse.</p>
+        <div class="a9__brew-row" data-in>
+          <button class="a9__brew" type="button" data-brew>
+            <span class="a9__brew-fill" aria-hidden="true"></span>
+            <span class="a9__brew-t" data-brew-t>Hold to brew</span>
+          </button>
+          <p class="a9__cups"><span data-cups>0</span> today</p>
+          <span class="a9__cupdots" aria-hidden="true" data-cupdots>{Array.from({ length: 8 }, () => <i />)}</span>
         </div>
       </div>
     </section>
@@ -1090,6 +1085,77 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       filter: none;
       transform: none;
     }
+  }
+
+  /* 5, minimal: thin trace, a leading dot labelled with the rate, small
+     type — the same marks as the graph */
+  .a9__heart.is-min {
+    padding: clamp(80px, 14vh, 160px) 0;
+  }
+  .a9__heart.is-min .a9__hm-mid {
+    display: block;
+    height: clamp(180px, 24vw, 340px);
+    margin: 0 0 clamp(24px, 3vw, 40px);
+    padding: 0;
+  }
+  .a9__heart.is-min .a9__hm-trace {
+    position: relative;
+    height: 100%;
+    background: none;
+  }
+  .a9__heart.is-min .a9__ecg path {
+    stroke: rgba(255, 255, 255, 0.55);
+    stroke-width: 1;
+  }
+  .a9__heart.is-min .a9__pen {
+    width: 9px;
+    height: 9px;
+    margin: -4.5px -4.5px 0 0;
+    right: var(--pad);
+    box-shadow: none;
+  }
+  .a9__heart.is-min .a9__hm-trace .a9__ecg {
+    width: calc(100% - var(--pad));
+  }
+  .a9__pen-l {
+    position: absolute;
+    right: -2px;
+    top: -12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transform: translateY(-100%);
+    transform-origin: 100% 100%;
+    font: 500 15px/1 var(--font-head);
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .a9__pen-l > span {
+    color: var(--grey);
+  }
+  .a9__pen-l strong {
+    display: flex;
+    font-weight: inherit;
+  }
+  .a9__heart.is-min .a9__hm-low {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .a9__heart.is-min .a9__hm-say {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font: 500 15px/1.4 var(--font-head);
+    letter-spacing: -0.01em;
+    color: var(--grey);
+  }
+  .a9__heart.is-min .a9__brew {
+    padding: 8px 14px;
+    font-size: 14px;
   }
 
   /* 3b: numbers — no boxes: each figure set as big as the pulse readout,
@@ -2066,7 +2132,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         // the B jumps on the R wave
         if (!calm && before < 0.22 && inBeat >= 0.22) {
           beatEl?.animate([{ transform: 'scale(1.8)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
-          bigBpm?.animate([{ transform: 'scale(1.025)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          bigBpm?.animate([{ transform: 'translateY(-100%) scale(1.08)' }, { transform: 'translateY(-100%)' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
         }
         samples.push(calm ? 0 : ecg(inBeat));
         if (samples.length > WIN * RATE) samples.shift();
