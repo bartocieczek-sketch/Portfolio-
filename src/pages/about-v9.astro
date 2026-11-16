@@ -71,9 +71,6 @@ const caps = [
 const [bPath, bBox] = glyphs.g.B as [string, number[], number];
 const bView = `${bBox[0]} ${-bBox[3]} ${bBox[2] - bBox[0]} ${bBox[3] - bBox[1]}`;
 const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}" fill="currentColor"/></svg>`;
-// the same B as a mask: the next section is seen through it as the 3D one
-// reaches the camera
-const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bView}" preserveAspectRatio="none"><path transform="scale(1,-1)" d="${bPath}" fill="#000"/></svg>`)}")`;
 ---
 
 <Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
@@ -96,7 +93,7 @@ const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
     </section>
 
     <!-- 2 -->
-    <section class="a9__sec a9__who" data-who data-mask={bMask}>
+    <section class="a9__sec a9__who" data-who>
       <p class="a9__label" data-in>Who I am</p>
       <div class="a9__who-c">
         <p class="a9__beat-n" data-in>01 — Who</p>
@@ -261,7 +258,9 @@ const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
   /* 1: same as /about-me — a sticky stage, the statement under a chrome B */
   .a9__intro {
     position: relative;
+    z-index: 4;
     height: 270svh;
+    pointer-events: none;
   }
   .a9__stage {
     position: sticky;
@@ -354,8 +353,6 @@ const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
     z-index: 3;
     margin-top: -100svh;
     background: var(--bg);
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
   }
   .a9__who.is-flat {
     margin-top: 0;
@@ -1307,11 +1304,13 @@ const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
     let heroPx = -1e4;
     let heroPy = -1e4;
     if (intro && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      intro.addEventListener('pointermove', (e) => {
+      // (the hero doesn't take pointer events — it lies over the next section
+      // at the end — so listen on the window)
+      addEventListener('pointermove', (e) => {
         heroPx = e.clientX;
         heroPy = e.clientY;
       });
-      intro.addEventListener('pointerleave', () => (heroPx = heroPy = -1e4));
+      document.addEventListener('pointerleave', () => (heroPx = heroPy = -1e4));
     }
     const frame = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -1679,50 +1678,69 @@ const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
       const IN_DUR = 1.8;
       const easeOut = (x: number) => 1 - Math.pow(1 - x, 4);
       const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      // ---- the B as a window onto the next section
+      // ---- the next section opens out of the B's edge: at the moment the
+      // turning letter is side-on (a thin sliver), a slit the size of that
+      // sliver opens behind it to the full screen, the B flying on in front
       const who = calm ? null : document.querySelector<HTMLElement>('[data-who]');
-      const maskUrl = who?.dataset.mask ?? '';
       if (who) (window as any).__a9Mask = true;
       B.geometry.computeBoundingBox();
       const bb = B.geometry.boundingBox!;
-      const corners = [0, 1, 2, 3].map(() => new THREE.Vector3());
-      let sent = false;
-      const uncover = (fly: number) => {
-        if (!who) return;
-        // hold the section in place while it's being uncovered
-        const top = who.offsetTop - scrollY;
-        who.style.transform = top > 0 ? `translate3d(0,${(-top).toFixed(1)}px,0)` : '';
-        if (fly < 0.35 || top <= 0) {
-          const m = top <= 0 ? 'none' : `${maskUrl}`;
-          who.style.webkitMaskImage = who.style.maskImage = m;
-          if (top > 0) who.style.webkitMaskSize = who.style.maskSize = '0px 0px';
-          return;
+      const corners = Array.from({ length: 8 }, () => new THREE.Vector3());
+      // the scroll value at which the letter turns side-on (rotation.y hits
+      // 3π/2 on its way round), found once
+      const flyAt = (s: number) => {
+        const z = Math.min(1, Math.max(0, (s - 0.42) / 0.5));
+        return z * z * (3 - 2 * z);
+      };
+      let sEdge = 0.75;
+      for (let s = 0.42; s <= 1; s += 0.001) {
+        if (s * Math.PI * 2 + flyAt(s) * 0.9 >= Math.PI * 1.5) {
+          sEdge = s;
+          break;
         }
-        // the front face's corners, projected to the screen
+      }
+      let slit: { x0: number; y0: number; x1: number; y1: number } | null = null;
+      let sent = false;
+      const project = () => {
         logo.updateMatrixWorld(true);
-        const z = bb.max.z;
-        corners[0].set(bb.min.x, bb.min.y, z);
-        corners[1].set(bb.max.x, bb.min.y, z);
-        corners[2].set(bb.min.x, bb.max.y, z);
-        corners[3].set(bb.max.x, bb.max.y, z);
         const W = canvas.clientWidth;
         const H = canvas.clientHeight;
         let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-        for (const c of corners) {
-          c.applyMatrix4(B.matrixWorld).project(camera);
+        let k = 0;
+        for (const x of [bb.min.x, bb.max.x]) for (const y of [bb.min.y, bb.max.y]) for (const z of [bb.min.z, bb.max.z]) {
+          const c = corners[k++].set(x, y, z).applyMatrix4(B.matrixWorld).project(camera);
           const sx = (c.x * 0.5 + 0.5) * W;
           const sy2 = (-c.y * 0.5 + 0.5) * H;
           x0 = Math.min(x0, sx); x1 = Math.max(x1, sx);
           y0 = Math.min(y0, sy2); y1 = Math.max(y1, sy2);
         }
-        // last stretch: the window opens up to the whole screen
-        const all = Math.min(1, Math.max(0, (fly - 0.8) / 0.14));
-        who.style.webkitMaskImage = who.style.maskImage = `${maskUrl}, linear-gradient(rgba(0,0,0,${all.toFixed(3)}), rgba(0,0,0,${all.toFixed(3)}))`;
-        const sz = `${(x1 - x0).toFixed(1)}px ${(y1 - y0).toFixed(1)}px, 100% 100%`;
-        const ps = `${x0.toFixed(1)}px ${y0.toFixed(1)}px, 0 0`;
-        who.style.webkitMaskSize = who.style.maskSize = sz;
-        who.style.webkitMaskPosition = who.style.maskPosition = ps;
-        if (!sent && fly > 0.55) {
+        return { x0: Math.max(0, x0), y0: Math.max(0, y0), x1: Math.min(W, x1), y1: Math.min(H, y1), W, H };
+      };
+      const uncover = () => {
+        if (!who) return;
+        // hold the section in place while it opens
+        const top = who.offsetTop - scrollY;
+        who.style.transform = top > 0 ? `translate3d(0,${(-top).toFixed(1)}px,0)` : '';
+        if (top <= 0) {
+          who.style.clipPath = '';
+          return;
+        }
+        const raw = Math.min(1, Math.max(0, (sy - sEdge) / 0.16));
+        if (raw <= 0) {
+          slit = null;
+          who.style.clipPath = 'inset(50% 50% 50% 50%)';
+          return;
+        }
+        const pr = project();
+        if (!slit) slit = { x0: pr.x0, y0: pr.y0, x1: pr.x1, y1: pr.y1 };
+        // strong ease-in-out: the slit eases open, then sweeps out
+        const e = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+        const t = slit.y0 * (1 - e);
+        const l = slit.x0 * (1 - e);
+        const rr = (pr.W - slit.x1) * (1 - e);
+        const b = (pr.H - slit.y1) * (1 - e);
+        who.style.clipPath = `inset(${t.toFixed(1)}px ${rr.toFixed(1)}px ${b.toFixed(1)}px ${l.toFixed(1)}px)`;
+        if (!sent && raw > 0.25) {
           sent = true;
           dispatchEvent(new Event('a9:reveal'));
         }
@@ -1742,17 +1760,13 @@ const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
         // until the viewer passes through its bowl into the page
         const fz = Math.min(1, Math.max(0, (sy - 0.42) / 0.5));
         const fly = calm ? 0 : fz * fz * (3 - 2 * fz);
-        logo.position.z = fly * fly * (camera.position.z - 0.6);
-        // it squares up to the camera on the way, so its outline is the
-        // window the next section shows through
-        const wrap = (v: number) => Math.atan2(Math.sin(v), Math.cos(v));
-        const face = Math.min(1, fly * 1.6);
-        logo.rotation.x = wrap(logo.rotation.x) * (1 - face);
-        logo.rotation.y = wrap(logo.rotation.y) * (1 - face);
-        logo.rotation.z = wrap(logo.rotation.z) * (1 - face);
-        logo.position.y *= 1 - face;
-        if (who) uncover(fly);
-        (mat as THREE.MeshPhysicalMaterial).opacity = k * (1 - Math.min(1, Math.max(0, (fly - 0.72) / 0.22)));
+        // it flies on past the camera (no fading: it simply goes by)
+        logo.position.z = fly * fly * (camera.position.z + 1.5);
+        logo.position.x = fly * 0.35;
+        logo.rotation.y += fly * 0.9;
+        logo.rotation.x += fly * -0.25;
+        if (who) uncover();
+        (mat as THREE.MeshPhysicalMaterial).opacity = k;
         glint.position.x += (px * 3.2 - glint.position.x) * 0.12;
         glint.position.y += (-py * 2.2 - glint.position.y) * 0.12;
         glint.intensity += ((px || py ? 26 : 0) * k - glint.intensity) * 0.06;
