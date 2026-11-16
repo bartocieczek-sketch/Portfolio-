@@ -13,6 +13,7 @@ import Nav from '../components/Nav.astro';
 import { ABOUT_QUERY, HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
 import { load } from '../lib/load';
 import glyphs from '../lib/monogram-b.json';
+import CapGraph from '../components/CapGraph.astro';
 
 const [settings, about, home] = await Promise.all([
   load(Astro.locals, SETTINGS_QUERY),
@@ -60,6 +61,14 @@ const photos = [
   { src: null, cap: 'Training' },
   { src: null, cap: 'Coffee, again' },
   { src: null, cap: 'Warsaw' },
+];
+// capabilities: three hubs, each with the skills behind it (draft wording)
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
+const caps = [
+  { name: 'Design', img: pix(projects[0]), items: ['UX/UI', 'Art direction', 'Design systems', 'Prototyping', 'Typography', 'Motion', 'Branding', 'Research'] },
+  { name: 'Technology', img: pix(projects[1]), items: ['No-code', 'Astro', 'Sanity CMS', 'WebGL', 'Three.js', 'Animation', 'Performance', 'Accessibility'] },
+  { name: 'AI & Play', img: pix(projects[2]), items: ['AI workflows', 'Generative UI', 'Prompting', 'Game design', 'Interaction', 'Playtesting'] },
 ];
 const [bPath, bBox] = glyphs.g.B as [string, number[], number];
 const bView = `${bBox[0]} ${-bBox[3]} ${bBox[2] - bBox[0]} ${bBox[3] - bBox[1]}`;
@@ -134,6 +143,12 @@ const lead: [string, boolean][] = [
           ))}
         </ul>
       </div>
+    </section>
+
+    <!-- capabilities graph -->
+    <section class="a6__caps">
+      <p class="a6__label a6__caps-label">Capabilities — point at a hub, drag it around</p>
+      <CapGraph groups={caps} />
     </section>
 
     <!-- 5: services -->
@@ -434,6 +449,17 @@ const lead: [string, boolean][] = [
     color: #fff;
     font-weight: 500;
     font-size: 11px;
+  }
+
+  .a6__caps {
+    position: relative;
+    border-top: 1px solid var(--rule);
+  }
+  .a6__caps-label {
+    position: absolute;
+    top: 24px;
+    left: var(--pad);
+    z-index: 2;
   }
 
   /* 5: services */

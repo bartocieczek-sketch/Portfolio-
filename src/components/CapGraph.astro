@@ -1,0 +1,298 @@
+---
+// Capabilities graph (after ref.digital): one centre node, three labelled
+// hubs with a small pixelated picture each, and a fan of thin lines out to
+// the skills behind each hub. Everything drifts a little. Pointing at a hub
+// darkens its fan and names its skills; pointing near a dot names that
+// skill; a hub can be dragged and its lines follow. The fan grows out of the
+// centre when it scrolls into view.
+interface Props {
+  groups: { name: string; img?: string | null; items: string[] }[];
+}
+const { groups } = Astro.props;
+---
+
+<div class="cg" data-cg>
+  <svg class="cg__lines" aria-hidden="true" data-cg-svg></svg>
+  <span class="cg__core" aria-hidden="true" data-cg-core></span>
+  {groups.map((g, gi) => (
+    <div class="cg__hub" data-hub={gi} tabindex="0" role="button" aria-label={`${g.name}: ${g.items.join(', ')}`}>
+      {g.img && <img src={g.img} alt="" width="48" height="60" loading="lazy" />}
+      <span class="cg__hub-t"><i></i>{g.name}</span>
+    </div>
+  ))}
+  {groups.map((g, gi) =>
+    g.items.map((it) => (
+      <span class="cg__dot" data-dot={gi} aria-hidden="true">
+        <i></i>
+        <b>{it}</b>
+      </span>
+    )),
+  )}
+</div>
+
+<style>
+  .cg {
+    --ink: rgb(17, 17, 17);
+    position: relative;
+    width: 100%;
+    height: clamp(460px, 78svh, 820px);
+    overflow: hidden;
+    background: #ece9e3;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: pan-y;
+  }
+  .cg__lines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .cg__lines :global(line) {
+    stroke: rgba(17, 17, 17, 0.16);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+    transition: stroke 0.3s ease;
+  }
+  .cg__lines :global(line.is-hub) {
+    stroke: rgba(17, 17, 17, 0.8);
+  }
+  .cg__lines :global(line.is-on) {
+    stroke: rgba(17, 17, 17, 0.55);
+  }
+  .cg__core,
+  .cg__hub,
+  .cg__dot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    will-change: transform;
+  }
+  .cg__core {
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    background: var(--ink);
+  }
+  .cg__hub {
+    margin: -6px 0 0 -6px;
+    cursor: grab;
+    outline: none;
+  }
+  .cg__hub:active {
+    cursor: grabbing;
+  }
+  .cg__hub img {
+    position: absolute;
+    left: -6px;
+    bottom: 22px;
+    width: clamp(40px, 4vw, 64px);
+    height: auto;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    filter: grayscale(1) contrast(1.1);
+    image-rendering: pixelated;
+    transition: filter 0.3s ease;
+  }
+  .cg__hub-t {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font: 500 clamp(13px, 1.1vw, 16px) / 1 var(--font-mono, var(--font-head));
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .cg__hub-t i {
+    width: 12px;
+    height: 12px;
+    background: var(--ink);
+    transition: transform 0.25s var(--e-out, ease-out);
+  }
+  .cg__hub.is-on .cg__hub-t i,
+  .cg__hub:focus-visible .cg__hub-t i {
+    transform: rotate(45deg);
+  }
+  .cg__hub.is-on img {
+    filter: grayscale(0);
+  }
+  .cg__dot {
+    margin: -2.5px 0 0 -2.5px;
+    pointer-events: none;
+  }
+  .cg__dot i {
+    display: block;
+    width: 5px;
+    height: 5px;
+    background: rgba(17, 17, 17, 0.3);
+    transition: background-color 0.25s ease;
+  }
+  .cg__dot b {
+    position: absolute;
+    left: 10px;
+    top: -5px;
+    font: 500 12px/1 var(--font-head);
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition:
+      opacity 0.2s ease,
+      transform 0.3s var(--e-out, ease-out);
+  }
+  .cg__dot.is-on i {
+    background: var(--ink);
+  }
+  .cg__dot.is-on b {
+    opacity: 1;
+    transform: none;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cg]').forEach((box) => {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = box.querySelector<SVGSVGElement>('[data-cg-svg]')!;
+    const core = box.querySelector<HTMLElement>('[data-cg-core]')!;
+    const hubs = [...box.querySelectorAll<HTMLElement>('[data-hub]')];
+    const dots = [...box.querySelectorAll<HTMLElement>('[data-dot]')];
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // layout, in fractions of the box: the hubs sit around the centre
+    const H = hubs.length;
+    // narrow boxes keep the hubs (and their labels) clear of the right edge
+    const base =
+      box.clientWidth < 640
+        ? [
+            { x: 0.08, y: 0.16 },
+            { x: 0.6, y: 0.3 },
+            { x: 0.14, y: 0.84 },
+            { x: 0.58, y: 0.86 },
+          ]
+        : [
+            { x: 0.12, y: 0.22 },
+            { x: 0.84, y: 0.27 },
+            { x: 0.27, y: 0.8 },
+            { x: 0.7, y: 0.82 },
+          ];
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    const hubPos = hubs.map((_, i) => ({ ...base[i % base.length], ox: 0, oy: 0, ph: rnd() * 6.28 }));
+    // each skill sits somewhere in the cone between the centre and its hub
+    const dotPos = dots.map((d) => {
+      const g = Number(d.dataset.dot);
+      const h = hubPos[g];
+      const ang = Math.atan2(h.y - 0.5, h.x - 0.5) + (rnd() - 0.5) * 1.1;
+      const len = Math.hypot(h.x - 0.5, h.y - 0.5) * (0.35 + rnd() * 0.75);
+      return { g, x: 0.5 + Math.cos(ang) * len, y: 0.5 + Math.sin(ang) * len, ph: rnd() * 6.28 };
+    });
+    const lines = [...hubs.map((_, i) => ({ hub: i })), ...dots.map((_, i) => ({ dot: i }))].map((l) => {
+      const el = document.createElementNS(NS, 'line');
+      if ('hub' in l) el.classList.add('is-hub');
+      svg.append(el);
+      return { ...l, el } as { hub?: number; dot?: number; el: SVGLineElement };
+    });
+
+    // interaction state
+    let hot = -1; // hovered hub
+    let near = -1; // dot near the pointer
+    let px = -1e4;
+    let py = -1e4;
+    let drag: { i: number; sx: number; sy: number; ox: number; oy: number } | null = null;
+    let grow = calm ? 1 : 0;
+    let growing = false;
+
+    const setHot = (i: number) => {
+      hot = i;
+      hubs.forEach((h, k) => h.classList.toggle('is-on', k === i));
+    };
+    hubs.forEach((h, i) => {
+      h.addEventListener('pointerenter', () => setHot(i));
+      h.addEventListener('pointerleave', () => !drag && setHot(-1));
+      h.addEventListener('focus', () => setHot(i));
+      h.addEventListener('blur', () => setHot(-1));
+      h.addEventListener('pointerdown', (e) => {
+        h.setPointerCapture(e.pointerId);
+        drag = { i, sx: e.clientX, sy: e.clientY, ox: hubPos[i].ox, oy: hubPos[i].oy };
+      });
+    });
+    box.addEventListener('pointermove', (e) => {
+      const r = box.getBoundingClientRect();
+      px = e.clientX - r.left;
+      py = e.clientY - r.top;
+      if (drag) {
+        hubPos[drag.i].ox = drag.ox + (e.clientX - drag.sx);
+        hubPos[drag.i].oy = drag.oy + (e.clientY - drag.sy);
+      }
+    });
+    box.addEventListener('pointerleave', () => {
+      px = py = -1e4;
+    });
+    addEventListener('pointerup', () => {
+      if (drag) setHot(-1);
+      drag = null;
+    });
+
+    // grow the fan out of the centre once it's in view
+    new IntersectionObserver(
+      (es) => {
+        if (es[0].isIntersecting && !growing) {
+          growing = true;
+          const t0 = performance.now();
+          const step = () => {
+            const t = Math.min(1, (performance.now() - t0) / 1400);
+            grow = 1 - Math.pow(1 - t, 4);
+            if (t < 1) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }
+      },
+      { threshold: 0.3 },
+    ).observe(box);
+
+    const frame = (now: number) => {
+      const W = box.clientWidth;
+      const Hh = box.clientHeight;
+      const t = calm ? 0 : now / 1000;
+      const cx = W / 2;
+      const cy = Hh / 2;
+      core.style.transform = `translate(${cx}px,${cy}px)`;
+      const hp = hubPos.map((h) => ({
+        x: cx + (h.x * W - cx) * grow + h.ox + Math.sin(t * 0.5 + h.ph) * 6,
+        y: cy + (h.y * Hh - cy) * grow + h.oy + Math.cos(t * 0.4 + h.ph) * 6,
+      }));
+      hp.forEach((p, i) => (hubs[i].style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px)`));
+      // the dots follow their hub a little when it's dragged
+      let best = 1e9;
+      let nb = -1;
+      const dp = dotPos.map((d, i) => {
+        const h = hubPos[d.g];
+        const x = cx + (d.x * W - cx) * grow + h.ox * 0.4 + Math.sin(t * 0.7 + d.ph) * 4;
+        const y = cy + (d.y * Hh - cy) * grow + h.oy * 0.4 + Math.cos(t * 0.6 + d.ph) * 4;
+        const dist = Math.hypot(x - px, y - py);
+        if (dist < best) {
+          best = dist;
+          nb = i;
+        }
+        return { x, y };
+      });
+      near = best < 36 ? nb : -1;
+      dp.forEach((p, i) => {
+        dots[i].style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px)`;
+        dots[i].classList.toggle('is-on', i === near || dotPos[i].g === hot);
+      });
+      lines.forEach((l) => {
+        const p = l.hub !== undefined ? hp[l.hub] : dp[l.dot!];
+        l.el.setAttribute('x1', cx.toFixed(1));
+        l.el.setAttribute('y1', cy.toFixed(1));
+        l.el.setAttribute('x2', p.x.toFixed(1));
+        l.el.setAttribute('y2', p.y.toFixed(1));
+        if (l.dot !== undefined) l.el.classList.toggle('is-on', dotPos[l.dot].g === hot || l.dot === near);
+      });
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+</script>
