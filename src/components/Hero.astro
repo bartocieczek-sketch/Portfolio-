@@ -77,16 +77,16 @@ const LAPS = 3;
 
 <div class="preload" aria-hidden="true" data-preload>
   <div class="preload__lock">
-    <span class="preload__side preload__side--l"><span class="preload__w">Bart</span><span class="preload__w">Design</span></span>
+    <span class="preload__side preload__side--l"><span class="preload__w">Bart</span><span class="preload__w">Designer</span></span>
     <canvas class="preload__mark" data-preload-mark></canvas>
-    <span class="preload__side preload__side--r"><span class="preload__w">Ocieczek</span><span class="preload__w">Engineer</span></span>
+    <span class="preload__side preload__side--r"><span class="preload__w">Ocieczek</span><span class="preload__w">&amp; Developer</span></span>
   </div>
 </div>
 <script is:inline>
   // Preloader: the chrome B lands in the middle (its 3D side turns it to face
   // you); then, word by word as in the first preloader, Bart drops in to its
   // left and Ocieczek to its right, they fall on down while Designer and
-  // Engineer drop into their places, and those fall away with the B as the
+  // Developer drop into their places, and those fall away with the B as the
   // column streams in. One timeline per element, so a busy main thread can
   // never skip a beat.
   (function () {
@@ -143,7 +143,7 @@ const LAPS = 3;
       ]);
       // the 3D side reads this timeline to spin away in step with the fall
       window.__preloadMark = { anim: a, leave: LEAVE, out: 520 };
-      // [Bart, Design] on the left, [Ocieczek, Engineer] 60ms behind
+      // [Bart, Designer] on the left, [Ocieczek, & Developer] 60ms behind
       [0, 2].forEach(function (i, side) {
         var lag = side * 60;
         track(words[i], [
