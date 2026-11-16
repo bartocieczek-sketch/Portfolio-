@@ -326,32 +326,40 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       </p>
       <div class="a9__sec a9__lt-rows">
         <p class="a9__label" data-in>Get in touch</p>
-        <ul class="a9__jobs a9__close-links">
+        <ul class="a9__ct">
           <li data-in>
-            <a href={`mailto:${settings.email ?? 'bartocieczek@gmail.com'}`}>
-              <span>Email</span>
-              <span class="a9__dim">{settings.email ?? 'bartocieczek@gmail.com'}</span>
-              <span class="a9__when">↗</span>
-            </a>
+            <button type="button" class="a9__ct-row" data-copy={settings.email ?? 'bartocieczek@gmail.com'}>
+              <span class="a9__ct-n">Email</span>
+              <span class="a9__ct-d" data-copy-t>{settings.email ?? 'bartocieczek@gmail.com'}</span>
+              <span class="a9__ct-a">Copy</span>
+            </button>
           </li>
           {settings.callUrl && (
             <li data-in>
-              <a href={settings.callUrl} target="_blank" rel="noopener">
-                <span>Book a call</span>
-                <span class="a9__dim">30 minutes, available for selected projects</span>
-                <span class="a9__when">↗</span>
+              <a class="a9__ct-row" href={settings.callUrl} target="_blank" rel="noopener">
+                <span class="a9__ct-n">Book a call</span>
+                <span class="a9__ct-d">30 min, pick a time that suits you</span>
+                <span class="a9__ct-a">↗</span>
               </a>
             </li>
           )}
-          {((settings.socials ?? []) as { _key: string; label: string; url: string }[]).map((so) => (
-            <li data-in>
-              <a href={so.url} target="_blank" rel="noopener">
-                <span>{nice(so.label)}</span>
-                <span class="a9__dim">{so.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '').replace(/%C5%82/gi, 'ł')}</span>
-                <span class="a9__when">↗</span>
-              </a>
-            </li>
-          ))}
+          {((settings.socials ?? []) as { _key: string; label: string; url: string }[]).map((so) => {
+            const l = so.label.toLowerCase();
+            const handle = l.includes('instagram')
+              ? `@${so.url.replace(/\/$/, '').split('/').pop()}`
+              : l.includes('linkedin')
+                ? 'Bartłomiej Ocieczek'
+                : so.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+            return (
+              <li data-in>
+                <a class="a9__ct-row" href={so.url} target="_blank" rel="noopener">
+                  <span class="a9__ct-n">{nice(so.label).replace('Linkedin', 'LinkedIn')}</span>
+                  <span class="a9__ct-d">{handle}</span>
+                  <span class="a9__ct-a">↗</span>
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </div>
       <footer class="a9__lt-foot" data-in>
@@ -1473,6 +1481,104 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   .a9__lt-rows {
     padding-top: 0;
+  }
+  /* contact rows: bigger than the experience rows (they're the point of
+     the page's end); on hover a white fill sweeps in from the left and the
+     row inverts; the email row copies the address */
+  .a9__ct {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--rule);
+  }
+  .a9__ct li {
+    border-bottom: 1px solid var(--rule);
+  }
+  .a9__ct-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 80px;
+    gap: 16px;
+    align-items: baseline;
+    width: 100%;
+    padding: clamp(14px, 1.6vw, 22px) 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    color: var(--ink);
+    text-decoration: none;
+    cursor: pointer;
+    isolation: isolate;
+  }
+  .a9__ct-row::before {
+    content: '';
+    position: absolute;
+    inset: 0 calc(-1 * var(--pad) / 2);
+    z-index: -1;
+    background: var(--ink);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.3s var(--e-out);
+  }
+  .a9__ct-n {
+    font: 500 clamp(22px, 2.4vw, 38px) / 1.05 var(--font-head);
+    letter-spacing: -0.03em;
+    transition: transform 0.3s var(--e-out);
+  }
+  .a9__ct-d {
+    font-size: 15px;
+    color: var(--grey);
+    transition:
+      color 0.2s ease,
+      filter 0.2s ease,
+      opacity 0.2s ease;
+  }
+  .a9__ct-a {
+    justify-self: end;
+    font-size: 15px;
+    color: var(--grey);
+    transition:
+      color 0.2s ease,
+      transform 0.3s var(--e-out);
+  }
+  .a9__ct-row:active {
+    transform: scale(0.995);
+  }
+  .a9__ct-row:focus-visible {
+    outline: 1px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 4px;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__ct-row:hover::before {
+      clip-path: inset(0 0 0 0);
+    }
+    .a9__ct-row:hover {
+      color: var(--bg);
+    }
+    .a9__ct-row:hover .a9__ct-n {
+      transform: translateX(14px);
+    }
+    .a9__ct-row:hover .a9__ct-d,
+    .a9__ct-row:hover .a9__ct-a {
+      color: var(--bg);
+    }
+    .a9__ct-row:hover .a9__ct-a {
+      transform: translateX(-14px);
+    }
+  }
+  .a9__ct-d.is-swap {
+    filter: blur(2px);
+    opacity: 0;
+  }
+  @media (max-width: 809px) {
+    .a9__ct-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      row-gap: 4px;
+    }
+    .a9__ct-d {
+      grid-row: 2;
+      grid-column: 1 / -1;
+    }
   }
   /* the footer as a hairline row, like the label rows above */
   .a9__lt-foot {
@@ -2892,6 +2998,31 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         }
       }).observe(end);
     }
+
+    // ---- the email row copies the address (falls back to mailto)
+    root.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) => {
+      const t = b.querySelector<HTMLElement>('[data-copy-t]');
+      const addr = b.dataset.copy ?? '';
+      let timer = 0;
+      const swap = (text: string) => {
+        if (!t) return;
+        t.classList.add('is-swap');
+        setTimeout(() => {
+          t.textContent = text;
+          t.classList.remove('is-swap');
+        }, 160);
+      };
+      b.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(addr);
+          swap('Copied to clipboard');
+          clearTimeout(timer);
+          timer = window.setTimeout(() => swap(addr), 1800);
+        } catch {
+          location.href = `mailto:${addr}`;
+        }
+      });
+    });
 
     // ---- let's talk: the clock row (Kraków) and the name sized to the page
     const ltH = root.querySelector<HTMLElement>('[data-lt-h]');
