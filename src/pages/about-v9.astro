@@ -83,7 +83,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     </section>
 
     <!-- 2 -->
-    <section class="a9__sec a9__who">
+    <section class="a9__sec a9__who" data-who>
       <p class="a9__label" data-in>Who I am</p>
       <div class="a9__who-c">
         <p class="a9__beat-n" data-in>01 — Who</p>
@@ -235,7 +235,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   /* 1: same as /about-me — a sticky stage, the statement under a chrome B */
   .a9__intro {
     position: relative;
-    height: 340svh;
+    height: 270svh;
   }
   .a9__stage {
     position: sticky;
@@ -318,6 +318,13 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     color-scheme: dark;
   }
 
+  /* the next section doesn't wait for the hero to unpin: it slides up over
+     the hero's last stretch, so the B's fly-through hands straight over */
+  .a9__who {
+    position: relative;
+    z-index: 3;
+    margin-top: -55svh;
+  }
   /* 2: who — no scrubbing here (the hero has that); it simply arrives:
      the lead sharpens out of a blur word by word, the beats follow */
   .a9__beat-n {
@@ -1171,7 +1178,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const p = max > 0 ? clamp(-intro.getBoundingClientRect().top / max) : 0;
         // light the words over the first half of the scroll, a soft edge of
         // ~3; around the pointer a soft spotlight lights them early
-        const f = (p / 0.5) * (words.length + 3) - 3;
+        const f = (p / 0.42) * (words.length + 3) - 3;
         const spot = heroPx > -1e3 && !calm;
         words.forEach((n, k) => {
           let v = clamp((f - k + 3) / 3);
@@ -1187,11 +1194,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         });
         // then the B comes for the camera and the statement falls back into
         // the dark behind it
-        const fly = smooth(clamp((p - 0.5) / 0.45));
+        const fly = smooth(clamp((p - 0.42) / 0.5));
         say.style.transform = `translateY(${(-p * 6).toFixed(2)}vh) scale(${(1 - fly * 0.14).toFixed(4)})`;
         say.style.filter = fly > 0.001 ? `blur(${(fly * 10).toFixed(2)}px)` : '';
         // gone completely before the B has passed: nothing left behind it
-        const gone = smooth(clamp((p - 0.5) / 0.32));
+        const gone = smooth(clamp((p - 0.42) / 0.28));
         say.style.opacity = (1 - gone).toFixed(3);
         say.style.visibility = gone > 0.995 ? 'hidden' : '';
         sayWrap.parentElement!.style.setProperty('--p', p.toFixed(3));
@@ -1536,19 +1543,19 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         rx += (py * 0.3 - rx) * 0.05;
         const k = calm ? 1 : easeOut(Math.min(1, Math.max(0, (t - IN_DELAY) / IN_DUR)));
         const sp = (window as any).__a9P ?? 0;
-        sy += (sp - sy) * 0.08;
+        sy += (sp - sy) * 0.14;
         logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6 + sy * Math.PI * 2, (1 - k) * -0.15);
         logo.position.y = (calm ? 0 : Math.sin(t * 0.8) * 0.05) - (1 - k) * 0.9;
         logo.scale.setScalar(0.75 + 0.25 * k);
         // the finale: past halfway the B rushes the camera, half-turning,
         // until the viewer passes through its bowl into the page
-        const fz = Math.min(1, Math.max(0, (sy - 0.5) / 0.45));
+        const fz = Math.min(1, Math.max(0, (sy - 0.42) / 0.5));
         const fly = calm ? 0 : fz * fz * (3 - 2 * fz);
         logo.position.z = fly * fly * (camera.position.z - 0.6);
         logo.position.x = fly * 0.35;
         logo.rotation.y += fly * 0.9;
         logo.rotation.x += fly * -0.25;
-        (mat as THREE.MeshPhysicalMaterial).opacity = k * (1 - Math.min(1, Math.max(0, (fly - 0.88) / 0.12)));
+        (mat as THREE.MeshPhysicalMaterial).opacity = k * (1 - Math.min(1, Math.max(0, (fly - 0.72) / 0.22)));
         glint.position.x += (px * 3.2 - glint.position.x) * 0.12;
         glint.position.y += (-py * 2.2 - glint.position.y) * 0.12;
         glint.intensity += ((px || py ? 26 : 0) * k - glint.intensity) * 0.06;
