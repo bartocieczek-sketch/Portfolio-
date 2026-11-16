@@ -15,6 +15,8 @@
 import Base from '../layouts/Base.astro';
 // vector marks for logos we only have small bitmaps of
 import awwwardsSvg from 'simple-icons/icons/awwwards.svg?raw';
+import kfcSvg from 'simple-icons/icons/kfc.svg?raw';
+import zabkaSvg from 'simple-icons/icons/zabka.svg?raw';
 // a blackletter for the hero title, kin to the B monogram
 import '@fontsource/pirata-one/latin-400.css';
 import Nav from '../components/Nav.astro';
@@ -42,6 +44,11 @@ const title = (s: string) =>
 // Awwwards as a vector tile (white mark on near-black), so it's sharp at any size
 const awwPath = /<path d="([^"]+)"/.exec(awwwardsSvg)?.[1] ?? '';
 const awwwardsLogo = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-7 -7 38 38"><rect x="-7" y="-7" width="38" height="38" fill="#111"/><path d="${awwPath}" fill="#fff"/></svg>`)}`;
+// brand marks as vector tiles: the mark in white on the brand's colour
+const tile = (svg: string, bg: string) => {
+  const d = /<path d="([^"]+)"/.exec(svg)?.[1] ?? '';
+  return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -5 34 34"><rect x="-5" y="-5" width="34" height="34" fill="${bg}"/><path d="${d}" fill="#fff"/></svg>`)}`;
+};
 const jobs = ((about.experience ?? []) as any[]).map((e) => ({
   role: title(e.role ?? ''),
   company: e.company as string,
@@ -49,6 +56,8 @@ const jobs = ((about.experience ?? []) as any[]).map((e) => ({
   now: /present/i.test(e.period ?? ''),
   logo: /awwwards/i.test(e.company ?? '') ? awwwardsLogo : e.logo?.asset ? urlFor(e.logo).width(480).height(480).fit('crop').url() : null,
 }));
+// a company's logo from the experience list, by name
+const logoOf = (name: string) => jobs.find((j) => (j.company ?? '').toLowerCase().includes(name))?.logo ?? null;
 const nice = (f: string) => {
   const s = f.toLowerCase().replace(/\b(ux|ui|ai)\b/g, (m) => m.toUpperCase());
   return s.replace(/(^|\s)(\w)/g, (_m, a, b) => a + b.toUpperCase()).replace('Nocode', 'No-code');
@@ -86,7 +95,17 @@ const clients: { name: string; logo: string | null; url?: string; svg?: boolean 
       svg: c.logo?.asset?.mimeType === 'image/svg+xml',
       logo: c.logo?.asset ? (c.logo.asset.mimeType === 'image/svg+xml' ? c.logo.asset.url : urlFor(c.logo).width(400).fit('max').url()) : null,
     }))
-  : jobs.map((j) => ({ name: j.company ?? '', logo: j.logo }));
+  : [
+      // default client list (until it's filled in the CMS); logos for
+      // dirt, Viktor and Asiacell are still to come — they show an initial
+      { name: 'KFC', logo: tile(kfcSvg, '#a3080c') },
+      { name: 'Żabka', logo: tile(zabkaSvg, '#006420') },
+      { name: 'GRAFIT', logo: logoOf('grafit') },
+      { name: 'FlyingBisons', logo: logoOf('flyingbisons') },
+      { name: 'dirt', logo: null },
+      { name: 'Viktor', logo: null },
+      { name: 'Asiacell', logo: null },
+    ];
 // services (DRAFT copy, to be edited): one line on what I do, then the
 // three groups the graph below is built from, in the same order
 const svcLead = 'I design and build websites and digital products end to end, from the first idea and the look of it to the shipped, fast, animated page.';
@@ -115,8 +134,6 @@ const abItems: { t: string; a: string; b?: string; pic?: boolean }[] = [
     b: 'Coffee keeps the rest going. There’s a monitor for that further down.',
   },
 ];
-// a company's logo from the experience list, by name
-const logoOf = (name: string) => jobs.find((j) => (j.company ?? '').toLowerCase().includes(name))?.logo ?? null;
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
 const caps = [
