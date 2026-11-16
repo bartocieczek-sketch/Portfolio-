@@ -312,40 +312,40 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
          my name across the bottom -->
     <section class="a9__lt" data-end>
       <div class="a9__lt-lines">
-        <p class="a9__lt-l" style="--x:20%" data-words>Every good thing</p>
-        <p class="a9__lt-l" style="--x:34%" data-words>I’ve made started</p>
+        <p class="a9__lt-l" style="--x:0em" data-words>Every good thing</p>
+        <p class="a9__lt-l" style="--x:1.6em" data-words>I’ve made started</p>
       </div>
+      <!-- the clock row, in the page's own grid: a small live label in the
+           left column, the photo, and the time set big to the right -->
       <div class="a9__lt-clock" data-in aria-label="Time in Kraków">
-        <span class="a9__lt-n"><span class="a9__lt-p">(</span><span data-lt-h>00</span></span>
-        <span class="a9__lt-c">:</span>
+        <p class="a9__lt-tz"><span class="a9__close-dot" aria-hidden="true" />Local time<br />in Kraków</p>
         <span class="a9__lt-pic">{portrait && <img src={portrait} alt="" width="512" height="512" loading="lazy" />}</span>
-        <span class="a9__lt-c">:</span>
-        <span class="a9__lt-n"><span data-lt-m>00</span><span class="a9__lt-p">)</span></span>
+        <span class="a9__lt-time"><span data-lt-h>00</span><span class="a9__lt-c">:</span><span data-lt-m>00</span></span>
       </div>
-      <div class="a9__lt-lines a9__lt-lines--b">
-        <div class="a9__lt-side" data-in>
-          <p>Available for<br />selected projects</p>
-          <p>
-            Write directly to:<br />
-            <a href={`mailto:${settings.email ?? 'bartocieczek@gmail.com'}`}>{settings.email ?? 'bartocieczek@gmail.com'}</a>
-          </p>
-          {settings.callUrl && <p><a href={settings.callUrl} target="_blank" rel="noopener">Book a 30 min call ↗</a></p>}
-        </div>
-        <p class="a9__lt-l" style="--x:40%" data-words>with a short</p>
-        <p class="a9__lt-l" style="--x:46%" data-words>conversation.</p>
-        <a class="a9__lt-l a9__lt-go" style="--x:56%" href={settings.callUrl ?? `mailto:${settings.email ?? ''}`} target="_blank" rel="noopener" data-words>Let’s talk.</a>
+      <div class="a9__lt-lines">
+        <p class="a9__lt-l" style="--x:0.8em" data-words>with a short</p>
+        <p class="a9__lt-l" style="--x:2.4em" data-words>conversation.</p>
+        <a class="a9__lt-l a9__lt-go" style="--x:0em" href={settings.callUrl ?? `mailto:${settings.email ?? ''}`} target="_blank" rel="noopener"><span data-words>Let’s talk.</span><i aria-hidden="true">↗</i></a>
       </div>
-      <ul class="a9__lt-soc" data-in>
-        {((settings.socials ?? []) as { _key: string; label: string; url: string }[]).map((so) => {
-          const l = so.label.toLowerCase();
-          const tag = l.includes('linkedin') ? 'in' : l.includes('behance') ? 'Bē' : l.includes('instagram') ? 'IG' : l.includes('dribbble') ? 'Dr' : so.label.slice(0, 2);
-          return (
-            <li>
-              <a href={so.url} target="_blank" rel="noopener" aria-label={so.label}>{tag}</a>
-            </li>
-          );
-        })}
-      </ul>
+      <div class="a9__lt-contact" data-in>
+        <p>Available for<br />selected projects</p>
+        <p>
+          Write directly to<br />
+          <a href={`mailto:${settings.email ?? 'bartocieczek@gmail.com'}`}>{settings.email ?? 'bartocieczek@gmail.com'}</a>
+        </p>
+        {settings.callUrl && <p>Prefer to talk<br /><a href={settings.callUrl} target="_blank" rel="noopener">Book a 30 min call ↗</a></p>}
+        <ul class="a9__lt-soc">
+          {((settings.socials ?? []) as { _key: string; label: string; url: string }[]).map((so) => {
+            const l = so.label.toLowerCase();
+            const tag = l.includes('linkedin') ? 'in' : l.includes('behance') ? 'Bē' : l.includes('instagram') ? 'IG' : l.includes('dribbble') ? 'Dr' : so.label.slice(0, 2);
+            return (
+              <li>
+                <a href={so.url} target="_blank" rel="noopener" aria-label={so.label}>{tag}</a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
       <footer class="a9__lt-foot" data-in>
         <span>© {new Date().getFullYear()} Bart Ocieczek</span>
         <span>Designer &amp; developer, Kraków</span>
@@ -1412,65 +1412,77 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     font-variant-numeric: tabular-nums;
   }
 
-  /* 6: let's talk */
+  /* 6: let's talk — the sentence sits in the content column with small
+     indents; the clock row uses the label column for a live caption, the
+     photo, and the time set big on the right; contact as four small columns */
   .a9__lt {
+    display: grid;
+    grid-template-columns: var(--col) minmax(0, 1fr);
+    column-gap: var(--pad);
     padding: clamp(120px, 22vh, 240px) var(--pad) 20px;
     overflow: hidden;
+  }
+  .a9__lt > * {
+    grid-column: 2;
+  }
+  .a9__lt > .a9__lt-clock,
+  .a9__lt > .a9__lt-foot {
+    grid-column: 1 / -1;
   }
   .a9__lt-l {
     display: block;
     width: fit-content;
     margin: 0 0 0 var(--x);
-    font: 500 clamp(44px, 6.6vw, 112px) / 0.92 var(--font-head);
+    font: 500 clamp(44px, 6.4vw, 108px) / 0.94 var(--font-head);
     letter-spacing: -0.05em;
     color: var(--ink);
     text-decoration: none;
   }
   .a9__lt-go {
-    margin-top: 0.08em;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.1em;
+    margin-top: 0.12em;
   }
-  .a9__lt-go :global(.w) {
-    padding: 0.12em 0.06em;
-    margin: -0.12em -0.06em;
+  .a9__lt-go i {
+    font-size: 0.4em;
+    font-style: normal;
+    margin-top: 0.25em;
+    color: var(--grey);
+    transition:
+      transform 0.35s var(--e-out),
+      color 0.2s ease;
   }
   @media (hover: hover) and (pointer: fine) {
-    .a9__lt-go {
-      transition: transform 0.35s var(--e-out);
-    }
-    .a9__lt-go:hover {
-      transform: translateX(0.06em);
+    .a9__lt-go:hover i {
+      color: var(--ink);
+      transform: translate(0.12em, -0.12em);
     }
   }
-  /* the clock row: ( HH : photo : MM ) spread across the page */
   .a9__lt-clock {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: var(--col) auto minmax(0, 1fr);
+    column-gap: var(--pad);
+    align-items: end;
+    margin: clamp(48px, 7vw, 104px) 0;
+  }
+  .a9__lt-tz {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: clamp(48px, 8vw, 120px) 0;
-    font: 500 clamp(48px, 7vw, 120px) / 1 var(--font-head);
-    letter-spacing: -0.04em;
-    font-variant-numeric: tabular-nums;
-    color: var(--ink);
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--grey);
   }
-  .a9__lt-n {
-    display: flex;
-    align-items: center;
-    gap: 0.08em;
-  }
-  .a9__lt-p {
-    display: inline-block;
-    font-weight: 300;
-    transform: scaleY(1.15);
-  }
-  .a9__lt-c {
-    animation: a9-tick 2s steps(1) infinite;
-  }
-  @keyframes a9-tick {
-    50% { opacity: 0.25; }
+  .a9__lt-tz .a9__close-dot {
+    flex: none;
+    margin-top: 5px;
   }
   .a9__lt-pic {
     display: block;
-    width: clamp(120px, 14vw, 240px);
+    width: clamp(120px, 13vw, 220px);
     aspect-ratio: 3 / 4;
     background: #000;
     overflow: hidden;
@@ -1488,50 +1500,61 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       filter: none;
     }
   }
-  .a9__lt-lines--b {
-    position: relative;
+  .a9__lt-time {
+    justify-self: end;
+    display: flex;
+    font: 500 clamp(64px, 12vw, 210px) / 0.8 var(--font-head);
+    letter-spacing: -0.06em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
   }
-  .a9__lt-side {
-    position: absolute;
-    left: 20%;
-    bottom: 0.4em;
+  .a9__lt-c {
+    margin: 0 0.04em;
+    animation: a9-tick 2s steps(1) infinite;
+  }
+  @keyframes a9-tick {
+    50% { opacity: 0.25; }
+  }
+  .a9__lt-contact {
     display: grid;
-    gap: 22px;
+    grid-template-columns: repeat(4, minmax(0, auto));
+    justify-content: start;
+    gap: 16px clamp(32px, 5vw, 80px);
+    align-items: end;
+    margin-top: clamp(56px, 8vw, 112px);
     font-size: 13px;
     line-height: 1.35;
     color: var(--grey);
   }
-  .a9__lt-side p {
+  .a9__lt-contact p {
     margin: 0;
   }
-  .a9__lt-side a {
+  .a9__lt-contact a:not(.a9__lt-soc a) {
     color: var(--ink);
     text-decoration: none;
     background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
     transition: background-size 0.35s var(--e-out);
   }
   @media (hover: hover) and (pointer: fine) {
-    .a9__lt-side a:hover {
+    .a9__lt-contact p a:hover {
       background-size: 100% 1px;
     }
   }
-  /* socials: small outlined circles */
   .a9__lt-soc {
     display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin: clamp(56px, 8vw, 120px) 0 0;
+    gap: 8px;
+    margin: 0;
     padding: 0;
     list-style: none;
   }
   .a9__lt-soc a {
     display: grid;
     place-items: center;
-    width: 56px;
-    height: 56px;
+    width: 44px;
+    height: 44px;
     border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 50%;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--ink);
     text-decoration: none;
@@ -1549,57 +1572,34 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       color: var(--bg);
     }
   }
-  /* my name across the foot of the page, sized to the width */
-  .a9__lt-name {
-    margin: clamp(64px, 10vw, 140px) 0 0;
-    text-align: center;
-    white-space: nowrap;
-    font: 500 calc(13.6vw * var(--fit, 1)) / 0.8 var(--font-head);
-    letter-spacing: -0.06em;
-    color: var(--ink);
-  }
-  .a9__lt-name span {
-    display: inline-block;
-  }
-  /* the footer as a hairline row, like the label rows above */
-  .a9__lt-foot {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    margin-top: clamp(64px, 10vw, 140px);
-    padding-top: 14px;
-    border-top: 1px solid var(--rule);
-    font-size: 13px;
-    color: var(--grey);
-  }
-  .a9__lt-foot > :nth-child(2) {
-    justify-self: center;
-  }
-  .a9__lt-foot > :last-child {
-    justify-self: end;
+  .a9__lt .a9__lt-foot {
+    grid-column: 1 / -1;
   }
   @media (max-width: 809px) {
-    .a9__lt-l,
-    .a9__lt-go {
-      margin-left: calc(var(--x) * 0.3);
+    .a9__lt {
+      grid-template-columns: 1fr;
     }
-    .a9__lt-side {
-      position: static;
-      margin: 0 0 40px;
+    .a9__lt > * {
+      grid-column: 1;
+    }
+    .a9__lt-l {
+      margin-left: calc(var(--x) * 0.5);
     }
     .a9__lt-clock {
-      font-size: 13vw;
+      grid-template-columns: auto minmax(0, 1fr);
+      row-gap: 16px;
+    }
+    .a9__lt-tz {
+      grid-column: 1 / -1;
     }
     .a9__lt-pic {
-      width: 22vw;
+      width: 28vw;
     }
-    .a9__lt-foot {
-      grid-template-columns: 1fr;
-      gap: 6px;
+    .a9__lt-time {
+      font-size: 18vw;
     }
-    .a9__lt-foot > :nth-child(2),
-    .a9__lt-foot > :last-child {
-      justify-self: start;
+    .a9__lt-contact {
+      grid-template-columns: 1fr 1fr;
     }
   }
   @media (prefers-reduced-motion: reduce) {
