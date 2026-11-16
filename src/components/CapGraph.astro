@@ -242,8 +242,24 @@ const { groups, core } = Astro.props;
     let py = -1e4;
     let drag: { i: number; sx: number; sy: number; ox: number; oy: number } | null = null;
     let focused = -1;
-    let grow = calm ? 1 : 0;
-    let growing = false;
+    // entrance: the centre settles in, then the hubs' lines shoot out, then
+    // the skills' lines sweep round the centre one after another; each end
+    // pops a little as its line lands
+    let t0 = calm ? 0 : -1;
+    const ease = (x: number) => 1 - Math.pow(1 - x, 4);
+    const gAt = (now: number, delay: number, dur: number) =>
+      calm ? 1 : t0 < 0 ? 0 : ease(Math.min(1, Math.max(0, (now - t0 - delay) / dur)));
+    const hubDelay = hubs.map((_, i) => 220 + i * 110);
+    // skills in the order they sit around the centre, so the sweep reads as one motion
+    const order = dotPos
+      .map((d, i) => ({ i, a: Math.atan2(d.y - 0.5, d.x - 0.5) }))
+      .sort((a, b) => a.a - b.a)
+      .map((o) => o.i);
+    const dotDelay: number[] = [];
+    order.forEach((i, k) => (dotDelay[i] = 520 + k * 32));
+    const landed = new Set<HTMLElement>();
+    const pop = (el: Element | null, from: number) =>
+      el?.animate([{ transform: `scale(${from})` }, { transform: 'scale(1)' }], { duration: 420, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
 
     const setHot = (i: number) => {
       hot = i;
@@ -279,21 +295,14 @@ const { groups, core } = Astro.props;
       drag = null;
     });
 
-    // grow the fan out of the centre once it's in view
     new IntersectionObserver(
-      (es) => {
-        if (es[0].isIntersecting && !growing) {
-          growing = true;
-          const t0 = performance.now();
-          const step = () => {
-            const t = Math.min(1, (performance.now() - t0) / 1400);
-            grow = 1 - Math.pow(1 - t, 4);
-            if (t < 1) requestAnimationFrame(step);
-          };
-          requestAnimationFrame(step);
+      (es, o) => {
+        if (es[0].isIntersecting) {
+          t0 = performance.now();
+          o.disconnect();
         }
       },
-      { threshold: 0.3 },
+      { threshold: 0.35 },
     ).observe(box);
 
     const frame = (now: number) => {
@@ -302,13 +311,24 @@ const { groups, core } = Astro.props;
       const t = calm ? 0 : now / 1000;
       const cx = W / 2;
       const cy = Hh / 2;
-      core.style.transform = `translate(${cx}px,${cy}px)`;
+      const gc = gAt(now, 0, 600);
+      core.style.transform = `translate(${cx}px,${cy}px) scale(${(0.7 + 0.3 * gc).toFixed(3)})`;
+      core.style.opacity = gc.toFixed(3);
       // where each hub would sit, then the nearest one within SNAP of the
       // pointer leans toward it (a quick spring) and lights up
-      const rest = hubPos.map((h) => ({
-        x: cx + (h.x * W - cx) * grow + h.ox + Math.sin(t * 0.5 + h.ph) * 6,
-        y: cy + (h.y * Hh - cy) * grow + h.oy + Math.cos(t * 0.4 + h.ph) * 6,
+      const hg = hubPos.map((_, i) => gAt(now, hubDelay[i], 1000));
+      const rest = hubPos.map((h, i) => ({
+        x: cx + (h.x * W - cx) * hg[i] + h.ox + Math.sin(t * 0.5 + h.ph) * 6,
+        y: cy + (h.y * Hh - cy) * hg[i] + h.oy + Math.cos(t * 0.4 + h.ph) * 6,
       }));
+      hubs.forEach((el, i) => {
+        // the label follows its line out and fades up as it lands
+        el.style.opacity = Math.min(1, Math.max(0, (hg[i] - 0.35) / 0.5)).toFixed(3);
+        if (hg[i] > 0.97 && !landed.has(el)) {
+          landed.add(el);
+          if (!calm) pop(el.querySelector('.cg__hub-t i'), 2.2);
+        }
+      });
       let pick = drag ? drag.i : -1;
       if (!drag) {
         let bd = SNAP;
@@ -342,10 +362,11 @@ const { groups, core } = Astro.props;
       // the dots follow their hub a little when it's dragged
       let best = 1e9;
       let nb = -1;
+      const dg = dotPos.map((_, i) => gAt(now, dotDelay[i], 800));
       const dp = dotPos.map((d, i) => {
         const h = hubPos[d.g];
-        const x = cx + (d.x * W - cx) * grow + h.ox * 0.4 + Math.sin(t * 0.7 + d.ph) * 4;
-        const y = cy + (d.y * Hh - cy) * grow + h.oy * 0.4 + Math.cos(t * 0.6 + d.ph) * 4;
+        const x = cx + (d.x * W - cx) * dg[i] + h.ox * 0.4 + Math.sin(t * 0.7 + d.ph) * 4;
+        const y = cy + (d.y * Hh - cy) * dg[i] + h.oy * 0.4 + Math.cos(t * 0.6 + d.ph) * 4;
         const dist = Math.hypot(x - px, y - py);
         if (dist < best) {
           best = dist;
@@ -396,6 +417,11 @@ const { groups, core } = Astro.props;
       });
       dp.forEach((p, i) => {
         dots[i].style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px)`;
+        dots[i].style.opacity = Math.min(1, Math.max(0, (dg[i] - 0.3) / 0.5)).toFixed(3);
+        if (dg[i] > 0.97 && !landed.has(dots[i])) {
+          landed.add(dots[i]);
+          if (!calm) pop(dots[i].firstElementChild, 2.6);
+        }
         dots[i].classList.toggle('is-on', lit[i]);
         nudge[i] += (want[i] - nudge[i]) * 0.3;
         labels[i].style.translate = `0 ${nudge[i].toFixed(1)}px`;
@@ -408,6 +434,8 @@ const { groups, core } = Astro.props;
         l.el.setAttribute('x2', p.x.toFixed(1));
         l.el.setAttribute('y2', p.y.toFixed(1));
         if (l.dot !== undefined) l.el.classList.toggle('is-on', dotPos[l.dot].g === hot || l.dot === near);
+        const lg = l.hub !== undefined ? hg[l.hub] : dg[l.dot!];
+        l.el.style.opacity = lg > 0.001 ? '1' : '0';
       });
       requestAnimationFrame(frame);
     };
