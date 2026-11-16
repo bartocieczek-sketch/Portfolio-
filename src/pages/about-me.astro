@@ -310,40 +310,48 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     <!-- 6: let's talk — a staggered sentence around a live clock with my
          photo in the middle, contact on the left, socials as small circles,
          my name across the bottom -->
+    <!-- 6: let's talk, in the page's own two voices: a paragraph like the
+         one about me (objects in the line: my photo, a live dot, the time in
+         Kraków), then the ways to reach me as rows like the experience list -->
     <section class="a9__lt" data-end>
-      <div class="a9__lt-lines">
-        <p class="a9__lt-l" style="--x:0em" data-words>Every good thing</p>
-        <p class="a9__lt-l" style="--x:1.6em" data-words>I’ve made started</p>
-      </div>
-      <!-- the clock row, in the page's own grid: a small live label in the
-           left column, the photo, and the time set big to the right -->
-      <div class="a9__lt-clock" data-in aria-label="Time in Kraków">
-        <p class="a9__lt-tz"><span class="a9__close-dot" aria-hidden="true" />Local time<br />in Kraków</p>
-        <span class="a9__lt-pic">{portrait && <img src={portrait} alt="" width="512" height="512" loading="lazy" />}</span>
-        <span class="a9__lt-time"><span data-lt-h>00</span><span class="a9__lt-c">:</span><span data-lt-m>00</span></span>
-      </div>
-      <div class="a9__lt-lines">
-        <p class="a9__lt-l" style="--x:0.8em" data-words>with a short</p>
-        <p class="a9__lt-l" style="--x:2.4em" data-words>conversation.</p>
-        <a class="a9__lt-l a9__lt-go" style="--x:0em" href={settings.callUrl ?? `mailto:${settings.email ?? ''}`} target="_blank" rel="noopener"><span data-words>Let’s talk.</span><i aria-hidden="true">↗</i></a>
-      </div>
-      <div class="a9__lt-contact" data-in>
-        <p>Available for<br />selected projects</p>
-        <p>
-          Write directly to<br />
-          <a href={`mailto:${settings.email ?? 'bartocieczek@gmail.com'}`}>{settings.email ?? 'bartocieczek@gmail.com'}</a>
-        </p>
-        {settings.callUrl && <p>Prefer to talk<br /><a href={settings.callUrl} target="_blank" rel="noopener">Book a 30 min call ↗</a></p>}
-        <ul class="a9__lt-soc">
-          {((settings.socials ?? []) as { _key: string; label: string; url: string }[]).map((so) => {
-            const l = so.label.toLowerCase();
-            const tag = l.includes('linkedin') ? 'in' : l.includes('behance') ? 'Bē' : l.includes('instagram') ? 'IG' : l.includes('dribbble') ? 'Dr' : so.label.slice(0, 2);
-            return (
-              <li>
-                <a href={so.url} target="_blank" rel="noopener" aria-label={so.label}>{tag}</a>
-              </li>
-            );
-          })}
+      <p class="a9__prose a9__lt-prose" data-prose>
+        Every good thing I’ve made started with a short conversation.
+        {portrait ? <img class="ob ob--pic" src={portrait} alt="" width="512" height="512" /> : null}
+        It’s
+        <span class="ob ob--time" aria-label="the time in Kraków"><span data-lt-h>00</span><span class="a9__lt-c">:</span><span data-lt-m>00</span></span>
+        in Kraków and I’m
+        <span class="ob ob--live" aria-hidden="true"><i /></span>
+        free to talk.{' '}
+        <a class="a9__lt-go" href={settings.callUrl ?? `mailto:${settings.email ?? ''}`} target="_blank" rel="noopener">Let’s talk ↗</a>
+      </p>
+      <div class="a9__sec a9__lt-rows">
+        <p class="a9__label" data-in>Get in touch</p>
+        <ul class="a9__jobs a9__close-links">
+          <li data-in>
+            <a href={`mailto:${settings.email ?? 'bartocieczek@gmail.com'}`}>
+              <span>Email</span>
+              <span class="a9__dim">{settings.email ?? 'bartocieczek@gmail.com'}</span>
+              <span class="a9__when">↗</span>
+            </a>
+          </li>
+          {settings.callUrl && (
+            <li data-in>
+              <a href={settings.callUrl} target="_blank" rel="noopener">
+                <span>Book a call</span>
+                <span class="a9__dim">30 minutes, available for selected projects</span>
+                <span class="a9__when">↗</span>
+              </a>
+            </li>
+          )}
+          {((settings.socials ?? []) as { _key: string; label: string; url: string }[]).map((so) => (
+            <li data-in>
+              <a href={so.url} target="_blank" rel="noopener">
+                <span>{nice(so.label)}</span>
+                <span class="a9__dim">{so.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '').replace(/%C5%82/gi, 'ł')}</span>
+                <span class="a9__when">↗</span>
+              </a>
+            </li>
+          ))}
         </ul>
       </div>
       <footer class="a9__lt-foot" data-in>
@@ -1412,198 +1420,90 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     font-variant-numeric: tabular-nums;
   }
 
-  /* 6: let's talk — the sentence sits in the content column with small
-     indents; the clock row uses the label column for a live caption, the
-     photo, and the time set big on the right; contact as four small columns */
+  /* 6: let's talk — the paragraph and the rows */
   .a9__lt {
-    display: grid;
-    grid-template-columns: var(--col) minmax(0, 1fr);
-    column-gap: var(--pad);
-    padding: clamp(120px, 22vh, 240px) var(--pad) 20px;
-    overflow: hidden;
+    padding: 0 0 20px;
   }
-  .a9__lt > * {
-    grid-column: 2;
+  .a9__lt-prose {
+    padding: clamp(110px, 20vh, 220px) var(--pad) clamp(56px, 8vh, 96px);
   }
-  .a9__lt > .a9__lt-clock,
-  .a9__lt > .a9__lt-foot {
-    grid-column: 1 / -1;
-  }
-  .a9__lt-l {
-    display: block;
-    width: fit-content;
-    margin: 0 0 0 var(--x);
-    font: 500 clamp(44px, 6.4vw, 108px) / 0.94 var(--font-head);
-    letter-spacing: -0.05em;
-    color: var(--ink);
-    text-decoration: none;
-  }
-  .a9__lt-go {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.1em;
-    margin-top: 0.12em;
-  }
-  .a9__lt-go i {
-    font-size: 0.4em;
-    font-style: normal;
-    margin-top: 0.25em;
-    color: var(--grey);
-    transition:
-      transform 0.35s var(--e-out),
-      color 0.2s ease;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .a9__lt-go:hover i {
-      color: var(--ink);
-      transform: translate(0.12em, -0.12em);
-    }
-  }
-  .a9__lt-clock {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: var(--col) auto minmax(0, 1fr);
-    column-gap: var(--pad);
-    align-items: end;
-    margin: clamp(48px, 7vw, 104px) 0;
-  }
-  .a9__lt-tz {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.35;
-    color: var(--grey);
-  }
-  .a9__lt-tz .a9__close-dot {
-    flex: none;
-    margin-top: 5px;
-  }
-  .a9__lt-pic {
-    display: block;
-    width: clamp(120px, 13vw, 220px);
-    aspect-ratio: 3 / 4;
-    background: #000;
-    overflow: hidden;
-  }
-  .a9__lt-pic img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: grayscale(1) contrast(1.05);
-    transition: filter 0.4s ease;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .a9__lt-pic:hover img {
-      filter: none;
-    }
-  }
-  .a9__lt-time {
-    justify-self: end;
-    display: flex;
-    font: 500 clamp(64px, 12vw, 210px) / 0.8 var(--font-head);
-    letter-spacing: -0.06em;
+  .ob--time {
+    display: inline-flex;
+    align-items: center;
+    height: auto;
+    padding: 0.02em 0.22em 0.06em;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    font-size: 0.78em;
+    line-height: 1;
     font-variant-numeric: tabular-nums;
-    color: var(--ink);
+    vertical-align: 0.06em;
   }
   .a9__lt-c {
-    margin: 0 0.04em;
+    margin: 0 0.02em;
     animation: a9-tick 2s steps(1) infinite;
   }
   @keyframes a9-tick {
     50% { opacity: 0.25; }
   }
-  .a9__lt-contact {
+  .ob--live {
+    display: inline-grid;
+    place-items: center;
+    width: 0.5em;
+    height: 0.5em;
+    vertical-align: 0.12em;
+  }
+  .ob--live i {
+    width: 0.32em;
+    height: 0.32em;
+    border-radius: 50%;
+    background: var(--ink);
+    animation: a9-live 2.4s var(--e-out) infinite;
+  }
+  .a9__lt-go {
+    display: inline-block;
+    color: var(--grey);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__lt-go:hover {
+      color: var(--ink);
+    }
+  }
+  .a9__lt-rows {
+    padding-top: 0;
+  }
+  /* the footer as a hairline row, like the label rows above */
+  .a9__lt-foot {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, auto));
-    justify-content: start;
-    gap: 16px clamp(32px, 5vw, 80px);
-    align-items: end;
-    margin-top: clamp(56px, 8vw, 112px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin: clamp(48px, 7vw, 96px) var(--pad) 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
     font-size: 13px;
-    line-height: 1.35;
     color: var(--grey);
   }
-  .a9__lt-contact p {
-    margin: 0;
+  .a9__lt-foot > :nth-child(2) {
+    justify-self: center;
   }
-  .a9__lt-contact a:not(.a9__lt-soc a) {
-    color: var(--ink);
-    text-decoration: none;
-    background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
-    transition: background-size 0.35s var(--e-out);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .a9__lt-contact p a:hover {
-      background-size: 100% 1px;
-    }
-  }
-  .a9__lt-soc {
-    display: flex;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .a9__lt-soc a {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: 50%;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--ink);
-    text-decoration: none;
-    transition:
-      background-color 0.2s ease,
-      color 0.2s ease,
-      transform 0.16s var(--e-out);
-  }
-  .a9__lt-soc a:active {
-    transform: scale(0.95);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .a9__lt-soc a:hover {
-      background: var(--ink);
-      color: var(--bg);
-    }
-  }
-  .a9__lt .a9__lt-foot {
-    grid-column: 1 / -1;
+  .a9__lt-foot > :last-child {
+    justify-self: end;
   }
   @media (max-width: 809px) {
-    .a9__lt {
+    .a9__lt-foot {
       grid-template-columns: 1fr;
+      gap: 6px;
     }
-    .a9__lt > * {
-      grid-column: 1;
-    }
-    .a9__lt-l {
-      margin-left: calc(var(--x) * 0.5);
-    }
-    .a9__lt-clock {
-      grid-template-columns: auto minmax(0, 1fr);
-      row-gap: 16px;
-    }
-    .a9__lt-tz {
-      grid-column: 1 / -1;
-    }
-    .a9__lt-pic {
-      width: 28vw;
-    }
-    .a9__lt-time {
-      font-size: 18vw;
-    }
-    .a9__lt-contact {
-      grid-template-columns: 1fr 1fr;
+    .a9__lt-foot > :nth-child(2),
+    .a9__lt-foot > :last-child {
+      justify-self: start;
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .a9__lt-c {
+    .a9__lt-c,
+    .ob--live i {
       animation: none;
     }
   }
