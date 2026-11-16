@@ -12,6 +12,8 @@
 // 5 coffee & heart — a real ECG trace; every coffee raises the rate;
 // 6 the call to action.
 import Base from '../layouts/Base.astro';
+// a modern blackletter for the hero title, kin to the B monogram
+import '@fontsource/grenze-gotisch/latin-500.css';
 import Nav from '../components/Nav.astro';
 import CapGraph from '../components/CapGraph.astro';
 import { ABOUT_QUERY, HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
@@ -93,7 +95,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       <div class="a9__stage">
         <div class="a9__say">
           <h1 class="t-display" data-say>
-            Hi, I’m Bart — a design engineer from Kraków.
+            About me
           </h1>
         </div>
         <canvas class="a9__mono" data-monogram aria-label="B monogram" role="img"></canvas>
@@ -305,7 +307,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     max-width: 11em;
     text-wrap: balance;
     text-align: center;
-    font-size: clamp(36px, 6.2vw, 104px);
+    font-family: 'Grenze Gotisch', var(--font-display);
+    font-weight: 500;
+    font-size: clamp(96px, 19vw, 320px);
+    text-transform: none;
+    letter-spacing: -0.01em;
     line-height: 0.98;
     color: var(--ink);
     will-change: transform;
@@ -314,8 +320,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     display: inline-block;
     overflow: hidden;
     vertical-align: top;
-    padding-bottom: 0.08em;
-    margin-bottom: -0.08em;
+    /* room for the blackletter's swashes inside each word's mask */
+    padding: 0.12em 0.08em;
+    margin: -0.12em -0.08em;
   }
   .a9__say :global(.swi) {
     display: inline-block;
