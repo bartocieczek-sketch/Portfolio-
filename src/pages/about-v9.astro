@@ -133,25 +133,32 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     </section>
 
     <!-- 5 -->
-    <section class="a9__sec a9__heart">
-      <p class="a9__label" data-in>Off-screen</p>
-      <div class="a9__heart-grid">
-        <div class="a9__heart-l">
-          <p class="a9__big" data-words>Coffee in, sport out.</p>
-          <div class="a9__brew-row" data-in>
+    <section class="a9__heart" data-heart>
+      <div class="a9__hm-top">
+        <p class="a9__label" data-in>Off-screen</p>
+        <p class="a9__hm-live" data-in><span class="a9__beat" aria-hidden="true" data-beat />Live — my pulse, your coffee</p>
+      </div>
+      <!-- a monitor the width of the page: the trace runs edge to edge, the
+           rate sits on it big, and the pen dot leads the line -->
+      <div class="a9__hm-mid" data-in>
+        <div class="a9__hm-trace">
+          <svg class="a9__ecg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-label="Heart rate trace"><path data-ecg d="" /></svg>
+          <span class="a9__pen" aria-hidden="true" data-pen />
+        </div>
+        <p class="a9__hm-bpm" data-bpm-big><strong data-bpm>62</strong><span>bpm</span></p>
+      </div>
+      <div class="a9__hm-low">
+        <p class="a9__hm-say" data-words>Coffee in, sport out.</p>
+        <div class="a9__hm-ctrl" data-in>
+          <p class="a9__hm-hint">Every coffee you brew raises it. A run brings it back down.</p>
+          <div class="a9__brew-row">
             <button class="a9__brew" type="button" data-brew>
               <span class="a9__brew-fill" aria-hidden="true"></span>
               <span class="a9__brew-t">Hold to brew</span>
             </button>
             <p class="a9__cups"><span data-cups>0</span> today</p>
+            <span class="a9__cupdots" aria-hidden="true" data-cupdots>{Array.from({ length: 8 }, () => <i />)}</span>
           </div>
-        </div>
-        <div class="a9__monitor" data-in>
-          <div class="a9__mon-top">
-            <span class="a9__beat" aria-hidden="true" data-beat />
-            <span><strong data-bpm>62</strong> bpm</span>
-          </div>
-          <svg class="a9__ecg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-label="Heart rate trace"><path data-ecg d="" /></svg>
         </div>
       </div>
     </section>
@@ -572,12 +579,136 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     background: rgba(255, 255, 255, 0.25);
   }
 
-  /* 5 */
-  .a9__heart-grid {
+  /* 5: the monitor */
+  .a9__heart {
+    position: relative;
+    padding: clamp(96px, 18vh, 200px) 0;
+  }
+  .a9__hm-top,
+  .a9__hm-low {
+    padding: 0 var(--pad);
+  }
+  .a9__hm-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .a9__hm-live {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--grey);
+  }
+  .a9__hm-mid {
+    position: relative;
+    margin: clamp(24px, 4vw, 56px) 0;
+    height: clamp(220px, 34vw, 480px);
+  }
+  .a9__hm-trace {
+    position: absolute;
+    inset: 0;
+  }
+  .a9__hm-trace .a9__ecg {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+  /* the pen: leads the line at its right end, glowing */
+  .a9__pen {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 9px;
+    height: 9px;
+    margin: -4.5px -4.5px 0 0;
+    border-radius: 50%;
+    background: var(--ink);
+    box-shadow:
+      0 0 12px 2px rgba(255, 255, 255, 0.55),
+      0 0 40px 8px rgba(255, 255, 255, 0.12);
+  }
+  /* the rate, huge, sat on the trace at the left */
+  .a9__hm-bpm {
+    position: absolute;
+    left: var(--pad);
+    bottom: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.12em;
+    margin: 0;
+    font: 500 clamp(120px, 21vw, 340px) / 0.78 var(--font-head);
+    letter-spacing: -0.06em;
+    font-variant-numeric: tabular-nums;
+    transform-origin: 0 100%;
+    pointer-events: none;
+  }
+  .a9__hm-bpm strong {
+    font-weight: inherit;
+    color: var(--ink);
+    /* the trace runs behind the readout */
+    background: var(--bg);
+    padding: 0.04em 0.06em 0 0;
+  }
+  .a9__hm-bpm span {
+    background: var(--bg);
+    padding: 0 0.3em 0 0;
+    font-size: 0.11em;
+    letter-spacing: 0;
+    color: var(--grey);
+  }
+  .a9__hm-low {
     display: grid;
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: clamp(24px, 4vw, 64px);
     align-items: end;
+  }
+  .a9__hm-say {
+    margin: 0;
+    font: 500 clamp(32px, 4.4vw, 72px) / 1 var(--font-head);
+    letter-spacing: -0.045em;
+  }
+  .a9__hm-ctrl {
+    justify-self: end;
+    display: grid;
+    gap: 14px;
+  }
+  .a9__hm-hint {
+    max-width: 30ch;
+    margin: 0;
+    color: var(--grey);
+  }
+  .a9__cupdots {
+    display: flex;
+    gap: 5px;
+    margin-left: 4px;
+  }
+  .a9__cupdots i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease,
+      transform 0.4s var(--e-out);
+  }
+  .a9__cupdots i.is-on {
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+  @media (max-width: 809px) {
+    .a9__hm-low {
+      grid-template-columns: 1fr;
+    }
+    .a9__hm-ctrl {
+      justify-self: start;
+    }
+    .a9__cupdots {
+      display: none;
+    }
   }
   .a9__brew-row {
     display: flex;
@@ -792,8 +923,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       margin-left: 0;
       max-width: 62%;
     }
-    .a9__sec,
-    .a9__heart-grid {
+    .a9__sec {
       grid-template-columns: 1fr;
     }
     .a9__who-grid {
@@ -907,6 +1037,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     const path = root.querySelector<SVGPathElement>('[data-ecg]');
     const bpmEl = root.querySelector<HTMLElement>('[data-bpm]');
     const beatEl = root.querySelector<HTMLElement>('[data-beat]');
+    const pen = root.querySelector<HTMLElement>('[data-pen]');
+    const bigBpm = root.querySelector<HTMLElement>('[data-bpm-big]');
     const WIN = 4; // seconds on screen
     const samples: number[] = [];
     const RATE = 60; // samples per second
@@ -990,8 +1122,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         inBeat += 1 / RATE;
         if (inBeat >= 60 / bpm) inBeat -= 60 / bpm;
         // the B jumps on the R wave
-        if (beatEl && !calm && before < 0.22 && inBeat >= 0.22)
-          beatEl.animate([{ transform: 'scale(1.8)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+        if (!calm && before < 0.22 && inBeat >= 0.22) {
+          beatEl?.animate([{ transform: 'scale(1.8)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          bigBpm?.animate([{ transform: 'scale(1.025)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+        }
         samples.push(calm ? 0 : ecg(inBeat));
         if (samples.length > WIN * RATE) samples.shift();
       }
@@ -1004,6 +1138,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           d += `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
         }
         path.setAttribute('d', d);
+        if (pen && n) pen.style.top = `${((150 - samples[n - 1] * 120) / 2).toFixed(2)}%`;
       }
       requestAnimationFrame(frame);
     };
@@ -1016,6 +1151,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: 'numeric', hour12: false }).format(new Date()));
       let n = Math.max(0, Math.min(4, Math.floor((hour - 6) / 3)));
       cups.textContent = String(n);
+      const dots = [...root.querySelectorAll<HTMLElement>('[data-cupdots] i')];
+      const paint = () => dots.forEach((d, i) => d.classList.toggle('is-on', i < n));
+      paint();
       let t = 0;
       const start = (e: Event) => {
         e.preventDefault();
@@ -1024,6 +1162,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           n++;
           caffeine += 1;
           cups.textContent = String(n);
+          paint();
+          dots[Math.min(n, dots.length) - 1]?.animate([{ transform: 'scale(2)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
           cups.animate([{ transform: 'translateY(40%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
           brew.classList.remove('is-holding');
           brew.querySelector('.a9__brew-t')!.textContent = n > 5 ? 'Enough' : 'Another';
