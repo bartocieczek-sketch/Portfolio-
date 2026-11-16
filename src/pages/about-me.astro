@@ -307,38 +307,50 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     </section>
 
     <!-- 6 -->
-    <!-- 6: the close, bookending the hero: the same blackletter, rising
-         out of its masks; under it the ways to reach me as hairline rows like
-         the experience list; a live dot with the time in Kraków -->
-    <section class="a9__close" data-end>
-      <p class="a9__close-status" data-in><span class="a9__close-dot" aria-hidden="true" /><span data-clock>Kraków</span></p>
-      <p class="a9__close-q" data-in>{about.ctaText?.split('?')[0]}?</p>
-      <a class="a9__close-big" href={settings.callUrl ?? '#'} target="_blank" rel="noopener">
-        <span data-words>Let’s talk</span><i aria-hidden="true">↗</i>
-      </a>
-      <ul class="a9__jobs a9__close-links">
-        {settings.callUrl && (
-          <li data-in>
-            <a href={settings.callUrl} target="_blank" rel="noopener">
-              <span>Book a call</span>
-              <span class="a9__dim">30 min, no strings</span>
-              <span class="a9__when">↗</span>
-            </a>
-          </li>
-        )}
-        {((settings.socials ?? []) as { _key: string; label: string; url: string }[]).map((so) => (
-          <li data-in>
-            <a href={so.url} target="_blank" rel="noopener">
-              <span>{so.label}</span>
-              <span class="a9__dim">{so.url.replace(/^(https?:\/\/|mailto:)(www\.)?/, '').replace(/\/$/, '')}</span>
-              <span class="a9__when">↗</span>
-            </a>
-          </li>
-        ))}
+    <!-- 6: let's talk — a staggered sentence around a live clock with my
+         photo in the middle, contact on the left, socials as small circles,
+         my name across the bottom -->
+    <section class="a9__lt" data-end>
+      <div class="a9__lt-lines">
+        <p class="a9__lt-l" style="--x:20%" data-words>Every good thing</p>
+        <p class="a9__lt-l" style="--x:34%" data-words>I’ve made started</p>
+      </div>
+      <div class="a9__lt-clock" data-in aria-label="Time in Kraków">
+        <span class="a9__lt-n"><span class="a9__lt-p">(</span><span data-lt-h>00</span></span>
+        <span class="a9__lt-c">:</span>
+        <span class="a9__lt-pic">{portrait && <img src={portrait} alt="" width="512" height="512" loading="lazy" />}</span>
+        <span class="a9__lt-c">:</span>
+        <span class="a9__lt-n"><span data-lt-m>00</span><span class="a9__lt-p">)</span></span>
+      </div>
+      <div class="a9__lt-lines a9__lt-lines--b">
+        <div class="a9__lt-side" data-in>
+          <p>Available for<br />selected projects</p>
+          <p>
+            Write directly to:<br />
+            <a href={`mailto:${settings.email ?? 'bartocieczek@gmail.com'}`}>{settings.email ?? 'bartocieczek@gmail.com'}</a>
+          </p>
+          {settings.callUrl && <p><a href={settings.callUrl} target="_blank" rel="noopener">Book a 30 min call ↗</a></p>}
+        </div>
+        <p class="a9__lt-l" style="--x:40%" data-words>with a short</p>
+        <p class="a9__lt-l" style="--x:46%" data-words>conversation.</p>
+        <a class="a9__lt-l a9__lt-go" style="--x:56%" href={settings.callUrl ?? `mailto:${settings.email ?? ''}`} target="_blank" rel="noopener" data-words>Let’s talk.</a>
+      </div>
+      <ul class="a9__lt-soc" data-in>
+        {((settings.socials ?? []) as { _key: string; label: string; url: string }[]).map((so) => {
+          const l = so.label.toLowerCase();
+          const tag = l.includes('linkedin') ? 'in' : l.includes('behance') ? 'Bē' : l.includes('instagram') ? 'IG' : l.includes('dribbble') ? 'Dr' : so.label.slice(0, 2);
+          return (
+            <li>
+              <a href={so.url} target="_blank" rel="noopener" aria-label={so.label}>{tag}</a>
+            </li>
+          );
+        })}
       </ul>
-      <div class="a9__foot">
-        <span>© {new Date().getFullYear()} Bart Ocieczek</span>
+      <p class="a9__lt-name" aria-hidden="true" data-lt-name><span>Bart Ocieczek</span></p>
+      <div class="a9__lt-foot">
+        <span>’{String(new Date().getFullYear()).slice(2)} © All rights reserved</span>
         <button type="button" class="a9__top" data-top>Back to top ↑</button>
+        <span>made w/ too much coffee</span>
       </div>
     </section>
   </main>
@@ -1401,7 +1413,200 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     font-variant-numeric: tabular-nums;
   }
 
-  /* 6: the close */
+  /* 6: let's talk */
+  .a9__lt {
+    padding: clamp(120px, 22vh, 240px) var(--pad) 20px;
+    overflow: hidden;
+  }
+  .a9__lt-l {
+    display: block;
+    width: fit-content;
+    margin: 0 0 0 var(--x);
+    font: 500 clamp(44px, 6.6vw, 112px) / 0.92 var(--font-head);
+    letter-spacing: -0.05em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .a9__lt-go {
+    font-family: 'Pirata One', var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    font-size: clamp(56px, 8.4vw, 144px);
+    margin-top: 0.08em;
+  }
+  .a9__lt-go :global(.w) {
+    padding: 0.12em 0.06em;
+    margin: -0.12em -0.06em;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__lt-go {
+      transition: transform 0.35s var(--e-out);
+    }
+    .a9__lt-go:hover {
+      transform: translateX(0.06em);
+    }
+  }
+  /* the clock row: ( HH : photo : MM ) spread across the page */
+  .a9__lt-clock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: clamp(48px, 8vw, 120px) 0;
+    font: 500 clamp(48px, 7vw, 120px) / 1 var(--font-head);
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .a9__lt-n {
+    display: flex;
+    align-items: center;
+    gap: 0.08em;
+  }
+  .a9__lt-p {
+    display: inline-block;
+    font-weight: 300;
+    transform: scaleY(1.15);
+  }
+  .a9__lt-c {
+    animation: a9-tick 2s steps(1) infinite;
+  }
+  @keyframes a9-tick {
+    50% { opacity: 0.25; }
+  }
+  .a9__lt-pic {
+    display: block;
+    width: clamp(120px, 14vw, 240px);
+    aspect-ratio: 3 / 4;
+    background: #000;
+    overflow: hidden;
+  }
+  .a9__lt-pic img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(1) contrast(1.05);
+    transition: filter 0.4s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__lt-pic:hover img {
+      filter: none;
+    }
+  }
+  .a9__lt-lines--b {
+    position: relative;
+  }
+  .a9__lt-side {
+    position: absolute;
+    left: 20%;
+    bottom: 0.4em;
+    display: grid;
+    gap: 22px;
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--grey);
+  }
+  .a9__lt-side p {
+    margin: 0;
+  }
+  .a9__lt-side a {
+    color: var(--ink);
+    text-decoration: none;
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+    transition: background-size 0.35s var(--e-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__lt-side a:hover {
+      background-size: 100% 1px;
+    }
+  }
+  /* socials: small outlined circles */
+  .a9__lt-soc {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: clamp(56px, 8vw, 120px) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .a9__lt-soc a {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.16s var(--e-out);
+  }
+  .a9__lt-soc a:active {
+    transform: scale(0.95);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__lt-soc a:hover {
+      background: var(--ink);
+      color: var(--bg);
+    }
+  }
+  /* my name across the foot of the page, sized to the width */
+  .a9__lt-name {
+    margin: clamp(64px, 10vw, 140px) 0 0;
+    text-align: center;
+    white-space: nowrap;
+    font: 500 calc(13.6vw * var(--fit, 1)) / 0.8 var(--font-head);
+    letter-spacing: -0.06em;
+    color: var(--ink);
+  }
+  .a9__lt-name span {
+    display: inline-block;
+  }
+  .a9__lt-foot {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--grey);
+  }
+  .a9__lt-foot > :last-child {
+    justify-self: end;
+  }
+  @media (max-width: 809px) {
+    .a9__lt-l,
+    .a9__lt-go {
+      margin-left: calc(var(--x) * 0.3);
+    }
+    .a9__lt-side {
+      position: static;
+      margin: 0 0 40px;
+    }
+    .a9__lt-clock {
+      font-size: 13vw;
+    }
+    .a9__lt-pic {
+      width: 22vw;
+    }
+    .a9__lt-foot {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    .a9__lt-foot > :last-child {
+      justify-self: start;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__lt-c {
+      animation: none;
+    }
+  }
+
+  /* 6 (old): the close */
   .a9__close {
     display: grid;
     gap: 0;
@@ -2785,6 +2990,29 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         }
       }).observe(end);
     }
+
+    // ---- let's talk: the clock row (Kraków) and the name sized to the page
+    const ltH = root.querySelector<HTMLElement>('[data-lt-h]');
+    const ltM = root.querySelector<HTMLElement>('[data-lt-m]');
+    const ltTick = () => {
+      const [hh, mm] = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit', hour12: false })
+        .format(new Date())
+        .split(':');
+      if (ltH) ltH.textContent = hh;
+      if (ltM) ltM.textContent = mm;
+    };
+    ltTick();
+    setInterval(ltTick, 15000);
+    const ltName = root.querySelector<HTMLElement>('[data-lt-name]');
+    const fitName = () => {
+      if (!ltName) return;
+      const sp = ltName.firstElementChild as HTMLElement;
+      ltName.style.setProperty('--fit', '1');
+      ltName.style.setProperty('--fit', ((ltName.clientWidth / sp.scrollWidth) * 0.99).toFixed(4));
+    };
+    fitName();
+    document.fonts?.ready.then(fitName);
+    addEventListener('resize', fitName);
 
     // ---- live Kraków time
     const clock = root.querySelector<HTMLElement>('[data-clock]');
