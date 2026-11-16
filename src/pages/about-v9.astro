@@ -1,7 +1,7 @@
 ---
 // Draft (v8 with more show: a portrait that opens out of a pill, scrubbed
 // blur-in words, hairlines that draw, a logo that trails the cursor, text
-// scramble, letters that wave toward the pointer): About, cut down to six beats and built from the home page's
+// scramble, a page-wide CTA that fills in with a pointer-following orb): About, cut down to six beats and built from the home page's
 // language (white page, pill-shaped pictures, the thin line, small grey
 // labels, Neue Montreal) with the B woven through:
 // 1 big uppercase statement (who / what / into), lit word by word as you
@@ -143,12 +143,19 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     </section>
 
     <!-- 6 -->
-    <section class="a9__sec a9__end">
-      <a class="a9__cta" href={settings.callUrl ?? '#'} target="_blank" rel="noopener" data-in>
-        <span class="a9__cta-q">{about.ctaText?.split('?')[0]}?</span>
-        <span class="a9__cta-go" data-wave>Let’s talk <i>↗</i></span>
+    <section class="a9__end" data-end>
+      <a class="a9__cta" href={settings.callUrl ?? '#'} target="_blank" rel="noopener" data-cta>
+        <span class="a9__cta-q" data-in>{about.ctaText?.split('?')[0]}?</span>
+        <span class="a9__huge">
+          <span class="a9__huge-o">Let’s talk</span>
+          <span class="a9__huge-f" aria-hidden="true" data-fill>Let’s talk</span>
+        </span>
+        <span class="a9__orb" aria-hidden="true" data-orb><span>Book a call</span><i>↗</i></span>
       </a>
-      <p class="a9__clock" data-in><span data-clock>Warsaw</span></p>
+      <div class="a9__foot">
+        <span data-clock>Warsaw</span>
+        <button type="button" class="a9__top" data-top>Back to top ↑</button>
+      </div>
     </section>
   </main>
 </Base>
@@ -544,57 +551,100 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     vector-effect: non-scaling-stroke;
   }
 
-  /* 6 */
+  /* 6: a word the width of the page, drawn as an outline that fills with
+     ink as you arrive; a round "Book a call" follows the pointer over it */
   .a9__end {
-    align-items: end;
-    min-height: 60svh;
-  }
-  .a9__end > .a9__cta {
-    grid-column: 2;
-  }
-  .a9__end > .a9__clock {
-    grid-column: 1;
-    grid-row: 1;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 var(--pad) var(--pad);
   }
   .a9__cta {
+    position: relative;
+    display: block;
     color: var(--ink);
     text-decoration: none;
   }
   .a9__cta-q {
     display: block;
     max-width: 24em;
+    margin-left: calc(var(--col) + var(--pad));
     color: var(--grey);
-    transition: color 0.3s ease;
   }
-  :global(.a9 .wl) {
-    display: inline-block;
-    will-change: transform;
-  }
-  .a9__cta-go {
+  .a9__huge {
+    position: relative;
     display: block;
-    margin-top: 10px;
-    font: 500 clamp(56px, 9vw, 150px) / 1 var(--font-head);
-    letter-spacing: -0.045em;
+    margin-top: 2vw;
+    font: 500 calc(19.4vw * var(--fit, 1)) / 0.82 var(--font-head);
+    letter-spacing: -0.06em;
+    white-space: nowrap;
   }
-  .a9__cta-go i {
+  .a9__huge-o {
     display: inline-block;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.28);
+  }
+  .a9__huge-f {
+    position: absolute;
+    inset: 0;
+    color: var(--ink);
+    clip-path: inset(-0.2em calc((1 - var(--f, 0)) * 100%) -0.2em 0);
+  }
+  .a9__orb {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 2;
+    width: clamp(96px, 9vw, 140px);
+    aspect-ratio: 1;
+    margin: calc(clamp(96px, 9vw, 140px) / -2) 0 0 calc(clamp(96px, 9vw, 140px) / -2);
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 2px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 14px;
+    pointer-events: none;
+    will-change: transform;
+    /* inverts over the letters: black over the ink, white over the page */
+    mix-blend-mode: difference;
+  }
+  .a9__orb i {
     font-style: normal;
-    font-size: 0.6em;
-    vertical-align: 0.3em;
-    transition: transform 0.45s var(--e-out);
+    font-size: 20px;
+    line-height: 1;
   }
   @media (hover: hover) and (pointer: fine) {
-    .a9__cta:hover .a9__cta-q {
-      color: var(--ink);
-    }
-    .a9__cta:hover i {
-      transform: translate(0.12em, -0.12em);
+    .a9__cta {
+      cursor: none;
     }
   }
-  .a9__clock {
-    margin: 0;
+  .a9__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: clamp(24px, 3vw, 48px);
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
     font-size: 13px;
     color: var(--grey);
+  }
+  .a9__top {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__top:hover {
+      color: var(--ink);
+    }
   }
 
   /* reveals */
@@ -631,6 +681,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     .a9 {
       --col: 0px;
     }
+    .a9__cta-q {
+      margin-left: 0;
+      max-width: 62%;
+    }
     .a9__sec,
     .a9__heart-grid {
       grid-template-columns: 1fr;
@@ -649,11 +703,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     .a9__when {
       grid-row: 1;
       grid-column: 2;
-    }
-    .a9__end > .a9__cta,
-    .a9__end > .a9__clock {
-      grid-column: 1;
-      grid-row: auto;
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -906,38 +955,77 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       });
     }
 
-    // ---- CTA letters lean up toward the pointer, like a wave
-    const wave = root.querySelector<HTMLElement>('[data-wave]');
-    if (wave && !calm && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      const arrow = wave.querySelector('i');
-      const text = (wave.firstChild?.textContent ?? '').trim();
-      wave.textContent = '';
-      const ls = [...text].map((c) => {
-        const s = document.createElement('span');
-        s.className = 'wl';
-        s.textContent = c === ' ' ? '\u00a0' : c;
-        wave.append(s);
-        return { el: s, y: 0 };
+    // ---- CTA: the outline fills as the section arrives (all of it on
+    // hover); the orb rests by the word and follows the pointer over it
+    const end = root.querySelector<HTMLElement>('[data-end]');
+    const cta = root.querySelector<HTMLElement>('[data-cta]');
+    const fill = root.querySelector<HTMLElement>('[data-fill]');
+    const orb = root.querySelector<HTMLElement>('[data-orb]');
+    const huge = root.querySelector<HTMLElement>('.a9__huge-o')!;
+    // size the word to run edge to edge of the content box
+    const fitWord = () => {
+      if (!cta || !huge) return;
+      huge.parentElement!.style.setProperty('--fit', '1');
+      const k = cta.clientWidth / huge.scrollWidth;
+      huge.parentElement!.style.setProperty('--fit', (k * 0.995).toFixed(4));
+    };
+    fitWord();
+    document.fonts?.ready.then(fitWord);
+    addEventListener('resize', fitWord);
+    root.querySelector('[data-top]')?.addEventListener('click', () => scrollTo({ top: 0, behavior: calm ? 'auto' : 'smooth' }));
+    if (end && cta && fill && orb) {
+      const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+      let over = false;
+      let mx = 0;
+      let my = 0;
+      let f = 0;
+      let ox = -1;
+      let oy = 0;
+      let os = 1;
+      let press = false;
+      let raf = 0;
+      cta.addEventListener('pointerenter', () => fine && (over = true));
+      cta.addEventListener('pointerleave', () => (over = press = false));
+      cta.addEventListener('pointermove', (e) => {
+        const r = cta.getBoundingClientRect();
+        mx = e.clientX - r.left;
+        my = e.clientY - r.top;
       });
-      if (arrow) wave.append(' ', arrow);
-      let mx = -1e4, my = -1e4, raf = 0;
+      cta.addEventListener('pointerdown', () => (press = true));
+      addEventListener('pointerup', () => (press = false));
       const step = () => {
-        let moving = false;
-        ls.forEach((l) => {
-          const r = l.el.getBoundingClientRect();
-          const d = Math.hypot(r.left + r.width / 2 - mx, r.top + r.height / 2 - my);
-          const target = -Math.max(0, 1 - d / 220) * 0.22 * r.height;
-          l.y += (target - l.y) * 0.18;
-          if (Math.abs(target - l.y) > 0.1) moving = true;
-          l.el.style.transform = `translateY(${l.y.toFixed(2)}px)`;
-        });
-        raf = moving ? requestAnimationFrame(step) : 0;
+        const r = end.getBoundingClientRect();
+        const arrive = clamp((innerHeight - r.top) / r.height);
+        const tf = over ? 1 : calm ? 1 : clamp((arrive - 0.25) / 0.7);
+        f += (tf - f) * (over ? 0.12 : 0.2);
+        fill.style.setProperty('--f', f.toFixed(4));
+        // rest: just right of the "k", on the word's middle
+        const W = cta.clientWidth;
+        const rx = W - orb.offsetWidth * 0.75;
+        const ry = huge.offsetTop + orb.offsetHeight * 0.1;
+        const tx = over ? mx : rx;
+        const ty = over ? my : ry;
+        if (ox < 0) {
+          ox = tx;
+          oy = ty;
+        }
+        const k = calm ? 1 : 0.2;
+        ox += (tx - ox) * k;
+        oy += (ty - oy) * k;
+        // a little stretch along the way it's moving, eased back when still
+        const v = Math.min(1, Math.hypot(tx - ox, ty - oy) / 300);
+        os += ((press ? 0.9 : over ? 1.08 : 1) - os) * 0.25;
+        orb.style.transform = `translate(${ox.toFixed(1)}px,${oy.toFixed(1)}px) scale(${(os * (1 + v * 0.08)).toFixed(3)})`;
+        raf = requestAnimationFrame(step);
       };
-      addEventListener('pointermove', (e) => {
-        mx = e.clientX;
-        my = e.clientY;
-        if (!raf) raf = requestAnimationFrame(step);
-      });
+      new IntersectionObserver((es) => {
+        if (es[0].isIntersecting) {
+          if (!raf) raf = requestAnimationFrame(step);
+        } else if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      }).observe(end);
     }
 
     // ---- live Warsaw time

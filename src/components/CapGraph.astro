@@ -203,13 +203,31 @@ const { groups, core } = Astro.props;
     // of its label, so it doesn't need to be hit exactly
     const SNAP = 90;
     // each skill sits somewhere in the cone between the centre and its hub
+    // (best of a few tries: the spot farthest from the dots already placed,
+    // measured in pixels, so the labels have room)
+    const AR = box.clientWidth / Math.max(1, box.clientHeight);
+    const placed: { g: number; x: number; y: number; ph: number }[] = [];
     const dotPos = dots.map((d) => {
       const g = Number(d.dataset.dot);
       const h = hubPos[g];
-      const ang = Math.atan2(h.y - 0.5, h.x - 0.5) + (rnd() - 0.5) * 1.1;
-      const len = Math.hypot(h.x - 0.5, h.y - 0.5) * (0.35 + rnd() * 0.75);
-      return { g, x: 0.5 + Math.cos(ang) * len, y: 0.5 + Math.sin(ang) * len, ph: rnd() * 6.28 };
+      let best = { g, x: 0.5, y: 0.5, ph: rnd() * 6.28 };
+      let bestD = -1;
+      for (let k = 0; k < 24; k++) {
+        const ang = Math.atan2(h.y - 0.5, h.x - 0.5) + (rnd() - 0.5) * 1.1;
+        const len = Math.hypot(h.x - 0.5, h.y - 0.5) * (0.35 + rnd() * 0.75);
+        const c = { g, x: 0.5 + Math.cos(ang) * len, y: 0.5 + Math.sin(ang) * len, ph: best.ph };
+        const dmin = Math.min(1e9, ...placed.map((o) => Math.hypot((o.x - c.x) * AR * 2, (o.y - c.y) * 3)), ...hubPos.map((o) => Math.hypot((o.x - c.x) * AR * 2, (o.y - c.y) * 3)));
+        if (dmin > bestD) {
+          bestD = dmin;
+          best = c;
+        }
+      }
+      placed.push(best);
+      return best;
     });
+    // each label's own vertical nudge, so lit labels never sit on each other
+    const labels = dots.map((d) => d.querySelector('b') as HTMLElement);
+    const nudge = dots.map(() => 0);
     const lines = [...hubs.map((_, i) => ({ hub: i })), ...dots.map((_, i) => ({ dot: i }))].map((l) => {
       const el = document.createElementNS(NS, 'line');
       if ('hub' in l) el.classList.add('is-hub');
@@ -336,9 +354,52 @@ const { groups, core } = Astro.props;
         return { x, y };
       });
       near = best < 36 ? nb : -1;
+      const lit = dp.map((_, i) => i === near || dotPos[i].g === hot);
+      // lit labels as boxes; push apart vertically any that would overlap,
+      // hub labels count as fixed obstacles
+      const LH = 16;
+      const boxes = dp
+        .map((p, i) => {
+          const w = labels[i].offsetWidth;
+          const flip = p.x + 14 + w > W - 8;
+          return flip
+            ? { i, x0: p.x - 14 - w, x1: p.x - 10, y: p.y, o: 0, flip }
+            : { i, x0: p.x + 10, x1: p.x + 14 + w, y: p.y, o: 0, flip };
+        })
+        .filter((b) => lit[b.i]);
+      const fixed = hp.map((p, i) => ({ x0: p.x - 8, x1: p.x + hubs[i].offsetWidth, y: p.y }));
+      for (let pass = 0; pass < 8; pass++) {
+        boxes.sort((a, b) => a.y + a.o - (b.y + b.o));
+        for (let a = 0; a < boxes.length; a++) {
+          const A = boxes[a];
+          for (let b = a + 1; b < boxes.length; b++) {
+            const B = boxes[b];
+            if (A.x1 < B.x0 || B.x1 < A.x0) continue;
+            const gap = B.y + B.o - (A.y + A.o);
+            if (gap < LH) {
+              A.o -= (LH - gap) / 2;
+              B.o += (LH - gap) / 2;
+            }
+          }
+          for (const F of fixed) {
+            if (A.x1 < F.x0 || F.x1 < A.x0) continue;
+            const gap = A.y + A.o - F.y;
+            if (Math.abs(gap) < LH) A.o += (gap >= 0 ? 1 : -1) * (LH - Math.abs(gap));
+          }
+        }
+      }
+      const want = dp.map(() => 0);
+      const flipped = dp.map(() => false);
+      boxes.forEach((b) => {
+        want[b.i] = Math.max(-40, Math.min(40, b.o));
+        flipped[b.i] = b.flip;
+      });
       dp.forEach((p, i) => {
         dots[i].style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px)`;
-        dots[i].classList.toggle('is-on', i === near || dotPos[i].g === hot);
+        dots[i].classList.toggle('is-on', lit[i]);
+        nudge[i] += (want[i] - nudge[i]) * 0.3;
+        labels[i].style.translate = `0 ${nudge[i].toFixed(1)}px`;
+        labels[i].style.left = flipped[i] ? `${-10 - labels[i].offsetWidth}px` : '';
       });
       lines.forEach((l) => {
         const p = l.hub !== undefined ? hp[l.hub] : dp[l.dot!];
