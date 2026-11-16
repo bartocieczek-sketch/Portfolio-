@@ -242,6 +242,8 @@ const { groups, core } = Astro.props;
     let py = -1e4;
     let drag: { i: number; sx: number; sy: number; ox: number; oy: number } | null = null;
     let focused = -1;
+    // a page can point at a hub from outside (e.g. a list of services)
+    box.addEventListener('cg:focus', (e) => (focused = (e as CustomEvent<number>).detail));
     // entrance: the centre settles in, then the hubs' lines shoot out, then
     // the skills' lines sweep round the centre one after another; each end
     // pops a little as its line lands

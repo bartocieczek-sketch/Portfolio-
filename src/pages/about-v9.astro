@@ -62,6 +62,14 @@ const stats = [
   { v: 1, suf: '', l: 'Seat on the Awwwards Young Jury', c: '8 / 11', up: false, h: 0.6 },
   { v: 4, suf: '', l: 'Coffees a day, give or take', c: '10 / 13', up: true, h: 0.78 },
 ];
+// services (DRAFT copy, to be edited): one line on what I do, then the
+// three groups the graph below is built from, in the same order
+const svcLead = 'I design and build websites and digital products end to end — from the first idea and the look of it, to the shipped, fast, animated page.';
+const services = [
+  { t: 'Design', d: 'UX/UI, art direction and design systems — interfaces that look sharp and still hold up long after launch.' },
+  { t: 'Technology', d: 'Builds in no-code and in code — Astro, Sanity, WebGL and motion — fast, accessible and easy to edit.' },
+  { t: 'AI & Play', d: 'AI in the workflow and in the product, plus game-design thinking for interfaces people want to play with.' },
+];
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
 const caps = [
@@ -115,6 +123,28 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       </div>
     </section>
 
+    <!-- 2b: services — what I do, then how it connects -->
+    <section class="a9__svc" data-svc-root>
+      <div class="a9__sec a9__svc-top">
+        <p class="a9__label" data-in>Services</p>
+        <div class="a9__svc-c">
+          <p class="a9__svc-lead" data-blur>{svcLead}</p>
+          <ul class="a9__svc-list">
+            {services.map((sv, i) => (
+              <li data-in data-svc={i} tabindex="0">
+                <h3><i aria-hidden="true" />{sv.t}</h3>
+                <p>{sv.d}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div class="a9__caps">
+        <p class="a9__label a9__caps-label">How it connects</p>
+        <CapGraph groups={caps} core={bSvg} />
+      </div>
+    </section>
+
     <!-- 3 -->
     <section class="a9__sec">
       <p class="a9__label" data-in>Experience & what I do</p>
@@ -145,12 +175,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           </div>
         ))}
       </div>
-    </section>
-
-    <!-- 4 -->
-    <section class="a9__caps">
-      <p class="a9__label a9__caps-label">How it connects</p>
-      <CapGraph groups={caps} core={bSvg} />
     </section>
 
     <!-- 5 -->
@@ -581,6 +605,88 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     max-width: 36ch;
     margin: 0;
     color: var(--grey);
+  }
+
+  /* 2b: services */
+  .a9__svc-top {
+    padding-bottom: clamp(40px, 6vw, 80px);
+  }
+  .a9__svc-lead {
+    max-width: 21em;
+    margin: 0;
+    font: 500 clamp(26px, 3vw, 48px) / 1.06 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+  .a9__svc-lead :global(.bw) {
+    display: inline-block;
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(0.25em) scale(0.96);
+    transition:
+      opacity 0.9s var(--e-out),
+      filter 1s var(--e-out),
+      transform 1.2s var(--e-expo);
+    transition-delay: calc(var(--k) * 30ms);
+  }
+  .a9__svc-lead.is-in :global(.bw) {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+  .a9__svc-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(20px, 3vw, 48px);
+    margin: clamp(40px, 6vw, 88px) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .a9__svc-list li {
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    outline: none;
+    cursor: default;
+    transition: border-color 0.25s ease;
+  }
+  .a9__svc-list h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    font: 500 clamp(18px, 1.5vw, 22px) / 1.2 var(--font-head);
+    letter-spacing: -0.02em;
+  }
+  .a9__svc-list h3 i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink);
+    transition: transform 0.25s var(--e-out);
+  }
+  .a9__svc-list p {
+    max-width: 34ch;
+    margin: 0;
+    color: var(--grey);
+  }
+  /* pointing at a service lights its branch in the graph below */
+  .a9__svc-list li.is-on,
+  .a9__svc-list li:focus-visible {
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  .a9__svc-list li.is-on h3 i,
+  .a9__svc-list li:focus-visible h3 i {
+    transform: scale(1.6);
+  }
+  @media (max-width: 809px) {
+    .a9__svc-list {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__svc-lead :global(.bw) {
+      filter: none;
+      transform: none;
+    }
   }
 
   /* 3b: numbers — boxes hang off one hairline across the page, above and
@@ -1279,6 +1385,23 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         requestAnimationFrame(step);
       });
     }
+    // services ↔ graph: pointing at a service lights its branch
+    const cgBox = root.querySelector<HTMLElement>('.a9__caps [data-cg]');
+    root.querySelectorAll<HTMLElement>('[data-svc]').forEach((li) => {
+      const i = Number(li.dataset.svc);
+      const on = () => {
+        li.classList.add('is-on');
+        cgBox?.dispatchEvent(new CustomEvent('cg:focus', { detail: i }));
+      };
+      const off = () => {
+        li.classList.remove('is-on');
+        cgBox?.dispatchEvent(new CustomEvent('cg:focus', { detail: -1 }));
+      };
+      li.addEventListener('pointerenter', on);
+      li.addEventListener('pointerleave', off);
+      li.addEventListener('focus', on);
+      li.addEventListener('blur', off);
+    });
     const later: HTMLElement[] = [];
     root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid], [data-nm]').forEach((el) => {
       const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
