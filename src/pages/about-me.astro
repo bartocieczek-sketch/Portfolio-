@@ -65,7 +65,8 @@ const nice = (f: string) => {
 const focus: string[] = (about.focus ?? []).map(nice);
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const projects = ((home?.projects ?? []) as any[]).filter(Boolean);
-const portrait = about.portrait?.asset ? urlFor(about.portrait).width(700).height(930).fit('crop').url() : null;
+// my photo (bundled with the site, sharper than the old one in the CMS)
+const portrait = '/images/bart.jpg';
 // what I'm doing right now (the 'Now' beat)
 const nowJobs = jobs.filter((j) => j.now);
 // years since the earliest role in the experience list
