@@ -205,7 +205,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   /* 1: same as /about-me — a sticky stage, the statement under a chrome B */
   .a9__intro {
     position: relative;
-    height: 260svh;
+    height: 340svh;
   }
   .a9__stage {
     position: sticky;
@@ -817,16 +817,44 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
 
     // ---- scroll-driven bits + the monitor, in one loop
     const intro = root.querySelector<HTMLElement>('[data-intro]');
+    const smooth = (v: number) => v * v * (3 - 2 * v);
+    let heroPx = -1e4;
+    let heroPy = -1e4;
+    if (intro && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      intro.addEventListener('pointermove', (e) => {
+        heroPx = e.clientX;
+        heroPy = e.clientY;
+      });
+      intro.addEventListener('pointerleave', () => (heroPx = heroPy = -1e4));
+    }
     const frame = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       if (intro) {
         const max = intro.offsetHeight - innerHeight;
         const p = max > 0 ? clamp(-intro.getBoundingClientRect().top / max) : 0;
-        // light the words over the first 85% of the scroll, a soft edge of ~3
-        const f = (p / 0.85) * (words.length + 3) - 3;
-        words.forEach((n, k) => n.style.setProperty('--lit', (0.28 + 0.72 * clamp((f - k + 3) / 3)).toFixed(3)));
-        say.style.transform = `translateY(${(-p * 6).toFixed(2)}vh)`;
+        // light the words over the first half of the scroll, a soft edge of
+        // ~3; around the pointer a soft spotlight lights them early
+        const f = (p / 0.5) * (words.length + 3) - 3;
+        const spot = heroPx > -1e3 && !calm;
+        words.forEach((n, k) => {
+          let v = clamp((f - k + 3) / 3);
+          if (spot) {
+            const r = n.getBoundingClientRect();
+            const d = Math.hypot(r.left + r.width / 2 - heroPx, r.top + r.height / 2 - heroPy);
+            v = Math.max(v, clamp(1 - d / 260) * 0.85);
+          }
+          const cur = Number(n.dataset.v ?? 0);
+          const nv = cur + (v - cur) * 0.2;
+          n.dataset.v = nv.toFixed(4);
+          n.style.setProperty('--lit', (0.22 + 0.78 * nv).toFixed(3));
+        });
+        // then the B comes for the camera and the statement falls back into
+        // the dark behind it
+        const fly = smooth(clamp((p - 0.5) / 0.45));
+        say.style.transform = `translateY(${(-p * 6).toFixed(2)}vh) scale(${(1 - fly * 0.14).toFixed(4)})`;
+        say.style.filter = fly > 0.001 ? `blur(${(fly * 10).toFixed(2)}px)` : '';
+        say.style.opacity = String(1 - fly * 0.85);
         sayWrap.parentElement!.style.setProperty('--p', p.toFixed(3));
         (window as any).__a9P = p;
       }
@@ -1070,6 +1098,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const key = new THREE.DirectionalLight(0xffffff, 2.4);
       key.position.set(-3, 4, 6);
       scene.add(key);
+      // a light that rides with the pointer, so glints run over the chrome
+      const glint = new THREE.PointLight(0xffffff, 0, 0, 1.6);
+      glint.position.set(0, 0, 3);
+      scene.add(glint);
       const rim = new THREE.DirectionalLight(0xffe2c4, 0.8);
       rim.position.set(4, -2, -3);
       scene.add(rim);
@@ -1156,7 +1188,18 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6 + sy * Math.PI * 2, (1 - k) * -0.15);
         logo.position.y = (calm ? 0 : Math.sin(t * 0.8) * 0.05) - (1 - k) * 0.9;
         logo.scale.setScalar(0.75 + 0.25 * k);
-        (mat as THREE.MeshPhysicalMaterial).opacity = k;
+        // the finale: past halfway the B rushes the camera, half-turning,
+        // until the viewer passes through its bowl into the page
+        const fz = Math.min(1, Math.max(0, (sy - 0.5) / 0.45));
+        const fly = calm ? 0 : fz * fz * (3 - 2 * fz);
+        logo.position.z = fly * fly * (camera.position.z - 0.6);
+        logo.position.x = fly * 0.35;
+        logo.rotation.y += fly * 0.9;
+        logo.rotation.x += fly * -0.25;
+        (mat as THREE.MeshPhysicalMaterial).opacity = k * (1 - Math.min(1, Math.max(0, (fly - 0.88) / 0.12)));
+        glint.position.x += (px * 3.2 - glint.position.x) * 0.12;
+        glint.position.y += (-py * 2.2 - glint.position.y) * 0.12;
+        glint.intensity += ((px || py ? 26 : 0) * k - glint.intensity) * 0.06;
         renderer.render(scene, camera);
         requestAnimationFrame(tick);
       };
