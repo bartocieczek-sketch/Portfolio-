@@ -2589,66 +2589,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const logo = new THREE.Group();
       const B = letter('B', 150);
       B.scale.setScalar(3.1);
-      // the B's biggest counter (the hole in a bowl), in the group's space:
-      // the glyph is drawn small, empty pixels not reachable from the edge
-      // are inside a bowl, and the one furthest from any ink is its middle
-      const hole = (() => {
-        const [d, bb] = glyphs.g.B as [string, number[], number];
-        const N = 160;
-        const w = bb[2] - bb[0];
-        const h = bb[3] - bb[1];
-        const sc = Math.max(w, h) / (N - 4);
-        const cv = document.createElement('canvas');
-        cv.width = cv.height = N;
-        const c2 = cv.getContext('2d')!;
-        c2.setTransform(1 / sc, 0, 0, 1 / sc, -bb[0] / sc + 2, -bb[1] / sc + 2);
-        c2.fill(new Path2D(d));
-        const px = c2.getImageData(0, 0, N, N).data;
-        const ink = (i: number) => px[i * 4 + 3] > 100;
-        const out = new Uint8Array(N * N);
-        const q: number[] = [];
-        for (let i = 0; i < N; i++) for (const k of [i, (N - 1) * N + i, i * N, i * N + N - 1]) if (!ink(k) && !out[k]) { out[k] = 1; q.push(k); }
-        while (q.length) {
-          const k = q.pop()!;
-          const x = k % N;
-          for (const n of [k - 1, k + 1, k - N, k + N]) {
-            if (n < 0 || n >= N * N || out[n] || ink(n) || Math.abs((n % N) - x) > 1) continue;
-            out[n] = 1;
-            q.push(n);
-          }
-        }
-        // distance from ink (BFS), then the furthest enclosed pixel
-        const dist = new Int32Array(N * N).fill(-1);
-        const bq: number[] = [];
-        for (let k = 0; k < N * N; k++) if (ink(k)) { dist[k] = 0; bq.push(k); }
-        for (let h2 = 0; h2 < bq.length; h2++) {
-          const k = bq[h2];
-          const x = k % N;
-          for (const n of [k - 1, k + 1, k - N, k + N]) {
-            if (n < 0 || n >= N * N || dist[n] >= 0 || Math.abs((n % N) - x) > 1) continue;
-            dist[n] = dist[k] + 1;
-            bq.push(n);
-          }
-        }
-        let best = -1;
-        let bk = -1;
-        // aim for the round loop at the B's upper left (its "o"): in the
-        // drawing (y down = font units) that's the left part, toward high y
-        for (let k = 0; k < N * N; k++) {
-          const gx = ((k % N) - 2) * sc + bb[0];
-          const gy = (Math.floor(k / N) - 2) * sc + bb[1];
-          if (ink(k) || gx < bb[0] + w * 0.05 || gx > bb[0] + w * 0.4 || gy < bb[1] + h * 0.45 || gy > bb[1] + h * 0.85) continue;
-          if (dist[k] > best) {
-            best = dist[k];
-            bk = k;
-          }
-        }
-        if (bk < 0) return { x: 0, y: 0 };
-        const fx = ((bk % N) - 2) * sc + bb[0];
-        const fy = (Math.floor(bk / N) - 2) * sc + bb[1];
-        // the geometry is centred on its box and scaled to 1/U, then ×3.1
-        return { x: ((fx - (bb[0] + bb[2]) / 2) / U) * 3.1, y: ((fy - (bb[1] + bb[3]) / 2) / U) * 3.1 };
-      })();
       logo.add(B);
       scene.add(logo);
 
@@ -2697,7 +2637,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       let sEdge = 0.75;
       for (let s = 0.42; s <= 1; s += 0.001) {
         const fa = flyAt(s);
-        if (Math.min(1, s / 0.8) * Math.PI * 2 + (fa < 0.7 ? Math.sin((Math.PI * fa) / 0.7) : 0) * 0.9 >= Math.PI * 1.5) {
+        if (s * Math.PI * 2 + fa * 0.9 >= Math.PI * 1.5) {
           sEdge = s;
           break;
         }
@@ -2763,32 +2703,23 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const tick = () => {
         const t = (performance.now() - t0) / 1000;
         const idle = calm ? 0 : Math.sin(t * 0.45) * 0.35;
-        // the pointer (and the idle sway) let go of the B as it flies, so
-        // its path through the camera is always the same one
-        const hold = 1 - Math.min(1, Math.max(0, ((sy - 0.42) / 0.5) / 0.45));
-        ry += ((idle + px * 0.5) * hold - ry) * 0.08;
-        rx += (py * 0.3 * hold - rx) * 0.08;
+        ry += (idle + px * 0.5 - ry) * 0.05;
+        rx += (py * 0.3 - rx) * 0.05;
         const k = calm ? 1 : easeOut(Math.min(1, Math.max(0, (t - IN_DELAY) / IN_DUR)));
         const sp = (window as any).__a9P ?? 0;
         sy += (sp - sy) * 0.14;
-        logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6 + Math.min(1, sy / 0.8) * Math.PI * 2, (1 - k) * -0.15);
+        logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6 + sy * Math.PI * 2, (1 - k) * -0.15);
         logo.position.y = (calm ? 0 : Math.sin(t * 0.8) * 0.05) - (1 - k) * 0.9;
         logo.scale.setScalar(0.75 + 0.25 * k);
         // the finale: past halfway the B rushes the camera, half-turning,
         // until the viewer passes through its bowl into the page
         const fz = Math.min(1, Math.max(0, (sy - 0.42) / 0.5));
         const fly = calm ? 0 : fz * fz * (3 - 2 * fz);
-        // it rushes the camera, half-turning on the way and squaring up at
-        // the end, lined up so the camera passes clean through its bowl
-        // the half-turn happens early; it has squared up well before the pass
-        const bell = fly < 0.7 ? Math.sin((Math.PI * fly) / 0.7) : 0;
+        // it flies on past the camera (no fading: it simply goes by)
         logo.position.z = fly * fly * (camera.position.z + 1.5);
-        const am = Math.min(1, fly / 0.8);
-        const aim = am * am * (3 - 2 * am);
-        logo.position.x = fly * 0.35 * (1 - aim) - hole.x * aim;
-        logo.position.y = logo.position.y * (1 - aim) - hole.y * aim;
-        logo.rotation.y += bell * 0.9;
-        logo.rotation.x += bell * -0.25;
+        logo.position.x = fly * 0.35;
+        logo.rotation.y += fly * 0.9;
+        logo.rotation.x += fly * -0.25;
         if (who) uncover();
         (mat as THREE.MeshPhysicalMaterial).opacity = k;
         glint.position.x += (px * 3.2 - glint.position.x) * 0.12;
