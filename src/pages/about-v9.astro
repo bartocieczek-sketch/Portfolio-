@@ -69,10 +69,14 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
 
     <!-- 1 -->
     <section class="a9__intro" data-intro>
-      <div class="a9__pin">
-        <h1 class="a9__say" data-lit>
-          Hi, I’m Bart — a design engineer from Warsaw. I design and build bold web experiences with AI in the loop. Into sport, games and way too much coffee.
-        </h1>
+      <div class="a9__stage">
+        <div class="a9__say">
+          <h1 class="t-display" data-say>
+            Hi, I’m Bart — a design engineer from Warsaw. I design and build bold web experiences with AI in the loop. Into sport, games and way too much coffee.
+          </h1>
+        </div>
+        <canvas class="a9__mono" data-monogram aria-label="B monogram" role="img"></canvas>
+        <span class="a9__hint" aria-hidden="true">Scroll</span>
       </div>
     </section>
 
@@ -191,50 +195,90 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     margin: 0;
   }
 
-  /* 1 */
+  /* 1: same as /about-me — a sticky stage, the statement under a chrome B */
   .a9__intro {
-    height: 220svh;
+    position: relative;
+    height: 260svh;
   }
-  .a9__pin {
+  .a9__stage {
     position: sticky;
     top: 0;
     height: 100svh;
+    overflow: hidden;
+  }
+  .a9__say {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: 0 var(--pad);
     display: flex;
     align-items: center;
-    padding: 0 var(--pad) 0 calc(var(--pad) + var(--col) + var(--pad));
+    justify-content: center;
+    pointer-events: none;
   }
-  .a9__mark {
-    position: absolute;
-    left: var(--pad);
-    top: 50%;
-    width: 28px;
-    margin-top: -18px;
+  .a9__say h1 {
+    margin: 0;
+    max-width: 1000px;
+    text-align: center;
+    font-size: clamp(28px, 4.4vw, 68px);
+    line-height: 0.98;
+    color: var(--ink);
     will-change: transform;
   }
-  .a9__mark :global(svg),
+  .a9__say :global(.sw) {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    padding-bottom: 0.08em;
+    margin-bottom: -0.08em;
+  }
+  .a9__say :global(.swi) {
+    display: inline-block;
+    transform: translateY(115%) rotate(7deg);
+    transform-origin: 0 100%;
+    opacity: var(--lit, 0.28);
+    transition:
+      transform 1.15s var(--e-expo),
+      opacity 0.35s var(--e-out);
+    transition-delay: calc(var(--l, 0) * 90ms + var(--i, 0) * 14ms), 0ms;
+  }
+  .a9__say.is-in :global(.swi) {
+    transform: none;
+  }
+  .a9__mono {
+    z-index: 2;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .a9__hint {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    z-index: 3;
+    transform: translateX(-50%);
+    font: 500 12px/1 var(--font-head);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--grey);
+    opacity: 0;
+    transition: opacity 0.6s var(--e-out) 1.6s;
+  }
+  .a9__say.is-in ~ .a9__hint {
+    opacity: calc(1 - var(--p, 0) * 6);
+    transition-delay: 1.6s;
+  }
   .a9__beat :global(svg) {
     display: block;
     width: 100%;
     height: auto;
   }
-  .a9__say {
-    max-width: 16em;
-    margin: 0;
-    font: 500 clamp(28px, 3.6vw, 56px) / 1.02 var(--font-head);
-    letter-spacing: -0.04em;
-    text-transform: uppercase;
-  }
   :global(html:has(.a9)),
   :global(body:has(.a9)) {
     background: rgb(10, 10, 10);
     color-scheme: dark;
-  }
-  :global(.a9 .lw) {
-    display: inline-block;
-    color: var(--ink);
-    opacity: calc(0.12 + var(--l, 0) * 0.88);
-    filter: blur(calc((1 - var(--l, 0)) * 8px));
-    transform: translateY(calc((1 - var(--l, 0)) * 0.18em));
   }
 
   /* 2 */
@@ -591,13 +635,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     .a9__heart-grid {
       grid-template-columns: 1fr;
     }
-    .a9__pin {
-      padding: 0 var(--pad);
-    }
-    .a9__mark {
-      top: 90px;
-      margin-top: 0;
-    }
     .a9__who-grid {
       grid-template-columns: 96px 1fr;
     }
@@ -621,7 +658,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   @media (prefers-reduced-motion: reduce) {
     [data-in],
-    :global(.a9 .wi) {
+    :global(.a9 .wi),
+    .a9__say :global(.swi) {
       transform: none;
     }
   }
@@ -633,19 +671,42 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 
-    // ---- 1: words to light
-    const say = root.querySelector<HTMLElement>('[data-lit]')!;
-    const words = (say.textContent ?? '').trim().split(/\s+/).map((w, i, all) => {
-      const s = document.createElement('span');
-      s.className = 'lw';
-      s.textContent = w;
-      return s;
-    });
+    // ---- 1: as on /about-me — each word in a tilted mask, lines rise in,
+    // then the scroll lights them up word by word
+    const say = root.querySelector<HTMLElement>('[data-say]')!;
+    const sayWrap = say.parentElement!;
+    const words: HTMLElement[] = [];
+    const sayText = (say.textContent ?? '').trim().split(/\s+/);
     say.textContent = '';
-    words.forEach((w, i) => {
-      say.append(w);
-      if (i < words.length - 1) say.append(' ');
+    sayText.forEach((w, i) => {
+      const o = document.createElement('span');
+      o.className = 'sw';
+      const n = document.createElement('span');
+      n.className = 'swi';
+      n.textContent = w;
+      o.append(n);
+      say.append(o);
+      if (i < sayText.length - 1) say.append(' ');
+      words.push(n);
     });
+    const lines = () => {
+      let line = -1;
+      let top = -1;
+      let i = 0;
+      words.forEach((n) => {
+        const t = (n.parentElement as HTMLElement).offsetTop;
+        if (t !== top) {
+          line++;
+          top = t;
+          i = 0;
+        }
+        n.style.setProperty('--l', String(line));
+        n.style.setProperty('--i', String(i++));
+      });
+    };
+    lines();
+    addEventListener('resize', lines);
+    setTimeout(() => sayWrap.classList.add('is-in'), 650);
 
     // ---- masked word rise for [data-words]
     root.querySelectorAll<HTMLElement>('[data-words]').forEach((el) => {
@@ -707,23 +768,18 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
 
     // ---- scroll-driven bits + the monitor, in one loop
     const intro = root.querySelector<HTMLElement>('[data-intro]');
-    const mark = root.querySelector<HTMLElement>('[data-mark]');
-    const hint = root.querySelector<HTMLElement>('[data-hint]');
-    let markR = 0;
     const frame = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       if (intro) {
-        const r = intro.getBoundingClientRect();
-        const p = clamp(-r.top / (r.height - innerHeight));
-        // words: each blurs in and rises over its own slice of the first half
-        const f = clamp(p / 0.8) * (words.length + 4) - 4;
-        words.forEach((w, k) => w.style.setProperty('--l', clamp((f - k + 4) / 4).toFixed(3)));
-        if (hint) hint.style.opacity = String(1 - clamp(p * 8));
-        if (mark && !calm) {
-          markR += (p * 360 - markR) * 0.1;
-          mark.style.transform = `perspective(300px) rotateY(${markR.toFixed(2)}deg)`;
-        }
+        const max = intro.offsetHeight - innerHeight;
+        const p = max > 0 ? clamp(-intro.getBoundingClientRect().top / max) : 0;
+        // light the words over the first 85% of the scroll, a soft edge of ~3
+        const f = (p / 0.85) * (words.length + 3) - 3;
+        words.forEach((n, k) => n.style.setProperty('--lit', (0.28 + 0.72 * clamp((f - k + 3) / 3)).toFixed(3)));
+        say.style.transform = `translateY(${(-p * 6).toFixed(2)}vh)`;
+        sayWrap.parentElement!.style.setProperty('--p', p.toFixed(3));
+        (window as any).__a9P = p;
       }
       // heart: caffeine wears off ~1 coffee per 40s; the rate eases toward its target
       caffeine = Math.max(0, caffeine - dt / 40);
@@ -892,4 +948,130 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     tick();
     setInterval(tick, 20000);
   }
+</script>
+
+<script>
+      import * as THREE from 'three';
+      import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+      import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+      import glyphs from '../lib/monogram-b.json';
+      import { hasGPU } from '../lib/gpu';
+
+      const canvas = document.querySelector<HTMLCanvasElement>('[data-monogram]');
+      // no real GPU: a flat silver B instead of the 3D one
+      if (canvas && !hasGPU()) {
+        const [d, b] = glyphs.g.B as [string, number[], number];
+        const box = document.createElement('div');
+        box.className = canvas.className;
+        box.style.cssText = 'position:absolute;inset:0;z-index:2;display:grid;place-items:center;pointer-events:none';
+        box.innerHTML = `<svg viewBox="${b[0]} ${-b[3]} ${b[2] - b[0]} ${b[3] - b[1]}" style="width:min(46vmin,420px);height:auto" aria-hidden="true"><path transform="scale(1,-1)" d="${d}" fill="#d9d9de"/></svg>`;
+        canvas.replaceWith(box);
+      } else if (canvas) {
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      const scene = new THREE.Scene();
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 1.25;
+      const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+      camera.position.set(0, 0, 9);
+
+      // soft key light + a warm rim, on top of the room reflections
+      const key = new THREE.DirectionalLight(0xffffff, 2.4);
+      key.position.set(-3, 4, 6);
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0xffe2c4, 0.8);
+      rim.position.set(4, -2, -3);
+      scene.add(rim);
+
+
+      // polished black chrome: deep, with crisp reflections running along
+      // the strokes as it turns
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: 0xd9d9de,
+        roughness: 0.16,
+        metalness: 1.0,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05,
+        transparent: true,
+        opacity: 0,
+      });
+
+      const U = glyphs.upm;
+      const shapesOf = (d: string) => {
+        const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`);
+        return data.paths.flatMap((p) => p.toShapes(true));
+      };
+      const letter = (ch: 'B', depth: number) => {
+        const [d] = glyphs.g[ch] as [string, number[], number];
+        const geo = new THREE.ExtrudeGeometry(shapesOf(d), {
+          depth,
+          bevelEnabled: true,
+          bevelThickness: 22,
+          bevelSize: 6,
+          bevelSegments: 6,
+          curveSegments: 28,
+        });
+        geo.computeBoundingBox();
+        const bb = geo.boundingBox!;
+        geo.translate(-(bb.min.x + bb.max.x) / 2, -(bb.min.y + bb.max.y) / 2, -(bb.min.z + bb.max.z) / 2);
+        geo.scale(1 / U, 1 / U, 1 / U);
+        geo.computeVertexNormals();
+        return new THREE.Mesh(geo, mat);
+      };
+
+      // just the B, a slim slab: thin, with a fine bevel catching the light
+      const logo = new THREE.Group();
+      const B = letter('B', 150);
+      B.scale.setScalar(3.1);
+      logo.add(B);
+      scene.add(logo);
+
+      const resize = () => {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        camera.position.z = w < h ? 13 : 9;
+      };
+      addEventListener('resize', resize);
+      resize();
+
+      // slow idle turn; the pointer tilts it (eased, never snaps)
+      let px = 0;
+      let py = 0;
+      addEventListener('pointermove', (e) => {
+        px = (e.clientX / innerWidth) * 2 - 1;
+        py = (e.clientY / innerHeight) * 2 - 1;
+      });
+      let rx = 0;
+      let ry = 0;
+      let sy = 0; // the scroll, smoothed
+      const t0 = performance.now();
+      // entrance (as the dark page opens): it rises a little, turns in from a
+      // three-quarter view and grows to size on a long ease-out
+      const IN_DELAY = 0.45;
+      const IN_DUR = 1.8;
+      const easeOut = (x: number) => 1 - Math.pow(1 - x, 4);
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const tick = () => {
+        const t = (performance.now() - t0) / 1000;
+        const idle = calm ? 0 : Math.sin(t * 0.45) * 0.35;
+        ry += (idle + px * 0.5 - ry) * 0.05;
+        rx += (py * 0.3 - rx) * 0.05;
+        const k = calm ? 1 : easeOut(Math.min(1, Math.max(0, (t - IN_DELAY) / IN_DUR)));
+        const sp = (window as any).__a9P ?? 0;
+        sy += (sp - sy) * 0.08;
+        logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6 + sy * Math.PI * 2, (1 - k) * -0.15);
+        logo.position.y = (calm ? 0 : Math.sin(t * 0.8) * 0.05) - (1 - k) * 0.9;
+        logo.scale.setScalar(0.75 + 0.25 * k);
+        (mat as THREE.MeshPhysicalMaterial).opacity = k;
+        renderer.render(scene, camera);
+        requestAnimationFrame(tick);
+      };
+      tick();
+      }
 </script>
