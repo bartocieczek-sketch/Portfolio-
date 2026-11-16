@@ -156,7 +156,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     <!-- 2b: services — what I do, then how it connects -->
     <section class="a9__svc" data-svc-root>
       <div class="a9__sec a9__svc-top">
-        <p class="a9__label" data-in>Services</p>
         <div class="a9__svc-c">
           <p class="a9__svc-lead" data-blur>{svcLead}</p>
           <ul class="a9__svc-list">
@@ -170,7 +169,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         </div>
       </div>
       <div class="a9__caps">
-        <p class="a9__label a9__caps-label">How it connects</p>
         <CapGraph groups={caps} core={bSvg} />
       </div>
     </section>
@@ -936,6 +934,14 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
 
   /* 2b: services */
+  .a9__svc-c {
+    grid-column: 2;
+  }
+  @media (max-width: 809px) {
+    .a9__svc-c {
+      grid-column: 1;
+    }
+  }
   .a9__svc-top {
     padding-bottom: clamp(40px, 6vw, 80px);
   }
