@@ -93,7 +93,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       <div class="a9__stage">
         <div class="a9__say">
           <h1 class="t-display" data-say>
-            Hi, I’m Bart — a design engineer from Warsaw. I design and build bold web experiences with AI in the loop. Into sport, games and way too much coffee.
+            Hi, I’m Bart — a design engineer from Kraków.
           </h1>
         </div>
         <canvas class="a9__mono" data-monogram aria-label="B monogram" role="img"></canvas>
@@ -228,7 +228,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         <span class="a9__orb" aria-hidden="true" data-orb><span>Book a call</span><i>↗</i></span>
       </a>
       <div class="a9__foot">
-        <span data-clock>Warsaw</span>
+        <span data-clock>Kraków</span>
         <button type="button" class="a9__top" data-top>Back to top ↑</button>
       </div>
     </section>
@@ -302,9 +302,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   .a9__say h1 {
     margin: 0;
-    max-width: 1000px;
+    max-width: 11em;
+    text-wrap: balance;
     text-align: center;
-    font-size: clamp(28px, 4.4vw, 68px);
+    font-size: clamp(36px, 6.2vw, 104px);
     line-height: 0.98;
     color: var(--ink);
     will-change: transform;
@@ -1739,10 +1740,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       }).observe(end);
     }
 
-    // ---- live Warsaw time
+    // ---- live Kraków time
     const clock = root.querySelector<HTMLElement>('[data-clock]');
     const tick = () => {
-      if (clock) clock.textContent = `Warsaw, ${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' }).format(new Date())} — open for new work`;
+      if (clock) clock.textContent = `Kraków, ${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' }).format(new Date())} — open for new work`;
     };
     tick();
     setInterval(tick, 20000);
@@ -1828,7 +1829,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       // just the B, a slim slab: thin, with a fine bevel catching the light
       const logo = new THREE.Group();
       const B = letter('B', 150);
-      B.scale.setScalar(3.1);
+      B.scale.setScalar(2.35);
       logo.add(B);
       scene.add(logo);
 
