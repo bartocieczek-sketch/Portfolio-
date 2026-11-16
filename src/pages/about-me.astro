@@ -362,10 +362,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           })}
         </ul>
       </div>
-      <footer class="a9__lt-foot" data-in>
-        <span>© {new Date().getFullYear()} Bart Ocieczek</span>
+      <footer class="a9__lt-foot">
+        <span>© Bart Ocieczek {new Date().getFullYear()}</span>
         <span>Designer &amp; developer, Kraków</span>
-        <span>Made with too much coffee</span>
+        <span>Made with a lot of coffee</span>
       </footer>
     </section>
   </main>
@@ -1586,7 +1586,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     margin: clamp(48px, 7vw, 96px) var(--pad) 0;
-    padding-top: 14px;
+    padding: 14px 0 6px;
     border-top: 1px solid var(--rule);
     font-size: 13px;
     color: var(--grey);
