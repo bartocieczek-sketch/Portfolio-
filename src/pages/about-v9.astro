@@ -51,6 +51,16 @@ const projects = ((home?.projects ?? []) as any[]).filter(Boolean);
 const portrait = about.portrait?.asset ? urlFor(about.portrait).width(700).height(930).fit('crop').url() : null;
 // what I'm doing right now (the 'Now' beat)
 const nowJobs = jobs.filter((j) => j.now);
+// in numbers — PLACEHOLDER values, to be replaced with Bart's real ones.
+// h is the column's height (share of the tallest), so the row reads as a
+// small bar chart rising from one baseline.
+const stats = [
+  { v: 8, suf: '+', l: 'Years in digital design', h: 1 },
+  { v: 120, suf: '+', l: 'Projects shipped', h: 0.8 },
+  { v: 30, suf: '+', l: 'Brands & studios', h: 0.62 },
+  { v: 1, suf: '', l: 'Seat on the Awwwards Young Jury', h: 0.46 },
+  { v: 4, suf: '', l: 'Coffees a day, give or take', h: 0.32 },
+];
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
 const caps = [
@@ -126,6 +136,19 @@ const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
         </ul>
         <p class="a9__focus" data-in data-scramble>{focus.join(', ')}.</p>
         <div class="a9__trail" aria-hidden="true" data-trail><img alt="" /></div>
+      </div>
+    </section>
+
+    <!-- 3b -->
+    <section class="a9__sec a9__nums">
+      <p class="a9__label" data-in>In numbers</p>
+      <div class="a9__nm" data-nm>
+        {stats.map((st, i) => (
+          <div class="a9__nm-c" style={`--h:${st.h};--i:${i}`}>
+            <p class="a9__nm-v"><span data-count={st.v}>{st.v}</span>{st.suf}</p>
+            <p class="a9__nm-l">{st.l}</p>
+          </div>
+        ))}
       </div>
     </section>
 
@@ -553,6 +576,79 @@ const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
     max-width: 36ch;
     margin: 0;
     color: var(--grey);
+  }
+
+  /* 3b: numbers — columns of falling heights on one baseline, hairline
+     sides and tops only; they rise out of the baseline one after another
+     and the figures count up as they do */
+  .a9__nm {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+    height: clamp(360px, 58vh, 580px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+  }
+  .a9__nm-c {
+    height: calc(var(--h) * 100%);
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px 16px 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+    clip-path: inset(100% 0 0 0);
+    transition:
+      clip-path 1.2s var(--e-expo) calc(var(--i) * 90ms),
+      background-color 0.25s ease;
+  }
+  .a9__nm-c:last-child {
+    border-right: 1px solid rgba(255, 255, 255, 0.16);
+  }
+  .a9__nm.is-in .a9__nm-c {
+    clip-path: inset(0 0 0 0);
+  }
+  .a9__nm-v {
+    margin: 0;
+    font: 500 clamp(44px, 5.4vw, 96px) / 0.9 var(--font-head);
+    letter-spacing: -0.05em;
+    font-variant-numeric: tabular-nums;
+  }
+  .a9__nm-l {
+    max-width: 16ch;
+    margin: 0;
+    font-size: 13px;
+    color: var(--grey);
+    transition: color 0.25s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__nm-c:hover {
+      background-color: rgba(255, 255, 255, 0.035);
+    }
+    .a9__nm-c:hover .a9__nm-l {
+      color: var(--ink);
+    }
+  }
+  @media (max-width: 809px) {
+    .a9__nm {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      height: auto;
+      border-bottom: 0;
+    }
+    .a9__nm-c {
+      height: auto;
+      min-height: 150px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    }
+    .a9__nm-c:nth-child(2n) {
+      border-right: 1px solid rgba(255, 255, 255, 0.16);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__nm-c {
+      clip-path: none;
+      transition: background-color 0.25s ease;
+    }
   }
 
   /* 4: the graph, quiet */
@@ -1106,11 +1202,29 @@ const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
           if (!e.isIntersecting) return;
           e.target.classList.add('is-in');
           io.unobserve(e.target);
+          if ((e.target as HTMLElement).hasAttribute('data-nm')) countUp(e.target as HTMLElement);
         }),
       { rootMargin: '0px 0px -10% 0px' },
     );
+    // figures count up with their column (ease-out, a touch after it starts)
+    function countUp(box: HTMLElement) {
+      box.querySelectorAll<HTMLElement>('[data-count]').forEach((el, i) => {
+        const to = Number(el.dataset.count);
+        if (calm || !to) return;
+        const delay = 150 + i * 90;
+        const dur = 1100;
+        const t0 = performance.now() + delay;
+        el.textContent = '0';
+        const step = (now: number) => {
+          const x = Math.min(1, Math.max(0, (now - t0) / dur));
+          el.textContent = String(Math.round(to * (1 - Math.pow(1 - x, 4))));
+          if (x < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      });
+    }
     const later: HTMLElement[] = [];
-    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid]').forEach((el) => {
+    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid], [data-nm]').forEach((el) => {
       const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
       el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 60}ms`);
       // the section behind the B only starts once it's being uncovered
