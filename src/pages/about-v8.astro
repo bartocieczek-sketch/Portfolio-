@@ -68,8 +68,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     <!-- 1 -->
     <section class="a8__intro" data-intro>
       <div class="a8__pin">
-                <span class="a8__mark" set:html={bSvg} data-mark aria-hidden="true" />
-        <h1 class="a8__say" data-lit>
+                <h1 class="a8__say" data-lit>
           Hi, I’m Bart — a design engineer from Warsaw. I design and build bold web experiences with AI in the loop. Into sport, games and way too much coffee.
         </h1>
       </div>
@@ -128,7 +127,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         </div>
         <div class="a8__monitor" data-in>
           <div class="a8__mon-top">
-            <span class="a8__beat" aria-hidden="true" set:html={bSvg} data-beat />
+            <span class="a8__beat" aria-hidden="true" data-beat />
             <span><strong data-bpm>62</strong> bpm</span>
           </div>
           <svg class="a8__ecg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-label="Heart rate trace"><path data-ecg d="" /></svg>
@@ -406,10 +405,12 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     color: var(--ink);
     font-variant-numeric: tabular-nums;
   }
+  /* a small dot that beats with the heart */
   .a8__beat {
-    width: 14px;
-    color: var(--ink);
-    transform-origin: 50% 60%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink);
   }
   .a8__ecg {
     display: block;
@@ -658,7 +659,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         if (inBeat >= 60 / bpm) inBeat -= 60 / bpm;
         // the B jumps on the R wave
         if (beatEl && !calm && before < 0.22 && inBeat >= 0.22)
-          beatEl.animate([{ transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          beatEl.animate([{ transform: 'scale(1.8)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
         samples.push(calm ? 0 : ecg(inBeat));
         if (samples.length > WIN * RATE) samples.shift();
       }
