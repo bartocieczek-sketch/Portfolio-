@@ -293,10 +293,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           <span>bpm</span>
         </p>
       </div>
-      <p class="a9__ring-t" data-in>
-        Coffee in, sport out. <span>Hold the dot to brew one. Every coffee raises my pulse.</span>
-        <span class="a9__ring-c"><b data-cups>0</b> today</span>
-      </p>
+      <div class="a9__ring-t" data-in>
+        <p class="a9__ring-h">Coffee in, sport out.</p>
+        <p class="a9__ring-s">Hold the dot to brew a coffee. Each one raises my pulse.</p>
+        <p class="a9__ring-c"><b data-cups>0</b> coffees today</p>
+      </div>
     </section>
 
     <!-- 6 -->
@@ -1290,24 +1291,38 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     display: flex;
     font-weight: inherit;
   }
+  /* three levels: a line to read, a line to act on, a figure to glance at */
   .a9__ring-t {
-    max-width: 40ch;
-    margin: 0;
+    display: grid;
+    justify-items: center;
+    gap: 8px;
     text-align: center;
-    font: 500 15px/1.45 var(--font-head);
+  }
+  .a9__ring-t p {
+    margin: 0;
+  }
+  .a9__ring-h {
+    font: 500 clamp(22px, 2vw, 30px) / 1.1 var(--font-head);
+    letter-spacing: -0.03em;
     color: var(--ink);
   }
-  .a9__ring-t > span {
+  .a9__ring-s {
+    max-width: 32ch;
+    font-size: 14px;
+    line-height: 1.45;
     color: var(--grey);
   }
   .a9__ring-c {
-    display: block;
-    margin-top: 6px;
-    font-size: 13px;
+    margin-top: 10px !important;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--grey);
   }
   .a9__ring-c b {
     font-weight: 500;
     color: var(--ink);
+    font-variant-numeric: tabular-nums;
   }
 
   /* 3b: numbers — no boxes: each figure set as big as the pulse readout,
