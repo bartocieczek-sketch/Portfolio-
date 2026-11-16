@@ -463,7 +463,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
      the objects in the line pop in on their turn, and each one does a
      little thing of its own (steam, a ticking hand, a running trace). */
   .a9__prose-sec {
-    padding: clamp(110px, 20vh, 220px) var(--pad);
+    padding: clamp(110px, 20vh, 220px) var(--pad) clamp(36px, 6vh, 64px);
+  }
+  /* services sit close under the paragraph */
+  .a9__prose-sec + .a9__svc .a9__svc-top {
+    padding-top: clamp(28px, 4vh, 48px);
   }
   .a9__prose {
     margin: 0;
