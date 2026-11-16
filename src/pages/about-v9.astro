@@ -69,10 +69,10 @@ const stats = [
 ];
 // services (DRAFT copy, to be edited): one line on what I do, then the
 // three groups the graph below is built from, in the same order
-const svcLead = 'I design and build websites and digital products end to end — from the first idea and the look of it, to the shipped, fast, animated page.';
+const svcLead = 'I design and build websites and digital products end to end, from the first idea and the look of it to the shipped, fast, animated page.';
 const services = [
-  { t: 'Design', d: 'UX/UI, art direction and design systems — interfaces that look sharp and still hold up long after launch.' },
-  { t: 'Technology', d: 'Builds in no-code and in code — Astro, Sanity, WebGL and motion — fast, accessible and easy to edit.' },
+  { t: 'Design', d: 'UX/UI, art direction and design systems: interfaces that look sharp and still hold up long after launch.' },
+  { t: 'Technology', d: 'Builds in no-code and in code (Astro, Sanity, WebGL, motion), fast, accessible and easy to edit.' },
   { t: 'AI & Play', d: 'AI in the workflow and in the product, plus game-design thinking for interfaces people want to play with.' },
 ];
 // about me, in four beats (the last two are DRAFT copy, to be edited)
@@ -86,12 +86,12 @@ const abItems: { t: string; a: string; b?: string; pic?: boolean }[] = [
   {
     t: 'How I work.',
     a: 'Design and build in one loop: I prototype in code early, test it on real screens, and polish the motion until it feels right.',
-    b: 'AI is part of that loop — for research, generative UI and faster iterations — while the judgement stays human.',
+    b: 'AI is part of that loop for research, generative UI and faster iterations, while the judgement stays human.',
   },
   {
     t: 'Off-screen.',
     a: 'Sport keeps me sharp and games keep me curious about how things should feel in the hand.',
-    b: 'Coffee keeps the rest going — there’s a monitor for that further down.',
+    b: 'Coffee keeps the rest going. There’s a monitor for that further down.',
   },
 ];
 // a company's logo from the experience list, by name
@@ -132,9 +132,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
          set into the line like words (DRAFT copy) -->
     <section class="a9__who a9__prose-sec" data-who>
       <p class="a9__prose" data-prose>
-        Hi, I’m Bart
+        Hi, I’m Bart,
         {portrait ? <img class="ob ob--pic" src={portrait} alt="" width="700" height="930" /> : null}
-        — a design engineer
+        a design engineer
         <span class="ob ob--b" aria-hidden="true" set:html={bSvg} />
         from Kraków. Senior Web Designer at GRAFIT
         {logoOf('grafit') && <img class="ob ob--logo" src={logoOf('grafit')} alt="" width="96" height="96" />}, Young Jury at Awwwards
@@ -146,8 +146,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         games
         <span class="ob ob--pad" aria-hidden="true"><svg viewBox="0 0 56 36"><path d="M14 4h28c7 0 11 6 12.5 15S55 34 49 34c-4.5 0-6-6-11-6H18c-5 0-6.5 6-11 6S0 28 1.5 19 7 4 14 4z" fill="currentColor" /><path d="M14 13v10M9 18h10" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" /><circle cx="39" cy="15" r="2.6" fill="#0a0a0a" /><circle cx="44" cy="20" r="2.6" fill="#0a0a0a" /></svg></span>
         and coffee
-        <span class="ob ob--cup" aria-hidden="true"><svg viewBox="0 0 40 48"><path class="ob-steam" d="M14 12c-3-3 3-5 0-9M21 12c-3-3 3-5 0-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /><path d="M6 16h28l-3.5 29a3 3 0 0 1-3 2.6h-15a3 3 0 0 1-3-2.6z" fill="currentColor" /><rect x="4" y="14" width="32" height="5" rx="2" fill="currentColor" /><path d="M10 28h20" stroke="#0a0a0a" stroke-width="5" /></svg></span>
-        — my pulse
+        <span class="ob ob--cup" aria-hidden="true"><svg viewBox="0 0 40 48"><path class="ob-steam" d="M14 12c-3-3 3-5 0-9M21 12c-3-3 3-5 0-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /><path d="M6 16h28l-3.5 29a3 3 0 0 1-3 2.6h-15a3 3 0 0 1-3-2.6z" fill="currentColor" /><rect x="4" y="14" width="32" height="5" rx="2" fill="currentColor" /><path d="M10 28h20" stroke="#0a0a0a" stroke-width="5" /></svg></span>.
+        My pulse
         <span class="ob ob--ecg" aria-hidden="true"><svg viewBox="0 0 80 32"><path d="M0 18h20l4-5 4 5h6l3 10 5-26 5 22 3-6h30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" /></svg></span>
         proves it.
       </p>
@@ -211,7 +211,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     <section class="a9__heart" data-heart>
       <div class="a9__hm-top">
         <p class="a9__label" data-in>Off-screen</p>
-        <p class="a9__hm-live" data-in><span class="a9__beat" aria-hidden="true" data-beat />Live — my pulse, your coffee</p>
+        <p class="a9__hm-live" data-in><span class="a9__beat" aria-hidden="true" data-beat />Live: my pulse, your coffee</p>
       </div>
       <!-- a monitor the width of the page: the trace runs edge to edge, the
            rate sits on it big, and the pen dot leads the line -->
@@ -1984,7 +1984,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     }
 
     // ---- text scramble: letters settle out of random glyphs, left to right
-    const GLYPHS = 'abcdefghijklmnopqrstuvwxyz/—_·';
+    const GLYPHS = 'abcdefghijklmnopqrstuvwxyz/-_·';
     const scramble = (el: HTMLElement) => {
       const final = el.textContent ?? '';
       if (calm) return;
@@ -2121,7 +2121,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     // ---- live Kraków time
     const clock = root.querySelector<HTMLElement>('[data-clock]');
     const tick = () => {
-      if (clock) clock.textContent = `Kraków, ${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' }).format(new Date())} — open for new work`;
+      if (clock) clock.textContent = `Kraków, ${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' }).format(new Date())} · open for new work`;
     };
     tick();
     setInterval(tick, 20000);
