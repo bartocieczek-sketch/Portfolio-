@@ -65,13 +65,27 @@ const yearsIn = firstYear < 9999 ? new Date().getFullYear() - firstYear : 7;
 // Boxes hang off one line across the page, some above it, some below,
 // offset like a timeline: c = grid columns (of 12), up = above the line,
 // h = height as a share of its half.
-const stats = [
+const statsFallback = [
   { v: yearsIn, suf: '+', l: 'Years in digital design', c: '1 / 5', up: true, h: 1 },
   { v: 120, suf: '+', l: 'Projects shipped', c: '3 / 7', up: false, h: 0.95 },
   { v: 30, suf: '+', l: 'Brands & studios', c: '6 / 9', up: true, h: 0.55 },
   { v: 1, suf: '', l: 'Seat on the Awwwards Young Jury', c: '8 / 11', up: false, h: 0.6 },
   { v: 4, suf: '', l: 'Coffees a day, give or take', c: '10 / 13', up: true, h: 0.78 },
 ];
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const cmsStats = ((about.stats ?? []) as any[]).filter((x) => typeof x?.value === 'number' && x.label);
+const stats = cmsStats.length ? cmsStats.map((x) => ({ v: x.value, suf: x.suffix ?? '', l: x.label })) : statsFallback;
+// logos under the numbers: the CMS list, or the companies from Experience
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const cmsClients = ((about.clients ?? []) as any[]).filter((c) => c?.name);
+const clients: { name: string; logo: string | null; url?: string; svg?: boolean }[] = cmsClients.length
+  ? cmsClients.map((c) => ({
+      name: c.name,
+      url: c.url,
+      svg: c.logo?.asset?.mimeType === 'image/svg+xml',
+      logo: c.logo?.asset ? (c.logo.asset.mimeType === 'image/svg+xml' ? c.logo.asset.url : urlFor(c.logo).width(400).fit('max').url()) : null,
+    }))
+  : jobs.map((j) => ({ name: j.company ?? '', logo: j.logo }));
 // services (DRAFT copy, to be edited): one line on what I do, then the
 // three groups the graph below is built from, in the same order
 const svcLead = 'I design and build websites and digital products end to end, from the first idea and the look of it to the shipped, fast, animated page.';
@@ -196,17 +210,37 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       </div>
     </section>
 
-    <!-- 3b -->
+    <!-- 3b: in numbers, with the companies under them (both editable in
+         the CMS: About page → In numbers / Clients & brands) -->
     <section class="a9__nums">
-      <p class="a9__label" data-in>In numbers</p>
       <div class="a9__nm" data-nm>
         {stats.map((st, i) => (
-          <div class="a9__nm-c" style={`--x:${[0, 34, 10, 52, 24][i] ?? 0}%;--i:${i}`} data-drop={i}>
+          <div class="a9__nm-c" style={`--x:${[0, 34, 10, 52, 24, 40, 6][i] ?? 0}%;--i:${i}`} data-drop={i}>
             <p class="a9__nm-v"><span class="a9__nm-in"><span data-count={st.v}>{st.v}</span>{st.suf}</span></p>
             <p class="a9__nm-l">{st.l}</p>
           </div>
         ))}
       </div>
+      {clients.length > 0 && (
+        <div class="a9__cl" data-cl>
+          <p class="a9__cl-t">Worked with</p>
+          <ul>
+            {clients.map((c, i) => {
+              const inner = (
+                <>
+                  <span class={`a9__cl-logo${c.svg ? ' is-svg' : ''}`}>{c.logo ? <img src={c.logo} alt="" loading="lazy" /> : <b>{c.name.slice(0, 1)}</b>}</span>
+                  <span class="a9__cl-n">{c.name}</span>
+                </>
+              );
+              return (
+                <li style={`--i:${i}`}>
+                  {c.url ? <a href={c.url} target="_blank" rel="noopener">{inner}</a> : <span class="a9__cl-w">{inner}</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </section>
 
     <!-- 5 -->
@@ -1109,6 +1143,94 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     }
   }
 
+  .a9__nums {
+    padding: clamp(96px, 18vh, 200px) var(--pad);
+  }
+  /* logos under the numbers: a row of tiles with names, arriving in turn
+     with the same blur-clear as everything else */
+  .a9__cl {
+    margin-top: clamp(64px, 9vw, 140px);
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+  }
+  .a9__cl-t {
+    margin: 0 0 24px;
+    font-size: 13px;
+    color: var(--grey);
+  }
+  .a9__cl ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: clamp(20px, 2.4vw, 36px) clamp(16px, 2vw, 28px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .a9__cl li {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(10px);
+    transition:
+      opacity 0.7s var(--e-out),
+      filter 0.8s var(--e-out),
+      transform 1s var(--e-expo);
+    transition-delay: calc(var(--i) * 70ms);
+  }
+  .a9__cl.is-in li {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+  .a9__cl a,
+  .a9__cl-w {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .a9__cl-logo {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #1a1a1a;
+  }
+  .a9__cl-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .a9__cl-logo.is-svg {
+    padding: 10px;
+  }
+  .a9__cl-logo.is-svg img {
+    object-fit: contain;
+  }
+  .a9__cl-logo b {
+    font-weight: 500;
+    color: var(--grey);
+  }
+  .a9__cl-n {
+    font-size: 15px;
+    color: var(--grey);
+    transition: color 0.2s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__cl a:hover .a9__cl-n {
+      color: var(--ink);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__cl li {
+      filter: none;
+      transform: none;
+    }
+  }
+
   /* 4: the graph, quiet */
   .a9__caps {
     position: relative;
@@ -1682,7 +1804,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       });
     }
     const later: HTMLElement[] = [];
-    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid], [data-nm], [data-prose]').forEach((el) => {
+    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid], [data-nm], [data-prose], [data-cl]').forEach((el) => {
       const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
       el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 60}ms`);
       // the section behind the B only starts once it's being uncovered

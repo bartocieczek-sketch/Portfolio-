@@ -27,7 +27,8 @@ export const HOME_QUERY = `*[_id == "homePage"][0]{
 export const ABOUT_QUERY = `*[_id == "aboutPage"][0]{
   ...,
   portrait{${imageFields}},
-  experience[]{..., logo{${imageFields}}}
+  experience[]{..., logo{${imageFields}}},
+  clients[]{..., logo{${imageFields}}}
 }`;
 
 export const PROJECT_QUERY = `*[_type == "project" && slug.current == $slug][0]{

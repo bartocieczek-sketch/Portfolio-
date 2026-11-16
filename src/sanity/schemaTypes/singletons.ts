@@ -75,6 +75,42 @@ export const aboutPage = defineType({
     defineField({ name: 'experienceLead', type: 'text', rows: 3 }),
     defineField({ name: 'experienceBody', type: 'text', rows: 4 }),
     defineField({ name: 'experience', type: 'array', of: [defineArrayMember({ type: 'experienceItem' })] }),
+    defineField({
+      name: 'stats',
+      title: 'In numbers',
+      description: 'Big figures on the About page (e.g. 7 + "Years in digital design").',
+      type: 'array',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          name: 'stat',
+          fields: [
+            defineField({ name: 'value', type: 'number', validation: (r) => r.required() }),
+            defineField({ name: 'suffix', type: 'string', description: 'e.g. + or %' }),
+            defineField({ name: 'label', type: 'string', validation: (r) => r.required() }),
+          ],
+          preview: { select: { v: 'value', s: 'suffix', l: 'label' }, prepare: ({ v, s, l }) => ({ title: `${v ?? ''}${s ?? ''}`, subtitle: l }) },
+        }),
+      ],
+    }),
+    defineField({
+      name: 'clients',
+      title: 'Clients & brands',
+      description: 'Logos shown under the numbers (SVG or transparent PNG work best). Empty = logos from Experience.',
+      type: 'array',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          name: 'client',
+          fields: [
+            defineField({ name: 'name', type: 'string', validation: (r) => r.required() }),
+            defineField({ name: 'logo', type: 'image' }),
+            defineField({ name: 'url', type: 'url' }),
+          ],
+          preview: { select: { title: 'name', media: 'logo' } },
+        }),
+      ],
+    }),
     defineField({ name: 'ctaText', title: 'Footer text', type: 'string' }),
   ],
   preview: { prepare: () => ({ title: 'About page' }) },
