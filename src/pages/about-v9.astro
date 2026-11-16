@@ -95,21 +95,17 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
 
     <!-- 2 -->
     <section class="a9__sec a9__who" data-who>
-      <p class="a9__label" data-in>Who I am</p>
       <div class="a9__who-c">
-        <p class="a9__beat-n" data-in>01 — Who</p>
         <p class="a9__lead" data-blur>{about.introLead}</p>
         <div class="a9__beats">
           <figure class="a9__who-pic" data-in>
             {portrait ? <img src={portrait} alt="Bart Ocieczek" width="700" height="930" loading="lazy" /> : <span />}
           </figure>
           <div data-in>
-            <p class="a9__beat-n">02 — How</p>
             <p class="a9__p">{about.introBody}</p>
           </div>
           {nowJobs.length > 0 && (
             <div data-in>
-              <p class="a9__beat-n">03 — Now</p>
               <ul class="a9__now">
                 {nowJobs.map((j) => <li><span>{nice(j.role ?? '')}</span> <span class="a9__dim">{j.company}</span></li>)}
               </ul>
@@ -363,6 +359,14 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   /* 2: who — no scrubbing here (the hero has that); it simply arrives:
      the lead sharpens out of a blur word by word, the beats follow */
+  .a9__who-c {
+    grid-column: 2;
+  }
+  @media (max-width: 809px) {
+    .a9__who-c {
+      grid-column: 1;
+    }
+  }
   .a9__beat-n {
     margin: 0 0 14px;
     font-size: 13px;
