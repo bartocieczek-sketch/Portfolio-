@@ -1289,14 +1289,17 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     clip-path: inset(50%);
   }
   /* the rate sits by the dot like a hub's name */
+  /* the rate sits just under the hold ring (r 34 of the 400 box) */
   .a9__ring-l {
     position: absolute;
-    left: calc(50% + 30px);
-    top: 50%;
+    left: 50%;
+    top: calc(50% + 8.5% + 10px);
     display: flex;
     align-items: center;
     gap: 5px;
-    margin: -0.5em 0 0;
+    margin: 0;
+    transform: translateX(-50%);
+    white-space: nowrap;
     font: 500 15px/1 var(--font-head);
     color: var(--ink);
     pointer-events: none;
