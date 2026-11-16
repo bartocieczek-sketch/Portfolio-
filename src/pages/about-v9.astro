@@ -52,14 +52,15 @@ const portrait = about.portrait?.asset ? urlFor(about.portrait).width(700).heigh
 // what I'm doing right now (the 'Now' beat)
 const nowJobs = jobs.filter((j) => j.now);
 // in numbers — PLACEHOLDER values, to be replaced with Bart's real ones.
-// h is the column's height (share of the tallest), so the row reads as a
-// small bar chart rising from one baseline.
+// Boxes hang off one line across the page, some above it, some below,
+// offset like a timeline: c = grid columns (of 12), up = above the line,
+// h = height as a share of its half.
 const stats = [
-  { v: 8, suf: '+', l: 'Years in digital design', h: 1 },
-  { v: 120, suf: '+', l: 'Projects shipped', h: 0.8 },
-  { v: 30, suf: '+', l: 'Brands & studios', h: 0.62 },
-  { v: 1, suf: '', l: 'Seat on the Awwwards Young Jury', h: 0.46 },
-  { v: 4, suf: '', l: 'Coffees a day, give or take', h: 0.32 },
+  { v: 8, suf: '+', l: 'Years in digital design', c: '1 / 5', up: true, h: 1 },
+  { v: 120, suf: '+', l: 'Projects shipped', c: '3 / 7', up: false, h: 0.95 },
+  { v: 30, suf: '+', l: 'Brands & studios', c: '6 / 9', up: true, h: 0.55 },
+  { v: 1, suf: '', l: 'Seat on the Awwwards Young Jury', c: '8 / 11', up: false, h: 0.6 },
+  { v: 4, suf: '', l: 'Coffees a day, give or take', c: '10 / 13', up: true, h: 0.78 },
 ];
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
@@ -140,8 +141,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     <section class="a9__sec a9__nums">
       <p class="a9__label" data-in>In numbers</p>
       <div class="a9__nm" data-nm>
+        <span class="a9__nm-line" aria-hidden="true" />
         {stats.map((st, i) => (
-          <div class="a9__nm-c" style={`--h:${st.h};--i:${i}`}>
+          <div class={`a9__nm-c ${st.up ? 'is-up' : 'is-down'}`} style={`--h:${st.h};--i:${i};grid-column:${st.c}`}>
             <p class="a9__nm-v"><span data-count={st.v}>{st.v}</span>{st.suf}</p>
             <p class="a9__nm-l">{st.l}</p>
           </div>
@@ -575,44 +577,68 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     color: var(--grey);
   }
 
-  /* 3b: numbers — columns of falling heights on one baseline, hairline
-     sides and tops only; they rise out of the baseline one after another
-     and the figures count up as they do */
+  /* 3b: numbers — boxes hang off one hairline across the page, above and
+     below it in turn, offset like a timeline. The line draws first; each
+     box then grows out of it (up or down) and its figure counts up. */
   .a9__nm {
+    --half: clamp(200px, 30vh, 320px);
+    --hl: rgba(255, 255, 255, 0.16);
+    position: relative;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    align-items: end;
-    height: clamp(360px, 58vh, 580px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: var(--half) var(--half);
+  }
+  .a9__nm-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--half);
+    height: 1px;
+    background: rgba(255, 255, 255, 0.28);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1.2s var(--e-expo);
+  }
+  .a9__nm.is-in .a9__nm-line {
+    transform: none;
   }
   .a9__nm-c {
+    position: relative;
     height: calc(var(--h) * 100%);
-    min-height: 150px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 16px 16px 18px;
-    border-top: 1px solid rgba(255, 255, 255, 0.16);
-    border-left: 1px solid rgba(255, 255, 255, 0.16);
-    clip-path: inset(100% 0 0 0);
+    padding: 16px 18px 18px;
+    border-left: 1px solid var(--hl);
+    border-right: 1px solid var(--hl);
     transition:
-      clip-path 1.2s var(--e-expo) calc(var(--i) * 90ms),
+      clip-path 1.1s var(--e-expo) calc(0.35s + var(--i) * 110ms),
       background-color 0.25s ease;
   }
-  .a9__nm-c:last-child {
-    border-right: 1px solid rgba(255, 255, 255, 0.16);
+  .a9__nm-c.is-up {
+    grid-row: 1;
+    align-self: end;
+    border-top: 1px solid var(--hl);
+    clip-path: inset(100% 0 0 0);
+  }
+  .a9__nm-c.is-down {
+    grid-row: 2;
+    align-self: start;
+    margin-top: 1px;
+    border-bottom: 1px solid var(--hl);
+    clip-path: inset(0 0 100% 0);
   }
   .a9__nm.is-in .a9__nm-c {
     clip-path: inset(0 0 0 0);
   }
   .a9__nm-v {
     margin: 0;
-    font: 500 clamp(44px, 5.4vw, 96px) / 0.9 var(--font-head);
+    font: 500 clamp(44px, 5.2vw, 92px) / 0.9 var(--font-head);
     letter-spacing: -0.05em;
     font-variant-numeric: tabular-nums;
   }
   .a9__nm-l {
-    max-width: 16ch;
+    max-width: 18ch;
     margin: 0;
     font-size: 13px;
     color: var(--grey);
@@ -628,23 +654,38 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   @media (max-width: 809px) {
     .a9__nm {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      height: auto;
-      border-bottom: 0;
+      display: flex;
+      flex-direction: column;
     }
-    .a9__nm-c {
-      height: auto;
-      min-height: 150px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    .a9__nm-line {
+      display: none;
     }
-    .a9__nm-c:nth-child(2n) {
-      border-right: 1px solid rgba(255, 255, 255, 0.16);
+    .a9__nm-c,
+    .a9__nm-c.is-up,
+    .a9__nm-c.is-down {
+      height: auto;
+      min-height: 140px;
+      margin: 0 0 -1px;
+      border: 1px solid var(--hl);
+      clip-path: inset(0 0 100% 0);
+    }
+    .a9__nm-c:nth-child(odd) {
+      margin-left: 18%;
+    }
+    .a9__nm-c:nth-child(even) {
+      margin-right: 18%;
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .a9__nm-c {
+    .a9__nm-c,
+    .a9__nm-c.is-up,
+    .a9__nm-c.is-down {
       clip-path: none;
       transition: background-color 0.25s ease;
+    }
+    .a9__nm-line {
+      transform: none;
+      transition: none;
     }
   }
 
@@ -1208,7 +1249,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       box.querySelectorAll<HTMLElement>('[data-count]').forEach((el, i) => {
         const to = Number(el.dataset.count);
         if (calm || !to) return;
-        const delay = 150 + i * 90;
+        const delay = 450 + i * 110;
         const dur = 1100;
         const t0 = performance.now() + delay;
         el.textContent = '0';
