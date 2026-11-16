@@ -1,5 +1,5 @@
 ---
-// About me (from draft v9).
+// About me (from draft v9, pulse with sport from v16).
 // Draft (v8 with more show: a portrait that opens out of a pill, scrubbed
 // blur-in words, hairlines that draw, a logo that trails the cursor, text
 // scramble, a page-wide CTA that fills in with a pointer-following orb): About, cut down to six beats and built from the home page's
@@ -274,7 +274,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       <div class="a9__ring" data-in>
         <svg class="a9__ring-svg" viewBox="-200 -200 400 400" aria-hidden="true">
           <g data-waves></g>
+          <circle class="a9__track" r="190" />
+          <circle class="a9__lap" r="190" pathLength="100" data-lap />
           <g data-rings></g>
+          <circle class="a9__runner" r="5" cx="0" cy="-190" data-runner />
           <circle class="a9__ring-prog" r="34" pathLength="100" />
         </svg>
         <button class="a9__core" type="button" data-brew aria-label="Hold to brew a coffee">
@@ -294,8 +297,12 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       </div>
       <div class="a9__ring-t" data-in>
         <p class="a9__ring-h">Coffee in, sport out.</p>
-        <p class="a9__ring-s">Hold the dot to brew a coffee. Each one raises my pulse.</p>
-        <p class="a9__ring-c"><b data-cups>0</b> coffees today</p>
+        <p class="a9__ring-s">Hold the dot to brew a coffee, it fills a ring. Then hold Run: the laps burn the coffees off again.</p>
+        <button class="a9__brew a9__run" type="button" data-run>
+          <span class="a9__brew-fill" aria-hidden="true"></span>
+          <span class="a9__brew-t" data-run-t>Hold to run</span>
+        </button>
+        <p class="a9__ring-c"><b data-cups>0</b> coffees · <b data-km>0.0</b> km today</p>
       </div>
     </section>
 
@@ -1311,6 +1318,37 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     display: flex;
     font-weight: inherit;
   }
+  /* the running track: the outermost ring, a runner going round it while
+     Run is held, and the lap drawing in behind them */
+  .a9__track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.07);
+    stroke-width: 1;
+    stroke-dasharray: 2 6;
+  }
+  .a9__lap {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.55);
+    stroke-width: 1.5;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    transform: rotate(-90deg);
+  }
+  .a9__runner {
+    fill: var(--ink);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .a9__ring.is-running .a9__runner {
+    opacity: 1;
+  }
+  .a9__run {
+    margin-top: 14px;
+  }
+  .a9__run.is-holding .a9__brew-fill {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 0.6s linear;
+  }
   /* three levels: a line to read, a line to act on, a figure to glance at */
   .a9__ring-t {
     display: grid;
@@ -2185,6 +2223,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     const samples: number[] = [];
     const RATE = 60; // samples per second
     let caffeine = 0;
+    let running = false;
     let bpm = 62;
     let inBeat = 0; // seconds since this beat started
     let acc = 0;
@@ -2309,7 +2348,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       }
       // heart: caffeine wears off ~1 coffee per 40s; the rate eases toward its target
       caffeine = Math.max(0, caffeine - dt / 40);
-      const target = 62 + Math.min(caffeine, 8) * 8;
+      // a run lifts the rate hard; coffee lifts it from rest
+      const target = running ? 132 + Math.min(caffeine, 8) * 3 : 62 + Math.min(caffeine, 8) * 8;
       bpm += (target - bpm) * Math.min(1, dt * 0.8);
       showBpm(Math.round(bpm));
       acc += dt * RATE;
@@ -2436,6 +2476,79 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       brew.addEventListener('pointercancel', stop);
       brew.addEventListener('keydown', (e) => e.key === ' ' && !e.repeat && start(e));
       brew.addEventListener('keyup', (e) => e.key === ' ' && stop());
+
+      // ---- sport out: hold Run and a runner laps the outer ring; every
+      // kilometre burns one coffee off (its dot goes dark, the rate settles)
+      const run = root.querySelector<HTMLButtonElement>('[data-run]');
+      const runT = root.querySelector<HTMLElement>('[data-run-t]');
+      const runner = root.querySelector<SVGCircleElement>('[data-runner]');
+      const lap = root.querySelector<SVGCircleElement>('[data-lap]');
+      const kmEl = root.querySelector<HTMLElement>('[data-km]');
+      const ring = root.querySelector<HTMLElement>('.a9__ring');
+      if (run && runner && lap && kmEl && ring) {
+        const LAP = 0.4; // km per lap
+        const SPEED = 0.22; // km per second, held
+        let km = 0;
+        let burnt = 0;
+        let raf = 0;
+        let last = 0;
+        const draw = () => {
+          const f = (km % LAP) / LAP;
+          const a = -Math.PI / 2 + f * Math.PI * 2;
+          runner.setAttribute('cx', (Math.cos(a) * 190).toFixed(2));
+          runner.setAttribute('cy', (Math.sin(a) * 190).toFixed(2));
+          lap.style.strokeDashoffset = String(100 - f * 100);
+          kmEl.textContent = km.toFixed(1);
+        };
+        const step = (now: number) => {
+          const dt = Math.min(0.1, (now - last) / 1000);
+          last = now;
+          km += dt * SPEED;
+          draw();
+          // a kilometre done: one coffee off
+          while (Math.floor(km) > burnt) {
+            burnt++;
+            caffeine = Math.max(0, caffeine - 1);
+            if (n > 0) {
+              const d = dots[n - 1];
+              n--;
+              cups.textContent = String(n);
+              paint();
+              d?.animate([{ transform: 'scale(1.8)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+            }
+          }
+          if (running) raf = requestAnimationFrame(step);
+        };
+        const go = (e: Event) => {
+          e.preventDefault();
+          if (running) return;
+          running = true;
+          run.classList.add('is-holding');
+          ring.classList.add('is-running');
+          if (runT) runT.textContent = 'Running…';
+          last = performance.now();
+          raf = requestAnimationFrame(step);
+        };
+        const halt = () => {
+          if (!running) return;
+          running = false;
+          cancelAnimationFrame(raf);
+          run.classList.remove('is-holding');
+          ring.classList.remove('is-running');
+          if (runT) runT.textContent = 'Hold to run';
+          // the lap fades back to empty, the runner waits at the start
+          lap.animate([{ strokeDashoffset: lap.style.strokeDashoffset || '100' }, { strokeDashoffset: '100' }], { duration: 500, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          lap.style.strokeDashoffset = '100';
+        };
+        draw();
+        lap.style.strokeDashoffset = '100';
+        run.addEventListener('pointerdown', go);
+        run.addEventListener('pointerup', halt);
+        run.addEventListener('pointerleave', halt);
+        run.addEventListener('pointercancel', halt);
+        run.addEventListener('keydown', (e) => e.key === ' ' && !e.repeat && go(e));
+        run.addEventListener('keyup', (e) => e.key === ' ' && halt());
+      }
     }
 
     // ---- text scramble: letters settle out of random glyphs, left to right
