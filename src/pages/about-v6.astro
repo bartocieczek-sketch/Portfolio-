@@ -1,0 +1,898 @@
+---
+// Draft: the Swiss type of v5, moving like v2. Light page, read by scrolling:
+// 1 the statement is pinned and goes from grey to black word by word as you
+//   scroll (the B mark turns with it);
+// 2 big numbers count up;
+// 3 a pinned strip of photos slides sideways (portrait + slots for more);
+// 4 path: experience rows, the logo slides in on hover;
+// 5 services, numbered, with one line each;
+// 6 off-screen: hold-to-brew coffee and a pulse that follows scroll speed;
+// 7 the CTA with a rotated live Warsaw status.
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import { ABOUT_QUERY, HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+import { load } from '../lib/load';
+import glyphs from '../lib/monogram-b.json';
+
+const [settings, about, home] = await Promise.all([
+  load(Astro.locals, SETTINGS_QUERY),
+  load(Astro.locals, ABOUT_QUERY),
+  load(Astro.locals, HOME_QUERY),
+]);
+if (!settings || !about) return new Response('Content not found', { status: 500 });
+
+const yy = (s: string) => {
+  const m = s.match(/(\d{4})\D+(\d{4}|present)/i);
+  if (!m) return '';
+  const a = `’${m[1].slice(2)}`;
+  return /present/i.test(m[2]) ? `${a}–now` : `${a}–’${m[2].slice(2)}`;
+};
+const title = (s: string) =>
+  s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\bUi\b/g, 'UI').replace(/\bUx\b/g, 'UX');
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const jobs = ((about.experience ?? []) as any[]).map((e) => ({
+  role: title(e.role ?? ''),
+  company: e.company as string,
+  when: yy(e.period ?? ''),
+  now: /present/i.test(e.period ?? ''),
+  logo: e.logo?.asset ? urlFor(e.logo).width(96).height(96).fit('crop').url() : null,
+}));
+const nice = (f: string) => {
+  const s = f.toLowerCase().replace(/\b(ux|ui|ai)\b/g, (m) => m.toUpperCase());
+  return s.replace(/(^|\s)(\w)/g, (_m, a, b) => a + b.toUpperCase()).replace('Nocode', 'No-code');
+};
+const focus: string[] = (about.focus ?? []).map(nice);
+const blurbs: Record<string, string> = {
+  'UX/UI Design': 'Interfaces that feel obvious — researched, systemised and polished to the last state.',
+  'No-code Development': 'Production sites shipped fast, with a CMS your team can actually run.',
+  'Game Design': 'Loops, feedback and delight — borrowed from games, used to make products stick.',
+  'Design Systems': 'Tokens, components and rules that keep a growing product consistent.',
+  'AI In Design': 'AI in the workflow, not in the look: faster exploration, sharper decisions.',
+};
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const projects = ((home?.projects ?? []) as any[]).filter(Boolean);
+const firstYear = Math.min(...jobs.map((j) => Number(j.when.match(/’(\d\d)/)?.[1] ?? 99) + 2000));
+const years = Number.isFinite(firstYear) && firstYear < 2100 ? new Date().getFullYear() - firstYear : 7;
+// photos: the portrait now; the other frames are slots for pictures to add
+const photos = [
+  { src: about.portrait?.asset ? urlFor(about.portrait).width(900).height(1100).fit('crop').url() : null, cap: 'Me' },
+  { src: null, cap: 'At the desk' },
+  { src: null, cap: 'Training' },
+  { src: null, cap: 'Coffee, again' },
+  { src: null, cap: 'Warsaw' },
+];
+const [bPath, bBox] = glyphs.g.B as [string, number[], number];
+const bView = `${bBox[0]} ${-bBox[3]} ${bBox[2] - bBox[0]} ${bBox[3] - bBox[1]}`;
+// the statement: [text, isSubstance]
+const lead: [string, boolean][] = [
+  ['Bart Ocieczek is a', false],
+  ['design engineer', true],
+  ['from Warsaw, working across', false],
+  ['AI-driven web experiences, UX/UI design', true],
+  ['and', false],
+  ['no-code development.', true],
+  ['Fuelled by sport and way too much coffee.', false],
+];
+---
+
+<Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
+  <main class="a6" data-a6>
+    <header class="a6__nav">
+      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
+    </header>
+
+    <!-- 1: pinned statement, lit by the scroll -->
+    <section class="a6__intro" data-intro>
+      <div class="a6__pin">
+        <svg class="a6__mark" viewBox={bView} aria-hidden="true" data-mark><path transform="scale(1,-1)" d={bPath} fill="currentColor" /></svg>
+        <h1 class="a6__lead" data-lead>
+          {lead.map(([t, sub]) => <span class={sub ? 'is-sub' : ''} data-part>{t}</span>)}
+        </h1>
+        <p class="a6__scroll" data-scrollhint>Scroll</p>
+      </div>
+    </section>
+
+    <!-- 2: numbers -->
+    <section class="a6__sec a6__nums">
+      <p data-in><strong data-count={years}>0</strong>+<em>years designing</em></p>
+      <p data-in><strong data-count={projects.length}>0</strong><em>selected projects</em></p>
+      <p data-in><strong data-count={jobs.length}>0</strong><em>teams, studios & juries</em></p>
+    </section>
+
+    <!-- 3: photos, pinned and sliding sideways -->
+    <section class="a6__photos" data-photos style={`--n:${photos.length}`}>
+      <div class="a6__photos-pin">
+        <p class="a6__label">Off the record</p>
+        <div class="a6__strip" data-strip>
+          {photos.map((ph, i) => (
+            <figure class="a6__ph" style={`--i:${i}`}>
+              <div class="a6__ph-img" data-par>
+                {ph.src ? <img src={ph.src} alt={ph.cap} width="900" height="1100" loading="lazy" /> : <span class="a6__slot">Photo slot</span>}
+              </div>
+              <figcaption><span>{String(i + 1).padStart(2, '0')}</span>{ph.cap}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 4: path -->
+    <section class="a6__sec a6__grid">
+      <p class="a6__label" data-in>Path</p>
+      <div>
+        <p class="a6__h" data-words>{about.experienceLead}</p>
+        <ul class="a6__jobs">
+          {jobs.map((j) => (
+            <li data-in>
+              <span class="a6__co">
+                {j.logo && <img src={j.logo} alt="" width="96" height="96" loading="lazy" />}
+                <span>{j.company}</span>
+              </span>
+              <span class="a6__role">{j.role}</span>
+              <span class="a6__when">{j.now && <b>now</b>}{j.when}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- 5: services -->
+    <section class="a6__sec a6__grid">
+      <p class="a6__label" data-in>Services</p>
+      <ol class="a6__services">
+        {focus.map((f, i) => (
+          <li data-in>
+            <span class="a6__n">{String(i + 1).padStart(2, '0')}</span>
+            <h3>{f}</h3>
+            <p>{blurbs[f] ?? ''}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <!-- 6: off-screen -->
+    <section class="a6__sec a6__grid">
+      <p class="a6__label" data-in>Off-screen</p>
+      <div class="a6__cards">
+        <div class="a6__card" data-in>
+          <p class="a6__card-k">Fuel</p>
+          <p class="a6__card-big"><span data-cups>0</span> coffees today</p>
+          <button class="a6__brew" type="button" data-brew>
+            <span class="a6__brew-fill" aria-hidden="true"></span>
+            <span class="a6__brew-t">Hold to brew one</span>
+          </button>
+        </div>
+        <div class="a6__card" data-in>
+          <p class="a6__card-k">Sport</p>
+          <p class="a6__card-big">Training keeps the head clear.</p>
+          <p class="a6__bpm"><span data-bpm>62</span> bpm</p>
+          <svg class="a6__pulse" viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true"><path data-pulse d="" /></svg>
+          <p class="a6__card-s">Every coffee pushes it up. So does scrolling fast.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7: cta -->
+    <section class="a6__sec a6__end">
+      <p class="a6__status" data-in><span data-clock>Warsaw</span><br />Open for new work</p>
+      <a class="a6__cta" href={settings.callUrl ?? '#'} target="_blank" rel="noopener" data-in>
+        <span class="g">{about.ctaText?.split('?')[0]}?</span>
+        <span class="a6__cta-go">Let’s talk <i>↗</i></span>
+      </a>
+    </section>
+  </main>
+</Base>
+
+<style>
+  .a6 {
+    --e-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --e-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ink: rgb(17, 17, 17);
+    --grey: rgb(150, 150, 150);
+    --faint: rgb(214, 214, 214);
+    --rule: rgba(17, 17, 17, 0.1);
+    --pad: clamp(20px, 2.8vw, 40px);
+    --col: clamp(140px, 22vw, 340px);
+    background: #fff;
+    color: var(--ink);
+  }
+  .a6__nav {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 10;
+    padding: var(--gutter);
+    mix-blend-mode: difference;
+    color: #fff;
+  }
+  .a6__nav :global(*) {
+    --text-primary: #fff;
+  }
+  .g {
+    color: var(--grey);
+  }
+  .a6__label {
+    margin: 0;
+    font: 500 13px/1.2 var(--font-head);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+  .a6__sec {
+    padding: clamp(80px, 14vh, 160px) var(--pad);
+  }
+  .a6__grid {
+    display: grid;
+    grid-template-columns: var(--col) minmax(0, 1fr);
+    gap: var(--pad);
+    border-top: 1px solid var(--rule);
+  }
+  .a6__grid > .a6__label {
+    position: sticky;
+    top: 90px;
+    align-self: start;
+  }
+
+  /* 1: pinned statement */
+  .a6__intro {
+    height: 260svh;
+  }
+  .a6__pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 var(--pad);
+  }
+  .a6__mark {
+    position: absolute;
+    right: var(--pad);
+    top: clamp(100px, 16vh, 150px);
+    width: clamp(44px, 4.4vw, 64px);
+    height: auto;
+    will-change: transform;
+  }
+  .a6__lead {
+    max-width: 17em;
+    margin: 0;
+    font: 500 clamp(34px, 5.2vw, 86px) / 1 var(--font-head);
+    letter-spacing: -0.05em;
+  }
+  /* each word starts faint; the scroll brings it in: grey for the frame,
+     black for the substance */
+  :global(.a6 .lw) {
+    color: var(--faint);
+    transition: color 0.25s linear;
+  }
+  :global(.a6 .lw.on) {
+    color: var(--grey);
+  }
+  :global(.a6 .is-sub .lw.on) {
+    color: var(--ink);
+  }
+  .a6__scroll {
+    position: absolute;
+    left: var(--pad);
+    bottom: 28px;
+    margin: 0;
+    font: 500 12px/1 var(--font-head);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--grey);
+    transition: opacity 0.4s ease;
+  }
+
+  /* 2: numbers */
+  .a6__nums {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--pad);
+    border-top: 1px solid var(--rule);
+  }
+  .a6__nums p {
+    margin: 0;
+    font: 500 clamp(64px, 10vw, 180px) / 0.84 var(--font-head);
+    letter-spacing: -0.065em;
+  }
+  .a6__nums strong {
+    font-weight: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+  .a6__nums em {
+    display: block;
+    margin-top: 16px;
+    font: 500 14px/1.2 var(--font-head);
+    letter-spacing: -0.01em;
+    font-style: normal;
+    color: var(--grey);
+  }
+
+  /* 3: photo strip */
+  .a6__photos {
+    height: calc(100svh + var(--n) * 45vh);
+  }
+  .a6__photos-pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 28px;
+    padding: 0 var(--pad);
+  }
+  .a6__strip {
+    display: flex;
+    gap: clamp(12px, 1.6vw, 24px);
+    width: max-content;
+    will-change: transform;
+  }
+  .a6__ph {
+    margin: 0;
+    width: clamp(240px, 26vw, 420px);
+  }
+  .a6__ph:nth-child(even) {
+    margin-top: 8vh;
+  }
+  .a6__ph-img {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background: #f1f1ef;
+  }
+  .a6__ph-img img {
+    position: absolute;
+    inset: -8% 0;
+    width: 100%;
+    height: 116%;
+    object-fit: cover;
+    transform: translateX(var(--px, 0px));
+    will-change: transform;
+  }
+  .a6__slot {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font: 500 12px/1 var(--font-head);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+  .a6__ph figcaption {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    font: 500 15px/1.2 var(--font-head);
+    letter-spacing: -0.02em;
+  }
+  .a6__ph figcaption span {
+    color: var(--grey);
+  }
+
+  /* 4: path */
+  .a6__h {
+    max-width: 22em;
+    margin: 0 0 48px;
+    font: 500 clamp(24px, 2.6vw, 42px) / 1.08 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+  .a6__jobs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .a6__jobs li {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 140px;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--rule);
+    font: 500 clamp(17px, 1.4vw, 22px) / 1.1 var(--font-head);
+    letter-spacing: -0.025em;
+  }
+  .a6__co {
+    display: inline-flex;
+    align-items: center;
+  }
+  .a6__co img {
+    width: 0;
+    height: 30px;
+    border-radius: 8px;
+    object-fit: cover;
+    opacity: 0;
+    transition:
+      width 0.35s var(--e-out),
+      margin 0.35s var(--e-out),
+      opacity 0.25s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a6__jobs li:hover .a6__co img {
+      width: 30px;
+      margin-right: 12px;
+      opacity: 1;
+    }
+  }
+  .a6__role,
+  .a6__when {
+    color: var(--grey);
+  }
+  .a6__when {
+    justify-self: end;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .a6__when b {
+    margin-right: 8px;
+    padding: 4px 7px;
+    border-radius: 99px;
+    background: var(--ink);
+    color: #fff;
+    font-weight: 500;
+    font-size: 11px;
+  }
+
+  /* 5: services */
+  .a6__services {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .a6__services li {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) minmax(0, 0.9fr);
+    gap: var(--pad);
+    align-items: baseline;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .a6__n {
+    font: 500 13px/1 var(--font-head);
+    color: var(--grey);
+  }
+  .a6__services h3 {
+    margin: 0;
+    font: 500 clamp(28px, 3.4vw, 56px) / 1 var(--font-head);
+    letter-spacing: -0.05em;
+    transition: transform 0.45s var(--e-out);
+  }
+  .a6__services p {
+    margin: 0;
+    font: 500 clamp(15px, 1.15vw, 19px) / 1.3 var(--font-head);
+    letter-spacing: -0.02em;
+    color: var(--grey);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a6__services li:hover h3 {
+      transform: translateX(12px);
+    }
+  }
+
+  /* 6: cards */
+  .a6__cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    gap: 16px;
+  }
+  .a6__card {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    padding: 28px;
+    background: #f4f4f2;
+  }
+  .a6__card-k {
+    margin: 0 0 auto;
+    font: 500 12px/1 var(--font-head);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+  .a6__card-big {
+    margin: 40px 0 20px;
+    font: 500 clamp(26px, 2.6vw, 40px) / 1.04 var(--font-head);
+    letter-spacing: -0.045em;
+  }
+  .a6__card-big span {
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
+  }
+  .a6__card-s {
+    margin: 10px 0 0;
+    font: 500 13px/1.3 var(--font-head);
+    color: var(--grey);
+  }
+  /* hold to brew: slow deliberate fill, snappy release */
+  .a6__brew {
+    position: relative;
+    align-self: flex-start;
+    overflow: hidden;
+    padding: 14px 20px;
+    border: 1px solid rgba(17, 17, 17, 0.2);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    font: 500 14px/1 var(--font-head);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    transition: transform 0.16s var(--e-out);
+  }
+  .a6__brew:active {
+    transform: scale(0.97);
+  }
+  .a6__brew-fill {
+    position: absolute;
+    inset: 0;
+    background: #c9a27a;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.2s var(--e-out);
+  }
+  .a6__brew.is-holding .a6__brew-fill {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 1.2s linear;
+  }
+  .a6__brew-t {
+    position: relative;
+  }
+  .a6__bpm {
+    margin: 0 0 6px;
+    font: 500 13px/1 var(--font-head);
+    color: var(--text-secondary, rgb(150, 150, 150));
+  }
+  .a6__bpm span {
+    display: inline-block;
+    min-width: 2.2ch;
+    font-variant-numeric: tabular-nums;
+    color: currentColor;
+  }
+  .a6__pulse {
+    width: 100%;
+    height: 80px;
+    margin-top: auto;
+  }
+  .a6__pulse path {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.6;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* 7: end */
+  .a6__end {
+    display: grid;
+    grid-template-columns: var(--col) minmax(0, 1fr);
+    gap: var(--pad);
+    align-items: end;
+    min-height: 80svh;
+    border-top: 1px solid var(--rule);
+  }
+  .a6__status {
+    margin: 0;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font: 500 15px/1.2 var(--font-head);
+    letter-spacing: -0.02em;
+  }
+  .a6__cta {
+    color: var(--ink);
+    text-decoration: none;
+    font: 500 clamp(30px, 3.8vw, 64px) / 1.02 var(--font-head);
+    letter-spacing: -0.05em;
+  }
+  .a6__cta-go {
+    display: block;
+    margin-top: 0.3em;
+    font-size: 2.3em;
+    letter-spacing: -0.065em;
+  }
+  .a6__cta-go i {
+    display: inline-block;
+    font-style: normal;
+    font-size: 0.5em;
+    vertical-align: 0.5em;
+    transition: transform 0.45s var(--e-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a6__cta:hover i {
+      transform: translate(0.12em, -0.12em);
+    }
+    .a6__cta .g {
+      transition: color 0.3s ease;
+    }
+    .a6__cta:hover .g {
+      color: var(--ink);
+    }
+  }
+
+  /* reveals */
+  [data-in] {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.8s var(--e-out),
+      transform 1s var(--e-expo);
+    transition-delay: var(--d, 0s);
+  }
+  [data-in].is-in {
+    opacity: 1;
+    transform: none;
+  }
+  .a6__status[data-in],
+  .a6__status[data-in].is-in {
+    transform: rotate(180deg);
+  }
+  :global(.a6 .w) {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    padding-bottom: 0.1em;
+    margin-bottom: -0.1em;
+  }
+  :global(.a6 .wi) {
+    display: inline-block;
+    transform: translateY(110%);
+    transition: transform 1s var(--e-expo);
+    transition-delay: calc(var(--k) * 24ms);
+  }
+  :global(.a6 .is-in .wi) {
+    transform: none;
+  }
+
+  @media (max-width: 809px) {
+    .a6 {
+      --col: 0px;
+    }
+    .a6__grid,
+    .a6__end {
+      grid-template-columns: 1fr;
+    }
+    .a6__grid > .a6__label {
+      position: static;
+    }
+    .a6__nums {
+      grid-template-columns: 1fr;
+    }
+    .a6__photos {
+      height: calc(100svh + var(--n) * 60vh);
+    }
+    .a6__ph {
+      width: 70vw;
+    }
+    .a6__jobs li {
+      grid-template-columns: 1fr auto;
+    }
+    .a6__role {
+      grid-column: 1;
+      grid-row: 2;
+      font-size: 14px;
+    }
+    .a6__when {
+      grid-row: 1 / span 2;
+      align-self: start;
+    }
+    .a6__services li {
+      grid-template-columns: 32px 1fr;
+    }
+    .a6__services p {
+      grid-column: 2;
+    }
+    .a6__end {
+      min-height: 60svh;
+    }
+    .a6__status {
+      writing-mode: horizontal-tb;
+      transform: none;
+    }
+    .a6__status[data-in],
+    .a6__status[data-in].is-in {
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-in],
+    :global(.a6 .wi) {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-a6]');
+  if (root) {
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+
+    // ---- statement: wrap every word (keeping its part's class)
+    const words: HTMLElement[] = [];
+    root.querySelectorAll<HTMLElement>('[data-part]').forEach((part) => {
+      const t = (part.textContent ?? '').trim().split(/\s+/);
+      part.textContent = '';
+      t.forEach((w, i) => {
+        const s = document.createElement('span');
+        s.className = 'lw';
+        s.textContent = w;
+        part.append(s);
+        if (i < t.length - 1) part.append(' ');
+        words.push(s);
+      });
+      part.after(' ');
+    });
+
+    // ---- [data-words]: masked word rise when in view
+    root.querySelectorAll<HTMLElement>('[data-words]').forEach((el) => {
+      const t = (el.textContent ?? '').trim().split(/\s+/);
+      el.textContent = '';
+      t.forEach((w, k) => {
+        const o = document.createElement('span');
+        o.className = 'w';
+        const i = document.createElement('span');
+        i.className = 'wi';
+        i.style.setProperty('--k', String(k));
+        i.textContent = w;
+        o.append(i);
+        el.append(o);
+        if (k < t.length - 1) el.append(' ');
+      });
+    });
+
+    // ---- reveal once, staggered among siblings; numbers count up
+    const count = (el: HTMLElement) => {
+      const to = Number(el.dataset.count);
+      if (calm) return void (el.textContent = String(to));
+      const t0 = performance.now();
+      const step = () => {
+        const p = Math.min(1, (performance.now() - t0) / 1200);
+        el.textContent = String(Math.round(to * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+    const io = new IntersectionObserver(
+      (es) =>
+        es.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('is-in');
+          io.unobserve(e.target);
+          e.target.querySelectorAll<HTMLElement>('[data-count]').forEach(count);
+        }),
+      { rootMargin: '0px 0px -10% 0px' },
+    );
+    root.querySelectorAll<HTMLElement>('[data-in], [data-words]').forEach((el) => {
+      const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
+      el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 70}ms`);
+      io.observe(el);
+    });
+
+    // ---- the scroll-driven parts, in one frame loop
+    const intro = root.querySelector<HTMLElement>('[data-intro]');
+    const mark = root.querySelector<SVGElement>('[data-mark]');
+    const hint = root.querySelector<HTMLElement>('[data-scrollhint]');
+    const photos = root.querySelector<HTMLElement>('[data-photos]');
+    const strip = root.querySelector<HTMLElement>('[data-strip]');
+    const pars = [...root.querySelectorAll<HTMLElement>('[data-par] img')];
+    const pulse = root.querySelector<SVGPathElement>('[data-pulse]');
+    let lastY = scrollY;
+    let speed = 0;
+    // heart rate: a resting 62 bpm; every coffee brewed adds ~9 (wearing
+    // off slowly), fast scrolling adds a little more; the line follows it
+    let caffeine = 0;
+    let bpm = 62;
+    let kick = 0;
+    let lastT = performance.now();
+    const bpmEl = root.querySelector<HTMLElement>('[data-bpm]');
+    let phase = 0;
+    let markR = 0;
+    const beat = (x: number) => {
+      const f = x - Math.floor(x);
+      if (f < 0.42) return 0;
+      if (f < 0.46) return -0.25;
+      if (f < 0.5) return 1;
+      if (f < 0.54) return -0.55;
+      if (f < 0.6) return 0.08;
+      return 0;
+    };
+    const frame = () => {
+      const vh = innerHeight;
+      // 1: light the words across the pinned stretch
+      if (intro) {
+        const r = intro.getBoundingClientRect();
+        const p = clamp(-r.top / (r.height - vh));
+        const n = Math.round(clamp(p / 0.85) * words.length);
+        words.forEach((w, k) => w.classList.toggle('on', k < n));
+        if (hint) hint.style.opacity = String(1 - clamp(p * 8));
+        if (mark && !calm) {
+          markR += (p * 360 - markR) * 0.1;
+          mark.style.transform = `perspective(300px) rotateY(${markR.toFixed(2)}deg)`;
+        }
+      }
+      // 3: photos slide sideways; each picture drifts a little inside its frame
+      if (photos && strip) {
+        const r = photos.getBoundingClientRect();
+        const p = clamp(-r.top / (r.height - vh));
+        const pin = strip.parentElement!;
+        const cs = getComputedStyle(pin);
+        const inner = pin.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const max = Math.max(0, strip.scrollWidth - inner);
+        strip.style.transform = `translate3d(${(-p * max).toFixed(1)}px,0,0)`;
+        if (!calm)
+          pars.forEach((img) => {
+            const b = img.parentElement!.getBoundingClientRect();
+            const c = (b.left + b.width / 2) / innerWidth - 0.5;
+            img.style.setProperty('--px', `${(-c * 40).toFixed(1)}px`);
+          });
+      }
+      // 6: pulse
+      if (pulse) {
+        const y = scrollY;
+        speed += (Math.min(60, Math.abs(y - lastY)) - speed) * 0.08;
+        lastY = y;
+        const now = performance.now();
+        const dt = Math.min(0.05, (now - lastT) / 1000);
+        lastT = now;
+        caffeine = Math.max(0, caffeine - dt * 0.05); // wears off ~1 coffee / 20 s
+        const target = 62 + Math.min(caffeine, 10) * 9 + speed * 0.6;
+        bpm += (target - bpm) * Math.min(1, dt * 1.6); // eases toward the new rate
+        kick *= Math.pow(0.02, dt); // a brew's jolt fades in well under a second
+        phase += (bpm / 60) * dt * 0.5; // two beats across the line
+        if (bpmEl) bpmEl.textContent = String(Math.round(bpm));
+        let d = '';
+        for (let i = 0; i <= 120; i++) {
+          d += `${i ? 'L' : 'M'}${((i / 120) * 600).toFixed(1)} ${(60 - beat(phase + (i / 120) * 2) * 46 * (1 + kick * 0.35)).toFixed(1)}`;
+        }
+        pulse.setAttribute('d', d);
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+
+    // ---- live Warsaw time + coffee count from the time of day
+    const clock = root.querySelector<HTMLElement>('[data-clock]');
+    const hourNow = () =>
+      Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: 'numeric', hour12: false }).format(new Date()));
+    const tick = () => {
+      if (!clock) return;
+      clock.textContent = `Warsaw, ${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' }).format(new Date())}`;
+    };
+    tick();
+    setInterval(tick, 20000);
+
+    // ---- hold to brew
+    const brew = root.querySelector<HTMLButtonElement>('[data-brew]');
+    const cups = root.querySelector<HTMLElement>('[data-cups]');
+    if (brew && cups) {
+      let n = Math.max(0, Math.min(4, Math.floor((hourNow() - 6) / 3)));
+      cups.textContent = String(n);
+      let t = 0;
+      const start = (e: Event) => {
+        e.preventDefault();
+        brew.classList.add('is-holding');
+        t = window.setTimeout(() => {
+          n++;
+          caffeine += 1;
+          kick = 1;
+          cups.textContent = String(n);
+          cups.animate([{ transform: 'translateY(40%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          brew.classList.remove('is-holding');
+          brew.querySelector('.a6__brew-t')!.textContent = n > 5 ? 'Maybe that’s enough' : 'Hold to brew another';
+        }, 1200);
+      };
+      const stop = () => {
+        clearTimeout(t);
+        brew.classList.remove('is-holding');
+      };
+      brew.addEventListener('pointerdown', start);
+      brew.addEventListener('pointerup', stop);
+      brew.addEventListener('pointerleave', stop);
+      brew.addEventListener('pointercancel', stop);
+      brew.addEventListener('keydown', (e) => e.key === ' ' && !e.repeat && start(e));
+      brew.addEventListener('keyup', (e) => e.key === ' ' && stop());
+    }
+  }
+</script>
