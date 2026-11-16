@@ -362,6 +362,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           })}
         </ul>
       </div>
+      <div class="a9__lt-mark" aria-hidden="true" data-lt-mark set:html={bSvg} />
       <footer class="a9__lt-foot">
         <span>© Bart Ocieczek {new Date().getFullYear()}</span>
         <span>Designer &amp; developer, Kraków</span>
@@ -1430,7 +1431,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
 
   /* 6: let's talk — the paragraph and the rows */
   .a9__lt {
+    position: relative;
     padding: 0 0 20px;
+    overflow: hidden;
   }
   .a9__lt-prose {
     padding: clamp(110px, 20vh, 220px) var(--pad) clamp(56px, 8vh, 96px);
@@ -1481,6 +1484,34 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   .a9__lt-rows {
     padding-top: 0;
+    padding-bottom: 0;
+  }
+  /* the monogram, very faint and cut off by the page's end: it rises into
+     place as the footer arrives, the last thing on the page */
+  .a9__lt-mark {
+    position: relative;
+    z-index: 0;
+    height: clamp(180px, 26vw, 420px);
+    margin-top: clamp(48px, 7vw, 104px);
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .a9__lt-mark :global(svg) {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: min(64vw, 900px);
+    height: auto;
+    color: var(--ink);
+    opacity: 0;
+    transform: translate(-50%, 18%);
+    transition:
+      opacity 1.4s var(--e-out),
+      transform 1.6s var(--e-expo);
+  }
+  .a9__lt-mark.is-in :global(svg) {
+    opacity: 0.06;
+    transform: translate(-50%, 0);
   }
   /* contact rows: bigger than the experience rows (they're the point of
      the page's end); on hover a white fill sweeps in from the left and the
@@ -1585,7 +1616,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
-    margin: clamp(48px, 7vw, 96px) var(--pad) 0;
+    position: relative;
+    z-index: 1;
+    margin: 0 var(--pad);
     padding: 14px 0 6px;
     border-top: 1px solid var(--rule);
     font-size: 13px;
@@ -2479,7 +2512,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       });
     }
     const later: HTMLElement[] = [];
-    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid], [data-nm], [data-prose], [data-cl]').forEach((el) => {
+    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid], [data-nm], [data-prose], [data-cl], [data-lt-mark]').forEach((el) => {
       const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
       el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 60}ms`);
       // the section behind the B only starts once it's being uncovered
