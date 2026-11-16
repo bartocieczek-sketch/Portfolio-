@@ -49,13 +49,8 @@ const focus: string[] = (about.focus ?? []).map(nice);
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const projects = ((home?.projects ?? []) as any[]).filter(Boolean);
 const portrait = about.portrait?.asset ? urlFor(about.portrait).width(700).height(930).fit('crop').url() : null;
-// the story's three beats: who, how, now
+// what I'm doing right now (the 'Now' beat)
 const nowJobs = jobs.filter((j) => j.now);
-const chapters = [
-  about.introLead,
-  about.introBody,
-  nowJobs.length ? `Right now: ${nowJobs.map((j) => `${nice(j.role ?? '')} at ${j.company}`).join(', and ')}.` : null,
-].filter(Boolean) as string[];
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
 const caps = [
@@ -88,20 +83,27 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     </section>
 
     <!-- 2 -->
-    <section class="a9__story" data-story style={`--n:${chapters.length}`}>
-      <div class="a9__story-pin">
-        <div class="a9__story-side">
-          <p class="a9__label">Who I am</p>
-          <p class="a9__story-n"><span data-story-n>01</span> / {String(chapters.length).padStart(2, '0')}</p>
-          <span class="a9__story-bar" aria-hidden="true"><i data-story-bar></i></span>
-        </div>
-        <div class="a9__story-body">
-          <figure class="a9__story-pic" data-story-pic>
+    <section class="a9__sec a9__who">
+      <p class="a9__label" data-in>Who I am</p>
+      <div class="a9__who-c">
+        <p class="a9__beat-n" data-in>01 — Who</p>
+        <p class="a9__lead" data-blur>{about.introLead}</p>
+        <div class="a9__beats">
+          <figure class="a9__who-pic" data-in>
             {portrait ? <img src={portrait} alt="Bart Ocieczek" width="700" height="930" loading="lazy" /> : <span />}
           </figure>
-          <div class="a9__story-chs">
-            {chapters.map((c) => <p class="a9__ch" data-ch>{c}</p>)}
+          <div data-in>
+            <p class="a9__beat-n">02 — How</p>
+            <p class="a9__p">{about.introBody}</p>
           </div>
+          {nowJobs.length > 0 && (
+            <div data-in>
+              <p class="a9__beat-n">03 — Now</p>
+              <ul class="a9__now">
+                {nowJobs.map((j) => <li><span>{nice(j.role ?? '')}</span> <span class="a9__dim">{j.company}</span></li>)}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -300,112 +302,99 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     color-scheme: dark;
   }
 
-  /* 2: the story — pinned; the beats come out of the distance, light up
-     word by word and fly past, the way the hero's B did */
-  .a9__story {
-    position: relative;
-    height: calc(var(--n, 3) * 120svh + 40svh);
-  }
-  .a9__story-pin {
-    position: sticky;
-    top: 0;
-    height: 100svh;
-    display: grid;
-    grid-template-columns: var(--col) minmax(0, 1fr);
-    gap: var(--pad);
-    padding: 0 var(--pad);
-    align-items: center;
-    overflow: hidden;
-  }
-  .a9__story-side {
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 6px;
-  }
-  .a9__story-n {
-    margin: 0;
+  /* 2: who — no scrubbing here (the hero has that); it simply arrives:
+     the lead sharpens out of a blur word by word, the beats follow */
+  .a9__beat-n {
+    margin: 0 0 14px;
     font-size: 13px;
     color: var(--grey);
     font-variant-numeric: tabular-nums;
   }
-  .a9__story-n span {
-    color: var(--ink);
+  .a9__lead {
+    max-width: 19em;
+    margin: 0;
+    font: 500 clamp(28px, 3.5vw, 58px) / 1.04 var(--font-head);
+    letter-spacing: -0.04em;
   }
-  .a9__story-bar {
-    display: block;
-    width: 64px;
-    height: 1px;
-    margin-top: 8px;
-    background: var(--rule);
+  .a9__lead :global(.bw) {
+    display: inline-block;
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(0.25em) scale(0.96);
+    transition:
+      opacity 0.9s var(--e-out),
+      filter 1s var(--e-out),
+      transform 1.2s var(--e-expo);
+    transition-delay: calc(var(--k) * 35ms);
   }
-  .a9__story-bar i {
-    display: block;
-    height: 100%;
-    background: var(--ink);
-    transform: scaleX(0);
-    transform-origin: left;
+  .a9__lead.is-in :global(.bw) {
+    opacity: 1;
+    filter: none;
+    transform: none;
   }
-  .a9__story-body {
+  .a9__beats {
     display: grid;
-    grid-template-columns: clamp(84px, 9vw, 140px) minmax(0, 1fr);
+    grid-template-columns: clamp(84px, 9vw, 130px) minmax(0, 1fr) minmax(0, 1fr);
     gap: clamp(24px, 4vw, 64px);
-    align-items: center;
+    align-items: start;
+    margin-top: clamp(48px, 7vw, 104px);
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
   }
-  .a9__story-pic {
+  .a9__who-pic {
     margin: 0;
     aspect-ratio: 0.8;
     border-radius: 999px;
     overflow: hidden;
     background: #1a1a1a;
-    will-change: transform, clip-path;
+    clip-path: inset(100% 0 0 0 round 999px);
+    transition: clip-path 1.3s var(--e-expo) 0.2s;
   }
-  .a9__story-pic img {
+  .a9__who-pic.is-in {
+    clip-path: inset(0 0 0 0 round 999px);
+  }
+  .a9__who-pic img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    filter: grayscale(1);
+    transform: scale(1.2);
+    transition:
+      transform 1.6s var(--e-expo) 0.2s,
+      filter 0.4s ease;
   }
-  .a9__story-chs {
-    display: grid;
+  .a9__who-pic.is-in img {
+    transform: none;
   }
-  .a9__ch {
-    grid-area: 1 / 1;
-    max-width: 17em;
+  @media (hover: hover) and (pointer: fine) {
+    .a9__who-pic:hover img {
+      filter: grayscale(0);
+    }
+  }
+  .a9__now {
+    list-style: none;
     margin: 0;
-    font: 500 clamp(28px, 3.5vw, 58px) / 1.04 var(--font-head);
-    letter-spacing: -0.04em;
-    transform-origin: 0 50%;
-    opacity: 0;
-    will-change: transform, filter, opacity;
-  }
-  .a9__ch :global(.lw) {
-    opacity: var(--lit, 0.22);
+    padding: 0;
+    display: grid;
+    gap: 6px;
   }
   @media (max-width: 809px) {
-    .a9__story-pin {
-      grid-template-columns: 1fr;
-      align-content: center;
-      gap: 32px;
-    }
-    .a9__story-side {
-      align-self: auto;
-      flex-direction: row;
-      align-items: center;
-      gap: 14px;
-    }
-    .a9__story-bar {
-      margin: 0 0 0 auto;
-    }
-    .a9__story-body {
+    .a9__beats {
       grid-template-columns: 1fr;
     }
-    .a9__story-pic {
+    .a9__who-pic {
       width: 84px;
     }
   }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__lead :global(.bw) {
+      filter: none;
+      transform: none;
+    }
+  }
 
+  /* 2 (old) */
   /* 2 (old) */
   .a9__who-grid {
     display: grid;
@@ -902,7 +891,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         }),
       { rootMargin: '0px 0px -10% 0px' },
     );
-    root.querySelectorAll<HTMLElement>('[data-in], [data-words]').forEach((el) => {
+    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur]').forEach((el) => {
       const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
       el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 60}ms`);
       io.observe(el);
@@ -936,25 +925,19 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     // ---- scroll-driven bits + the monitor, in one loop
     const intro = root.querySelector<HTMLElement>('[data-intro]');
     const smooth = (v: number) => v * v * (3 - 2 * v);
-    // story: each beat split into words to light
-    const story = root.querySelector<HTMLElement>('[data-story]');
-    const chs = [...root.querySelectorAll<HTMLElement>('[data-ch]')].map((el) => {
+    // who: the lead, word by word
+    root.querySelectorAll<HTMLElement>('[data-blur]').forEach((el) => {
       const ws = (el.textContent ?? '').trim().split(/\s+/);
       el.textContent = '';
-      const spans = ws.map((w, k) => {
+      ws.forEach((w, k) => {
         const sp = document.createElement('span');
-        sp.className = 'lw';
+        sp.className = 'bw';
+        sp.style.setProperty('--k', String(k));
         sp.textContent = w;
         el.append(sp);
         if (k < ws.length - 1) el.append(' ');
-        return sp;
       });
-      return { el, spans };
     });
-    const storyN = root.querySelector<HTMLElement>('[data-story-n]');
-    const storyBar = root.querySelector<HTMLElement>('[data-story-bar]');
-    const storyPic = root.querySelector<HTMLElement>('[data-story-pic]');
-    let storyIdx = -1;
     let heroPx = -1e4;
     let heroPy = -1e4;
     if (intro && matchMedia('(hover: hover) and (pointer: fine)').matches) {
@@ -994,45 +977,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         say.style.opacity = String(1 - fly * 0.85);
         sayWrap.parentElement!.style.setProperty('--p', p.toFixed(3));
         (window as any).__a9P = p;
-      }
-      if (story && chs.length) {
-        const r = story.getBoundingClientRect();
-        const max = story.offsetHeight - innerHeight;
-        const p = max > 0 ? clamp(-r.top / max) : 0;
-        // arriving: the first beat comes out of the distance as the section
-        // rises in, right behind the B's fly-through
-        const arrive = clamp((innerHeight - r.top) / innerHeight);
-        const n = chs.length;
-        const seg = 1 / n;
-        chs.forEach((c, i) => {
-          const local = (p - i * seg) / seg;
-          const enter = calm ? 1 : smooth(i === 0 ? clamp((arrive - 0.35) / 0.65) : clamp(local / 0.18));
-          const exit = calm || i === n - 1 ? 0 : smooth(clamp((local - 0.8) / 0.2));
-          const vis = enter * (1 - exit);
-          c.el.style.opacity = vis.toFixed(3);
-          c.el.style.visibility = vis < 0.01 ? 'hidden' : '';
-          c.el.style.transform = `translateY(${((1 - enter) * 3 - exit * 3).toFixed(2)}vh) scale(${(0.86 + 0.14 * enter + 0.16 * exit).toFixed(4)})`;
-          const bl = (1 - enter) * 12 + exit * 14;
-          c.el.style.filter = bl > 0.05 ? `blur(${bl.toFixed(2)}px)` : '';
-          // light the words across the middle of the beat
-          const lf = clamp((local - 0.04) / 0.6) * (c.spans.length + 3) - 3;
-          c.spans.forEach((s, k) => s.style.setProperty('--lit', (0.22 + 0.78 * clamp((lf - k + 3) / 3)).toFixed(3)));
-        });
-        const idx = Math.min(n - 1, Math.floor(p * n));
-        if (idx !== storyIdx && storyN) {
-          storyIdx = idx;
-          storyN.textContent = String(idx + 1).padStart(2, '0');
-        }
-        if (storyBar) storyBar.style.transform = `scaleX(${p.toFixed(4)})`;
-        if (storyPic) {
-          // the portrait opens upward as we arrive, warms into colour by the
-          // last beat, and drifts a touch with each one
-          const open = calm ? 1 : smooth(clamp((arrive - 0.3) / 0.6));
-          storyPic.style.clipPath = `inset(${((1 - open) * 100).toFixed(2)}% 0 0 0 round 999px)`;
-          const warm = clamp((p - (n - 1) * seg) / (seg * 0.5));
-          (storyPic.firstElementChild as HTMLElement | null)?.style.setProperty('filter', `grayscale(${(1 - warm).toFixed(3)})`);
-          storyPic.style.transform = `translateY(${(Math.sin(p * Math.PI * n) * -10).toFixed(2)}px) scale(${(0.9 + 0.1 * open).toFixed(4)})`;
-        }
       }
       // heart: caffeine wears off ~1 coffee per 40s; the rate eases toward its target
       caffeine = Math.max(0, caffeine - dt / 40);
