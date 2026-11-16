@@ -14,8 +14,8 @@
 import Base from '../layouts/Base.astro';
 // vector marks for logos we only have small bitmaps of
 import awwwardsSvg from 'simple-icons/icons/awwwards.svg?raw';
-// a modern blackletter for the hero title, kin to the B monogram
-import '@fontsource/grenze-gotisch/latin-500.css';
+// a blackletter for the hero title, kin to the B monogram
+import '@fontsource/pirata-one/latin-400.css';
 import Nav from '../components/Nav.astro';
 import CapGraph from '../components/CapGraph.astro';
 import { ABOUT_QUERY, HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
@@ -376,8 +376,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     max-width: 11em;
     text-wrap: balance;
     text-align: center;
-    font-family: 'Grenze Gotisch', var(--font-display);
-    font-weight: 500;
+    font-family: 'Pirata One', var(--font-display);
+    font-weight: 400;
     font-size: clamp(96px, 19vw, 320px);
     text-transform: none;
     letter-spacing: -0.01em;
