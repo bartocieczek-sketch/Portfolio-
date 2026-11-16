@@ -1,0 +1,2060 @@
+---
+// Draft v15 — services beside the graph: the three on the left, the graph held on the right; the one in the middle of the screen lights its branch.
+// Otherwise as v9 (v8 with more show: a portrait that opens out of a pill, scrubbed
+// blur-in words, hairlines that draw, a logo that trails the cursor, text
+// scramble, a page-wide CTA that fills in with a pointer-following orb): About, cut down to six beats and built from the home page's
+// language (white page, pill-shaped pictures, the thin line, small grey
+// labels, Neue Montreal) with the B woven through:
+// 1 big uppercase statement (who / what / into), lit word by word as you
+//   scroll, the B turning in the corner;
+// 2 who I am — a pill portrait and a short text;
+// 3 experience & what I do;
+// 4 how it connects — the capabilities graph with the B at its centre;
+// 5 coffee & heart — a real ECG trace; every coffee raises the rate;
+// 6 the call to action.
+import Base from '../layouts/Base.astro';
+// a modern blackletter for the hero title, kin to the B monogram
+import '@fontsource/grenze-gotisch/latin-500.css';
+import Nav from '../components/Nav.astro';
+import CapGraph from '../components/CapGraph.astro';
+import { ABOUT_QUERY, HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+import { load } from '../lib/load';
+import glyphs from '../lib/monogram-b.json';
+
+const [settings, about, home] = await Promise.all([
+  load(Astro.locals, SETTINGS_QUERY),
+  load(Astro.locals, ABOUT_QUERY),
+  load(Astro.locals, HOME_QUERY),
+]);
+if (!settings || !about) return new Response('Content not found', { status: 500 });
+
+const yy = (s: string) => {
+  const m = s.match(/(\d{4})\D+(\d{4}|present)/i);
+  if (!m) return '';
+  const a = `’${m[1].slice(2)}`;
+  return /present/i.test(m[2]) ? `${a}–now` : `${a}–’${m[2].slice(2)}`;
+};
+const title = (s: string) =>
+  s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\bUi\b/g, 'UI').replace(/\bUx\b/g, 'UX');
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const jobs = ((about.experience ?? []) as any[]).map((e) => ({
+  role: title(e.role ?? ''),
+  company: e.company as string,
+  when: yy(e.period ?? ''),
+  now: /present/i.test(e.period ?? ''),
+  logo: e.logo?.asset ? urlFor(e.logo).width(96).height(96).fit('crop').url() : null,
+}));
+const nice = (f: string) => {
+  const s = f.toLowerCase().replace(/\b(ux|ui|ai)\b/g, (m) => m.toUpperCase());
+  return s.replace(/(^|\s)(\w)/g, (_m, a, b) => a + b.toUpperCase()).replace('Nocode', 'No-code');
+};
+const focus: string[] = (about.focus ?? []).map(nice);
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const projects = ((home?.projects ?? []) as any[]).filter(Boolean);
+const portrait = about.portrait?.asset ? urlFor(about.portrait).width(700).height(930).fit('crop').url() : null;
+// what I'm doing right now (the 'Now' beat)
+const nowJobs = jobs.filter((j) => j.now);
+// in numbers — PLACEHOLDER values, to be replaced with Bart's real ones.
+// Boxes hang off one line across the page, some above it, some below,
+// offset like a timeline: c = grid columns (of 12), up = above the line,
+// h = height as a share of its half.
+const stats = [
+  { v: 8, suf: '+', l: 'Years in digital design', c: '1 / 5', up: true, h: 1 },
+  { v: 120, suf: '+', l: 'Projects shipped', c: '3 / 7', up: false, h: 0.95 },
+  { v: 30, suf: '+', l: 'Brands & studios', c: '6 / 9', up: true, h: 0.55 },
+  { v: 1, suf: '', l: 'Seat on the Awwwards Young Jury', c: '8 / 11', up: false, h: 0.6 },
+  { v: 4, suf: '', l: 'Coffees a day, give or take', c: '10 / 13', up: true, h: 0.78 },
+];
+// services (DRAFT copy, to be edited): one line on what I do, then the
+// three groups the graph below is built from, in the same order
+const svcLead = 'I design and build websites and digital products end to end — from the first idea and the look of it, to the shipped, fast, animated page.';
+const services = [
+  { t: 'Design', d: 'UX/UI, art direction and design systems — interfaces that look sharp and still hold up long after launch.' },
+  { t: 'Technology', d: 'Builds in no-code and in code — Astro, Sanity, WebGL and motion — fast, accessible and easy to edit.' },
+  { t: 'AI & Play', d: 'AI in the workflow and in the product, plus game-design thinking for interfaces people want to play with.' },
+];
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
+const caps = [
+  { name: 'Design', img: null, items: ['UX/UI', 'Art direction', 'Design systems', 'Prototyping', 'Typography', 'Motion', 'Branding', 'Research'] },
+  { name: 'Technology', img: null, items: ['No-code', 'Astro', 'Sanity CMS', 'WebGL', 'Three.js', 'Animation', 'Performance', 'Accessibility'] },
+  { name: 'AI & Play', img: null, items: ['AI workflows', 'Generative UI', 'Prompting', 'Game design', 'Interaction', 'Playtesting'] },
+];
+const [bPath, bBox] = glyphs.g.B as [string, number[], number];
+const bView = `${bBox[0]} ${-bBox[3]} ${bBox[2] - bBox[0]} ${bBox[3] - bBox[1]}`;
+const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}" fill="currentColor"/></svg>`;
+---
+
+<Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
+  <main class="a9" data-a9>
+    <header class="a9__nav">
+      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
+    </header>
+
+    <!-- 1 -->
+    <section class="a9__intro" data-intro>
+      <div class="a9__stage">
+        <div class="a9__say">
+          <h1 class="t-display" data-say>
+            About me
+          </h1>
+        </div>
+        <canvas class="a9__mono" data-monogram aria-label="B monogram" role="img"></canvas>
+        <span class="a9__hint" aria-hidden="true">Scroll</span>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="a9__sec a9__who" data-who>
+      <div class="a9__who-c">
+        <p class="a9__lead" data-blur>{about.introLead}</p>
+        <div class="a9__beats">
+          <figure class="a9__who-pic" data-in>
+            {portrait ? <img src={portrait} alt="Bart Ocieczek" width="700" height="930" loading="lazy" /> : <span />}
+          </figure>
+          <div data-in>
+            <p class="a9__p">{about.introBody}</p>
+          </div>
+          {nowJobs.length > 0 && (
+            <div data-in>
+              <ul class="a9__now">
+                {nowJobs.map((j) => <li><span>{nice(j.role ?? '')}</span> <span class="a9__dim">{j.company}</span></li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <!-- 2b: services — the list beside the graph -->
+    <section class="a9__svc" data-svc-root>
+      <div class="a9__sec a9__svc-top s15__top">
+        <p class="a9__label" data-in>Services</p>
+        <div class="a9__svc-c">
+          <p class="a9__svc-lead" data-blur>{svcLead}</p>
+        </div>
+      </div>
+      <div class="s15">
+        <ul class="s15__list">
+          {services.map((sv, i) => (
+            <li data-in data-svc={i} tabindex="0">
+              <h3>{sv.t}</h3>
+              <p>{sv.d}</p>
+              <span class="s15__k">{caps[i]?.items.join(' · ')}</span>
+            </li>
+          ))}
+        </ul>
+        <div class="a9__caps s15__caps">
+          <CapGraph groups={caps} core={bSvg} />
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="a9__sec">
+      <p class="a9__label" data-in>Experience & what I do</p>
+      <div class="a9__two">
+        <ul class="a9__jobs" data-jobs>
+          {jobs.map((j, i) => (
+            <li data-in data-logo={j.logo ?? ''}>
+              <span>{j.company}</span>
+              <span class="a9__dim">{j.role}</span>
+              <span class="a9__when">{j.when}</span>
+            </li>
+          ))}
+        </ul>
+        <p class="a9__focus" data-in data-scramble>{focus.join(', ')}.</p>
+        <div class="a9__trail" aria-hidden="true" data-trail><img alt="" /></div>
+      </div>
+    </section>
+
+    <!-- 3b -->
+    <section class="a9__nums">
+      <p class="a9__label" data-in>In numbers</p>
+      <div class="a9__nm" data-nm>
+        <span class="a9__nm-line" aria-hidden="true" />
+        {stats.map((st, i) => (
+          <div class={`a9__nm-c ${st.up ? 'is-up' : 'is-down'}`} style={`--h:${st.h};grid-column:${st.c}`} data-drop={st.up ? 2 + i : i}>
+            <p class="a9__nm-v"><span data-count={st.v}>{st.v}</span>{st.suf}</p>
+            <p class="a9__nm-l">{st.l}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="a9__heart" data-heart>
+      <div class="a9__hm-top">
+        <p class="a9__label" data-in>Off-screen</p>
+        <p class="a9__hm-live" data-in><span class="a9__beat" aria-hidden="true" data-beat />Live — my pulse, your coffee</p>
+      </div>
+      <!-- a monitor the width of the page: the trace runs edge to edge, the
+           rate sits on it big, and the pen dot leads the line -->
+      <div class="a9__hm-mid" data-hm-mid>
+        <p class="a9__hm-bpm" data-bpm-big>
+          <strong data-bpm aria-label="62 beats per minute">
+            {[0, 1, 2].map(() => (
+              <span class="a9__dg" aria-hidden="true">
+                <span class="a9__dg-col">{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => <span>{d}</span>)}</span>
+              </span>
+            ))}
+          </strong>
+          <span class="a9__hm-unit">bpm</span>
+        </p>
+        <div class="a9__hm-trace">
+          <svg class="a9__ecg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-label="Heart rate trace"><path data-ecg d="" /></svg>
+          <span class="a9__pen" aria-hidden="true" data-pen />
+        </div>
+      </div>
+      <div class="a9__hm-low">
+        <p class="a9__hm-say" data-words>Coffee in, sport out.</p>
+        <div class="a9__hm-ctrl" data-in>
+          <p class="a9__hm-hint">Every coffee you brew raises it. A run brings it back down.</p>
+          <div class="a9__brew-row">
+            <button class="a9__brew" type="button" data-brew>
+              <span class="a9__brew-fill" aria-hidden="true"></span>
+              <span class="a9__brew-t" data-brew-t>Hold to brew</span>
+            </button>
+            <p class="a9__cups"><span data-cups>0</span> today</p>
+            <span class="a9__cupdots" aria-hidden="true" data-cupdots>{Array.from({ length: 8 }, () => <i />)}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="a9__end" data-end>
+      <a class="a9__cta" href={settings.callUrl ?? '#'} target="_blank" rel="noopener" data-cta>
+        <span class="a9__cta-q" data-in>{about.ctaText?.split('?')[0]}?</span>
+        <span class="a9__huge">
+          <span class="a9__huge-o">Let’s talk</span>
+          <span class="a9__huge-f" aria-hidden="true" data-fill>Let’s talk</span>
+        </span>
+        <span class="a9__orb" aria-hidden="true" data-orb><span>Book a call</span><i>↗</i></span>
+      </a>
+      <div class="a9__foot">
+        <span data-clock>Kraków</span>
+        <button type="button" class="a9__top" data-top>Back to top ↑</button>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<style>
+  /* minimal: one type family in three sizes, grey + black, hairlines,
+     lots of air; a label column on the left like the home details row */
+  .a9 {
+    --e-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --e-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ink: rgb(240, 240, 238);
+    --grey: rgb(120, 120, 120);
+    --faint: rgb(40, 40, 40);
+    --rule: rgba(255, 255, 255, 0.1);
+    --bg: rgb(10, 10, 10);
+    --text-primary: var(--ink);
+    --text-secondary: var(--grey);
+    --surface-dark: var(--bg);
+    --pad: var(--gutter);
+    --col: clamp(120px, 24vw, 360px);
+    background: var(--bg);
+    color: var(--ink);
+    font: 500 16px/1.4 var(--font-head);
+    letter-spacing: -0.015em;
+  }
+  .a9__nav {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 10;
+    padding: var(--gutter);
+  }
+  .a9__label {
+    margin: 0;
+    font-size: 13px;
+    color: var(--grey);
+  }
+  .a9__sec {
+    display: grid;
+    grid-template-columns: var(--col) minmax(0, 1fr);
+    gap: var(--pad);
+    padding: clamp(96px, 18vh, 200px) var(--pad);
+  }
+  .a9__sec > .a9__label {
+    margin: 0;
+  }
+
+  /* 1: same as /about-me — a sticky stage, the statement under a chrome B */
+  .a9__intro {
+    position: relative;
+    z-index: 4;
+    height: 270svh;
+    pointer-events: none;
+  }
+  .a9__stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+  }
+  .a9__say {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: 0 var(--pad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .a9__say h1 {
+    margin: 0;
+    max-width: 11em;
+    text-wrap: balance;
+    text-align: center;
+    font-family: 'Grenze Gotisch', var(--font-display);
+    font-weight: 500;
+    font-size: clamp(96px, 19vw, 320px);
+    text-transform: none;
+    letter-spacing: -0.01em;
+    line-height: 0.98;
+    color: var(--ink);
+    will-change: transform;
+  }
+  .a9__say :global(.sw) {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    /* room for the blackletter's swashes inside each word's mask */
+    padding: 0.12em 0.08em;
+    margin: -0.12em -0.08em;
+  }
+  .a9__say :global(.swi) {
+    display: inline-block;
+    transform: translateY(115%) rotate(7deg);
+    transform-origin: 0 100%;
+    opacity: var(--lit, 0.28);
+    transition:
+      transform 1.15s var(--e-expo),
+      opacity 0.35s var(--e-out);
+    transition-delay: calc(var(--l, 0) * 90ms + var(--i, 0) * 14ms), 0ms;
+  }
+  .a9__say.is-in :global(.swi) {
+    transform: none;
+  }
+  .a9__mono {
+    z-index: 2;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .a9__hint {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    z-index: 3;
+    transform: translateX(-50%);
+    font: 500 12px/1 var(--font-head);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--grey);
+    opacity: 0;
+    transition: opacity 0.6s var(--e-out) 1.6s;
+  }
+  .a9__say.is-in ~ .a9__hint {
+    opacity: calc(1 - var(--p, 0) * 6);
+    transition-delay: 1.6s;
+  }
+  .a9__beat :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  :global(html:has(.a9)),
+  :global(body:has(.a9)) {
+    background: rgb(10, 10, 10);
+    color-scheme: dark;
+  }
+
+  /* the next section doesn't wait for the hero to unpin: it slides up over
+     the hero's last stretch, so the B's fly-through hands straight over */
+  /* the next section sits over the hero's last screen and is uncovered by
+     the B: as the chrome letter reaches the camera, the section shows
+     through its shape, held in place, until the letter has passed */
+  .a9__who {
+    position: relative;
+    z-index: 3;
+    margin-top: -100svh;
+    background: var(--bg);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+  .a9__who.is-flat {
+    margin-top: 0;
+  }
+  /* 2: who — no scrubbing here (the hero has that); it simply arrives:
+     the lead sharpens out of a blur word by word, the beats follow */
+  .a9__who-c {
+    grid-column: 2;
+  }
+  @media (max-width: 809px) {
+    .a9__who-c {
+      grid-column: 1;
+    }
+  }
+  .a9__beat-n {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: var(--grey);
+    font-variant-numeric: tabular-nums;
+  }
+  .a9__lead {
+    max-width: 19em;
+    margin: 0;
+    font: 500 clamp(28px, 3.5vw, 58px) / 1.04 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+  .a9__lead :global(.bw) {
+    display: inline-block;
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(0.25em) scale(0.96);
+    transition:
+      opacity 0.9s var(--e-out),
+      filter 1s var(--e-out),
+      transform 1.2s var(--e-expo);
+    transition-delay: calc(var(--k) * 35ms);
+  }
+  .a9__lead.is-in :global(.bw) {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+  .a9__beats {
+    display: grid;
+    grid-template-columns: clamp(84px, 9vw, 130px) minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 64px);
+    align-items: start;
+    margin-top: clamp(48px, 7vw, 104px);
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+  }
+  .a9__who-pic {
+    margin: 0;
+    aspect-ratio: 0.8;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #1a1a1a;
+    clip-path: inset(100% 0 0 0 round 999px);
+    transition: clip-path 1.3s var(--e-expo) 0.2s;
+  }
+  .a9__who-pic.is-in {
+    clip-path: inset(0 0 0 0 round 999px);
+  }
+  .a9__who-pic img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(1);
+    transform: scale(1.2);
+    transition:
+      transform 1.6s var(--e-expo) 0.2s,
+      filter 0.4s ease;
+  }
+  .a9__who-pic.is-in img {
+    transform: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__who-pic:hover img {
+      filter: grayscale(0);
+    }
+  }
+  .a9__now {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  @media (max-width: 809px) {
+    .a9__beats {
+      grid-template-columns: 1fr;
+    }
+    .a9__who-pic {
+      width: 84px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__lead :global(.bw) {
+      filter: none;
+      transform: none;
+    }
+  }
+
+  /* 2 (old) */
+  /* 2 (old) */
+  .a9__who-grid {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 64px);
+    align-items: start;
+  }
+  .a9__pill {
+    margin: 0;
+    aspect-ratio: 0.75;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #1a1a1a;
+  }
+  .a9__pill img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: grayscale(1);
+  }
+  .a9__big {
+    max-width: 20em;
+    margin: 0 0 24px;
+    font: 500 clamp(20px, 1.8vw, 28px) / 1.2 var(--font-head);
+    letter-spacing: -0.03em;
+  }
+  .a9__p {
+    max-width: 36ch;
+    margin: 0;
+    color: var(--grey);
+  }
+  .a9__dim {
+    color: var(--grey);
+  }
+
+  /* 3 */
+  .a9__two {
+    display: grid;
+    gap: 40px;
+  }
+  .a9__jobs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .a9__jobs li {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 100px;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .a9__jobs li:first-child {
+    border-top: 1px solid var(--rule);
+  }
+  /* the rule under each row draws in from the left as it reveals */
+  .a9__jobs li {
+    border-bottom-color: transparent;
+  }
+  .a9__jobs li::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.14);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1.1s var(--e-expo) calc(var(--d, 0s) + 0.1s);
+  }
+  .a9__jobs li.is-in::after {
+    transform: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__jobs li {
+      cursor: default;
+      transition: padding 0.4s var(--e-out);
+    }
+    .a9__jobs li:hover {
+      padding-left: 12px;
+    }
+  }
+  /* a pill with the company's logo trails the cursor over the rows */
+  .a9__trail {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 5;
+    width: 120px;
+    height: 160px;
+    margin: -80px 0 0 -60px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #1a1a1a;
+    pointer-events: none;
+    opacity: 0;
+    scale: 0.6;
+    transition:
+      opacity 0.25s var(--e-out),
+      scale 0.35s var(--e-out);
+  }
+  .a9__trail.is-on {
+    opacity: 1;
+    scale: 1;
+  }
+  .a9__trail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .a9__when {
+    justify-self: end;
+    color: var(--grey);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .a9__focus {
+    max-width: 36ch;
+    margin: 0;
+    color: var(--grey);
+  }
+
+  /* 2b: services */
+  .s15__top {
+    padding-bottom: clamp(24px, 3vw, 48px);
+  }
+  .s15 {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(16px, 3vw, 48px);
+    padding: 0 0 0 var(--pad);
+    align-items: start;
+  }
+  .s15__list {
+    margin: 0;
+    padding: 12svh 0;
+    list-style: none;
+  }
+  .s15__list li {
+    min-height: 34svh;
+    padding: 18px 0;
+    border-top: 1px solid var(--rule);
+    outline: none;
+    opacity: 0.4;
+    transition: opacity 0.35s ease;
+  }
+  .s15__list li.is-on,
+  .s15__list li:focus-visible {
+    opacity: 1;
+  }
+  .s15__list h3 {
+    margin: 0 0 12px;
+    font: 500 clamp(30px, 3.4vw, 56px) / 1 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+  .s15__list p {
+    max-width: 34ch;
+    margin: 0 0 14px;
+    color: var(--grey);
+  }
+  .s15__k {
+    font-size: 13px;
+    color: var(--grey);
+  }
+  .s15__caps {
+    position: sticky;
+    top: 10svh;
+    padding: 0;
+  }
+  .s15__caps :global(.cg) {
+    height: 80svh;
+  }
+  @media (max-width: 809px) {
+    .s15 {
+      grid-template-columns: 1fr;
+      padding: 0 var(--pad);
+    }
+    .s15__list {
+      padding: 0;
+    }
+    .s15__list li {
+      min-height: 0;
+      opacity: 1;
+    }
+    .s15__caps {
+      position: relative;
+      top: 0;
+      margin: 0 calc(-1 * var(--pad));
+    }
+  }
+  .a9__svc-top {
+    padding-bottom: clamp(40px, 6vw, 80px);
+  }
+  .a9__svc-lead {
+    max-width: 21em;
+    margin: 0;
+    font: 500 clamp(26px, 3vw, 48px) / 1.06 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+  .a9__svc-lead :global(.bw) {
+    display: inline-block;
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(0.25em) scale(0.96);
+    transition:
+      opacity 0.9s var(--e-out),
+      filter 1s var(--e-out),
+      transform 1.2s var(--e-expo);
+    transition-delay: calc(var(--k) * 30ms);
+  }
+  .a9__svc-lead.is-in :global(.bw) {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+  .a9__svc-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(20px, 3vw, 48px);
+    margin: clamp(40px, 6vw, 88px) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .a9__svc-list li {
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    outline: none;
+    cursor: default;
+    transition: border-color 0.25s ease;
+  }
+  .a9__svc-list h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    font: 500 clamp(18px, 1.5vw, 22px) / 1.2 var(--font-head);
+    letter-spacing: -0.02em;
+  }
+  .a9__svc-list h3 i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink);
+    transition: transform 0.25s var(--e-out);
+  }
+  .a9__svc-list p {
+    max-width: 34ch;
+    margin: 0;
+    color: var(--grey);
+  }
+  /* pointing at a service lights its branch in the graph below */
+  .a9__svc-list li.is-on,
+  .a9__svc-list li:focus-visible {
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  .a9__svc-list li.is-on h3 i,
+  .a9__svc-list li:focus-visible h3 i {
+    transform: scale(1.6);
+  }
+  @media (max-width: 809px) {
+    .a9__svc-list {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__svc-lead :global(.bw) {
+      filter: none;
+      transform: none;
+    }
+  }
+
+  /* 3b: numbers — boxes hang off one hairline across the page, above and
+     below it in turn, offset like a timeline. The line draws first; each
+     box then grows out of it (up or down) and its figure counts up. */
+  .a9__nums {
+    padding: clamp(96px, 18vh, 200px) var(--pad);
+  }
+  .a9__nums > .a9__label {
+    margin-bottom: clamp(32px, 5vw, 64px);
+  }
+  .a9__nm {
+    --half: clamp(200px, 30vh, 320px);
+    --hl: rgba(255, 255, 255, 0.16);
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: var(--half) var(--half);
+  }
+  .a9__nm-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--half);
+    height: 1px;
+    background: rgba(255, 255, 255, 0.28);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1.2s var(--e-expo);
+  }
+  .a9__nm.is-in .a9__nm-line {
+    transform: none;
+  }
+  .a9__nm-c {
+    position: relative;
+    height: calc(var(--h) * 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px 18px 18px;
+    border-left: 1px solid var(--hl);
+    border-right: 1px solid var(--hl);
+    opacity: 0;
+    transition: background-color 0.25s ease;
+  }
+  .a9__nm.is-in .a9__nm-c {
+    opacity: 1;
+  }
+  .a9__nm-c.is-up {
+    grid-row: 1;
+    align-self: end;
+    border-top: 1px solid var(--hl);
+  }
+  .a9__nm-c.is-down {
+    grid-row: 2;
+    align-self: start;
+    margin-top: 1px;
+    border-bottom: 1px solid var(--hl);
+  }
+  .a9__nm-v {
+    margin: 0;
+    font: 500 clamp(44px, 5.2vw, 92px) / 0.9 var(--font-head);
+    letter-spacing: -0.05em;
+    font-variant-numeric: tabular-nums;
+  }
+  .a9__nm-l {
+    max-width: 18ch;
+    margin: 0;
+    font-size: 13px;
+    color: var(--grey);
+    transition: color 0.25s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__nm-c:hover {
+      background-color: rgba(255, 255, 255, 0.035);
+    }
+    .a9__nm-c:hover .a9__nm-l {
+      color: var(--ink);
+    }
+  }
+  @media (max-width: 809px) {
+    .a9__nm {
+      display: flex;
+      flex-direction: column;
+    }
+    .a9__nm-line {
+      display: none;
+    }
+    .a9__nm-c,
+    .a9__nm-c.is-up,
+    .a9__nm-c.is-down {
+      height: auto;
+      min-height: 140px;
+      margin: 0 0 -1px;
+      border: 1px solid var(--hl);
+    }
+    .a9__nm-c:nth-child(odd) {
+      margin-left: 18%;
+    }
+    .a9__nm-c:nth-child(even) {
+      margin-right: 18%;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__nm-line {
+      transform: none;
+      transition: none;
+    }
+  }
+
+  /* 4: the graph, quiet */
+  .a9__caps {
+    position: relative;
+    padding: 0 var(--pad);
+  }
+  .a9__caps-label {
+    position: absolute;
+    top: 0;
+    left: var(--pad);
+    z-index: 2;
+  }
+  .a9__caps :global(.cg) {
+    --ink: rgb(240, 240, 238);
+    background: transparent;
+    height: clamp(420px, 70svh, 720px);
+  }
+  .a9__caps :global(.cg__core--mark) {
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .a9__caps :global(.cg__core--mark svg) {
+    width: 24px;
+  }
+  .a9__caps :global(.cg__lines line) {
+    stroke: rgba(255, 255, 255, 0.09);
+  }
+  .a9__caps :global(.cg__lines line.is-hub) {
+    stroke: rgba(255, 255, 255, 0.5);
+  }
+  .a9__caps :global(.cg__lines line.is-on) {
+    stroke: rgba(255, 255, 255, 0.4);
+  }
+  .a9__caps :global(.cg__hub-t) {
+    font: 500 13px/1 var(--font-head);
+    letter-spacing: -0.01em;
+    text-transform: none;
+  }
+  .a9__caps :global(.cg__hub-t i) {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+  .a9__caps :global(.cg__dot i) {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* 5: the monitor */
+  .a9__heart {
+    position: relative;
+    padding: clamp(96px, 18vh, 200px) 0;
+  }
+  .a9__hm-top,
+  .a9__hm-low {
+    padding: 0 var(--pad);
+  }
+  .a9__hm-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .a9__hm-live {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--grey);
+  }
+  /* the readout on the left, the trace running from it to the page's
+     edge over a faint monitor grid; the trace draws in once, from the
+     readout outward */
+  .a9__hm-mid {
+    display: flex;
+    align-items: flex-end;
+    gap: clamp(16px, 2vw, 32px);
+    margin: clamp(24px, 4vw, 56px) 0;
+    padding-left: var(--pad);
+    height: clamp(220px, 30vw, 440px);
+  }
+  .a9__hm-trace {
+    position: relative;
+    flex: 1;
+    align-self: stretch;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: 0 75%;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 1.6s var(--e-expo) 0.15s;
+  }
+  .a9__hm-mid.is-in .a9__hm-trace {
+    clip-path: inset(0 -20px 0 0);
+  }
+  .a9__hm-trace .a9__ecg {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+  /* the pen leads the line at its right end, glowing */
+  .a9__pen {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 9px;
+    height: 9px;
+    margin: -4.5px -4.5px 0 0;
+    border-radius: 50%;
+    background: var(--ink);
+    box-shadow:
+      0 0 12px 2px rgba(255, 255, 255, 0.55),
+      0 0 40px 8px rgba(255, 255, 255, 0.12);
+  }
+  .a9__hm-bpm {
+    flex: none;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.1em;
+    margin: 0;
+    font: 500 clamp(110px, 19vw, 300px) / 1 var(--font-head);
+    letter-spacing: -0.06em;
+    transform-origin: 0 100%;
+    opacity: 0;
+    transform: translateY(0.08em);
+    transition:
+      opacity 0.8s var(--e-out),
+      transform 1s var(--e-expo);
+  }
+  .a9__hm-mid.is-in .a9__hm-bpm {
+    opacity: 1;
+    transform: none;
+  }
+  .a9__hm-bpm strong {
+    display: flex;
+    font-weight: inherit;
+    color: var(--ink);
+  }
+  /* odometer: each digit is a column of 0–9 that rolls to its value; the
+     hundreds slot folds away below 100 */
+  .a9__dg {
+    display: block;
+    height: 0.76em;
+    overflow: hidden;
+    transition: width 0.5s var(--e-out);
+  }
+  .a9__dg-col {
+    display: flex;
+    flex-direction: column;
+    transform: translateY(calc(var(--v, 0) * -0.76em - 0.12em));
+    transition: transform 0.6s var(--e-out);
+  }
+  .a9__dg-col span {
+    display: block;
+    height: 0.76em;
+    line-height: 1;
+    text-align: center;
+  }
+  .a9__hm-unit {
+    margin-bottom: 0.02em;
+    font-size: 0.1em;
+    letter-spacing: 0;
+    color: var(--grey);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__dg-col,
+    .a9__hm-trace,
+    .a9__hm-bpm {
+      transition: none;
+    }
+  }
+  .a9__hm-low {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 64px);
+    align-items: end;
+  }
+  .a9__hm-say {
+    margin: 0;
+    font: 500 clamp(32px, 4.4vw, 72px) / 1 var(--font-head);
+    letter-spacing: -0.045em;
+  }
+  .a9__hm-ctrl {
+    justify-self: end;
+    display: grid;
+    gap: 14px;
+  }
+  .a9__hm-hint {
+    max-width: 30ch;
+    margin: 0;
+    color: var(--grey);
+  }
+  .a9__cupdots {
+    display: flex;
+    gap: 5px;
+    margin-left: 4px;
+  }
+  .a9__cupdots i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease,
+      transform 0.4s var(--e-out);
+  }
+  .a9__cupdots i.is-on {
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+  @media (max-width: 809px) {
+    .a9__hm-mid {
+      flex-direction: column;
+      align-items: stretch;
+      height: auto;
+      padding-left: 0;
+    }
+    .a9__hm-trace {
+      order: -1;
+      flex: none;
+      height: 150px;
+    }
+    .a9__hm-bpm {
+      padding-left: var(--pad);
+      font-size: 96px;
+    }
+    .a9__hm-low {
+      grid-template-columns: 1fr;
+    }
+    .a9__hm-ctrl {
+      justify-self: start;
+    }
+    .a9__cupdots {
+      display: none;
+    }
+  }
+  .a9__brew-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .a9__cups {
+    margin: 0;
+    color: var(--grey);
+  }
+  .a9__cups span {
+    display: inline-block;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  /* hold to brew: slow deliberate fill, snappy release */
+  .a9__brew {
+    position: relative;
+    overflow: hidden;
+    padding: 10px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    transition: transform 0.16s var(--e-out);
+  }
+  .a9__brew:active {
+    transform: scale(0.97);
+  }
+  .a9__brew-fill {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.08);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.2s var(--e-out);
+  }
+  .a9__brew.is-holding .a9__brew-fill {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 1.2s linear;
+  }
+  .a9__brew-t {
+    position: relative;
+  }
+  .a9__mon-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--grey);
+  }
+  .a9__mon-top strong {
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  /* a small dot that beats with the heart */
+  .a9__beat {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+  .a9__ecg {
+    display: block;
+    width: 100%;
+    height: 120px;
+    margin-top: 8px;
+  }
+  .a9__ecg path {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* 6: a word the width of the page, drawn as an outline that fills with
+     ink as you arrive; a round "Book a call" follows the pointer over it */
+  .a9__end {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 var(--pad) var(--pad);
+  }
+  .a9__cta {
+    position: relative;
+    display: block;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .a9__cta-q {
+    display: block;
+    max-width: 24em;
+    margin-left: calc(var(--col) + var(--pad));
+    color: var(--grey);
+  }
+  .a9__huge {
+    position: relative;
+    display: block;
+    margin-top: 2vw;
+    font: 500 calc(19.4vw * var(--fit, 1)) / 0.82 var(--font-head);
+    letter-spacing: -0.06em;
+    white-space: nowrap;
+  }
+  .a9__huge-o {
+    display: inline-block;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.28);
+  }
+  .a9__huge-f {
+    position: absolute;
+    inset: 0;
+    color: var(--ink);
+    clip-path: inset(-0.2em calc((1 - var(--f, 0)) * 100%) -0.2em 0);
+  }
+  .a9__orb {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 2;
+    width: clamp(96px, 9vw, 140px);
+    aspect-ratio: 1;
+    margin: calc(clamp(96px, 9vw, 140px) / -2) 0 0 calc(clamp(96px, 9vw, 140px) / -2);
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 2px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 14px;
+    pointer-events: none;
+    will-change: transform;
+    /* inverts over the letters: black over the ink, white over the page */
+    mix-blend-mode: difference;
+  }
+  .a9__orb i {
+    font-style: normal;
+    font-size: 20px;
+    line-height: 1;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__cta {
+      cursor: none;
+    }
+  }
+  .a9__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: clamp(24px, 3vw, 48px);
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--grey);
+  }
+  .a9__top {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__top:hover {
+      color: var(--ink);
+    }
+  }
+
+  /* reveals */
+  [data-in] {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 0.8s var(--e-out),
+      transform 1s var(--e-expo);
+    transition-delay: var(--d, 0s);
+  }
+  [data-in].is-in {
+    opacity: 1;
+    transform: none;
+  }
+  :global(.a9 .w) {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    padding-bottom: 0.1em;
+    margin-bottom: -0.1em;
+  }
+  :global(.a9 .wi) {
+    display: inline-block;
+    transform: translateY(110%);
+    transition: transform 1s var(--e-expo);
+    transition-delay: calc(var(--k) * 22ms);
+  }
+  :global(.a9 .is-in .wi) {
+    transform: none;
+  }
+
+  @media (max-width: 809px) {
+    .a9 {
+      --col: 0px;
+    }
+    .a9__cta-q {
+      margin-left: 0;
+      max-width: 62%;
+    }
+    .a9__sec {
+      grid-template-columns: 1fr;
+    }
+    .a9__who-grid {
+      grid-template-columns: 96px 1fr;
+    }
+    .a9__jobs li {
+      grid-template-columns: 1fr auto;
+    }
+    .a9__jobs .a9__dim {
+      grid-column: 1;
+      grid-row: 2;
+      font-size: 14px;
+    }
+    .a9__when {
+      grid-row: 1;
+      grid-column: 2;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-in],
+    :global(.a9 .wi),
+    .a9__say :global(.swi) {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-a9]');
+  if (root) {
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+
+    // ---- 1: as on /about-me — each word in a tilted mask, lines rise in,
+    // then the scroll lights them up word by word
+    const say = root.querySelector<HTMLElement>('[data-say]')!;
+    const sayWrap = say.parentElement!;
+    const words: HTMLElement[] = [];
+    const sayText = (say.textContent ?? '').trim().split(/\s+/);
+    say.textContent = '';
+    sayText.forEach((w, i) => {
+      const o = document.createElement('span');
+      o.className = 'sw';
+      const n = document.createElement('span');
+      n.className = 'swi';
+      n.textContent = w;
+      o.append(n);
+      say.append(o);
+      if (i < sayText.length - 1) say.append(' ');
+      words.push(n);
+    });
+    const lines = () => {
+      let line = -1;
+      let top = -1;
+      let i = 0;
+      words.forEach((n) => {
+        const t = (n.parentElement as HTMLElement).offsetTop;
+        if (t !== top) {
+          line++;
+          top = t;
+          i = 0;
+        }
+        n.style.setProperty('--l', String(line));
+        n.style.setProperty('--i', String(i++));
+      });
+    };
+    lines();
+    addEventListener('resize', lines);
+    setTimeout(() => sayWrap.classList.add('is-in'), 650);
+
+    // ---- masked word rise for [data-words]
+    root.querySelectorAll<HTMLElement>('[data-words]').forEach((el) => {
+      const t = (el.textContent ?? '').trim().split(/\s+/);
+      el.textContent = '';
+      t.forEach((w, k) => {
+        const o = document.createElement('span');
+        o.className = 'w';
+        const i = document.createElement('span');
+        i.className = 'wi';
+        i.style.setProperty('--k', String(k));
+        i.textContent = w;
+        o.append(i);
+        el.append(o);
+        if (k < t.length - 1) el.append(' ');
+      });
+    });
+
+    // ---- reveal once, staggered among siblings
+    const io = new IntersectionObserver(
+      (es) =>
+        es.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('is-in');
+          io.unobserve(e.target);
+          if ((e.target as HTMLElement).hasAttribute('data-nm')) countUp(e.target as HTMLElement);
+        }),
+      { rootMargin: '0px 0px -10% 0px' },
+    );
+    // figures count up with their column (ease-out, a touch after it starts)
+    // bricks: each box drops in from above, lands with a little squash and
+    // snaps into place; lower ones first, so the upper ones land on top.
+    // Its figure counts up once it has landed.
+    function countUp(box: HTMLElement) {
+      const DROP = 620;
+      const GAP = 140;
+      box.querySelectorAll<HTMLElement>('[data-drop]').forEach((el) => {
+        const delay = 300 + Number(el.dataset.drop) * GAP;
+        const num = el.querySelector<HTMLElement>('[data-count]');
+        const to = Number(num?.dataset.count ?? 0);
+        if (calm) return;
+        const tilt = (Number(el.dataset.drop) % 2 ? 1 : -1) * 4;
+        el.animate(
+          [
+            { transform: `translateY(-75vh) rotate(${tilt}deg)`, easing: 'cubic-bezier(0.55, 0, 0.9, 0.55)' },
+            { transform: 'translateY(0) rotate(0deg)', offset: 0.7, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+            { transform: 'translateY(0) scale(1.015, 0.975)', offset: 0.8, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+            { transform: 'none' },
+          ],
+          { duration: DROP, delay, fill: 'backwards' },
+        );
+        if (!num || !to) return;
+        num.textContent = '0';
+        const t0 = performance.now() + delay + DROP * 0.7;
+        const step = (now: number) => {
+          const x = Math.min(1, Math.max(0, (now - t0) / 700));
+          num.textContent = String(Math.round(to * (1 - Math.pow(1 - x, 4))));
+          if (x < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      });
+    }
+    // services ↔ graph: pointing at a service lights its branch
+    const cgBox = root.querySelector<HTMLElement>('.a9__caps [data-cg]');
+    root.querySelectorAll<HTMLElement>('[data-svc]').forEach((li) => {
+      const i = Number(li.dataset.svc);
+      const on = () => {
+        li.classList.add('is-on');
+        cgBox?.dispatchEvent(new CustomEvent('cg:focus', { detail: i }));
+      };
+      const off = () => {
+        li.classList.remove('is-on');
+        cgBox?.dispatchEvent(new CustomEvent('cg:focus', { detail: -1 }));
+      };
+      li.addEventListener('pointerenter', on);
+      li.addEventListener('pointerleave', () => !li.closest('.s15__list') && off());
+      li.addEventListener('focus', on);
+      li.addEventListener('blur', off);
+    });
+    // the service in the middle of the screen lights its branch
+    if (matchMedia('(min-width: 810px)').matches) {
+      const cg15 = root.querySelector<HTMLElement>('.s15__caps [data-cg]');
+      const items = [...root.querySelectorAll<HTMLElement>('.s15__list [data-svc]')];
+      const mid = new IntersectionObserver(
+        (es) =>
+          es.forEach((e) => {
+            if (!e.isIntersecting) return;
+            items.forEach((li) => li.classList.toggle('is-on', li === e.target));
+            cg15?.dispatchEvent(new CustomEvent('cg:focus', { detail: Number((e.target as HTMLElement).dataset.svc) }));
+          }),
+        { rootMargin: '-45% 0px -45% 0px' },
+      );
+      items.forEach((li) => mid.observe(li));
+    }
+    const later: HTMLElement[] = [];
+    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid], [data-nm]').forEach((el) => {
+      const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
+      el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 60}ms`);
+      // the section behind the B only starts once it's being uncovered
+      if (el.closest('[data-who]')) later.push(el);
+      else io.observe(el);
+    });
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      later.forEach((el) => io.observe(el));
+    };
+    addEventListener('a9:reveal', reveal);
+    // no 3D (or calm): nothing to uncover it, so it just follows the hero
+    setTimeout(() => {
+      if (!(window as any).__a9Mask) {
+        root.querySelector('[data-who]')?.classList.add('is-flat');
+        reveal();
+      }
+    }, 1500);
+
+    // ---- 5: a real ECG trace. One beat is a sum of gaussians at clinical
+    // timings (P 0.10s, Q 0.20s, R 0.22s, S 0.245s, T 0.42s); the beat
+    // interval is 60/bpm, so a faster rate packs beats closer while the
+    // complex keeps its shape — like a real monitor.
+    const g = (t: number, at: number, w: number, a: number) => a * Math.exp(-((t - at) ** 2) / (2 * w * w));
+    const ecg = (t: number) =>
+      g(t, 0.1, 0.022, 0.12) + g(t, 0.2, 0.009, -0.12) + g(t, 0.22, 0.01, 1) + g(t, 0.245, 0.011, -0.25) + g(t, 0.42, 0.045, 0.3);
+    const path = root.querySelector<SVGPathElement>('[data-ecg]');
+    const bpmEl = root.querySelector<HTMLElement>('[data-bpm]');
+    const digs = bpmEl ? [...bpmEl.querySelectorAll<HTMLElement>('.a9__dg')] : [];
+    let shown = -1;
+    const showBpm = (v: number) => {
+      if (v === shown || !bpmEl) return;
+      shown = v;
+      const str = String(v).padStart(3, ' ');
+      digs.forEach((d, i) => {
+        const c = str[i];
+        // the slot's width follows its digit; a blank hundreds slot folds away
+        d.style.width = c === ' ' ? '0' : '0.56em';
+        if (c !== ' ') (d.firstElementChild as HTMLElement).style.setProperty('--v', c);
+      });
+      bpmEl.setAttribute('aria-label', `${v} beats per minute`);
+    };
+    showBpm(62);
+    const beatEl = root.querySelector<HTMLElement>('[data-beat]');
+    const pen = root.querySelector<HTMLElement>('[data-pen]');
+    const bigBpm = root.querySelector<HTMLElement>('[data-bpm-big]');
+    const WIN = 4; // seconds on screen
+    const samples: number[] = [];
+    const RATE = 60; // samples per second
+    let caffeine = 0;
+    let bpm = 62;
+    let inBeat = 0; // seconds since this beat started
+    let acc = 0;
+    let last = performance.now();
+    // pre-fill so the trace is full from the start
+    for (let i = 0; i < WIN * RATE; i++) {
+      inBeat += 1 / RATE;
+      if (inBeat >= 60 / bpm) inBeat -= 60 / bpm;
+      samples.push(ecg(inBeat));
+    }
+
+    // ---- scroll-driven bits + the monitor, in one loop
+    const intro = root.querySelector<HTMLElement>('[data-intro]');
+    const smooth = (v: number) => v * v * (3 - 2 * v);
+    // who: the lead, word by word
+    root.querySelectorAll<HTMLElement>('[data-blur]').forEach((el) => {
+      const ws = (el.textContent ?? '').trim().split(/\s+/);
+      el.textContent = '';
+      ws.forEach((w, k) => {
+        const sp = document.createElement('span');
+        sp.className = 'bw';
+        sp.style.setProperty('--k', String(k));
+        sp.textContent = w;
+        el.append(sp);
+        if (k < ws.length - 1) el.append(' ');
+      });
+    });
+    let heroPx = -1e4;
+    let heroPy = -1e4;
+    if (intro && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      // (the hero doesn't take pointer events — it lies over the next section
+      // at the end — so listen on the window)
+      addEventListener('pointermove', (e) => {
+        heroPx = e.clientX;
+        heroPy = e.clientY;
+      });
+      document.addEventListener('pointerleave', () => (heroPx = heroPy = -1e4));
+    }
+    const frame = (now: number) => {
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      if (intro) {
+        const max = intro.offsetHeight - innerHeight;
+        const p = max > 0 ? clamp(-intro.getBoundingClientRect().top / max) : 0;
+        // light the words over the first half of the scroll, a soft edge of
+        // ~3; around the pointer a soft spotlight lights them early
+        const f = (p / 0.42) * (words.length + 3) - 3;
+        const spot = heroPx > -1e3 && !calm;
+        words.forEach((n, k) => {
+          let v = clamp((f - k + 3) / 3);
+          if (spot) {
+            const r = n.getBoundingClientRect();
+            const d = Math.hypot(r.left + r.width / 2 - heroPx, r.top + r.height / 2 - heroPy);
+            v = Math.max(v, clamp(1 - d / 260) * 0.85);
+          }
+          const cur = Number(n.dataset.v ?? 0);
+          const nv = cur + (v - cur) * 0.2;
+          n.dataset.v = nv.toFixed(4);
+          n.style.setProperty('--lit', (0.22 + 0.78 * nv).toFixed(3));
+        });
+        // then the B comes for the camera and the statement falls back into
+        // the dark behind it
+        const fly = smooth(clamp((p - 0.42) / 0.5));
+        say.style.transform = `translateY(${(-p * 6).toFixed(2)}vh) scale(${(1 - fly * 0.14).toFixed(4)})`;
+        say.style.filter = fly > 0.001 ? `blur(${(fly * 10).toFixed(2)}px)` : '';
+        // gone completely before the B has passed: nothing left behind it
+        const gone = smooth(clamp((p - 0.42) / 0.28));
+        say.style.opacity = (1 - gone).toFixed(3);
+        say.style.visibility = gone > 0.995 ? 'hidden' : '';
+        sayWrap.parentElement!.style.setProperty('--p', p.toFixed(3));
+        (window as any).__a9P = p;
+      }
+      // heart: caffeine wears off ~1 coffee per 40s; the rate eases toward its target
+      caffeine = Math.max(0, caffeine - dt / 40);
+      const target = 62 + Math.min(caffeine, 8) * 8;
+      bpm += (target - bpm) * Math.min(1, dt * 0.8);
+      showBpm(Math.round(bpm));
+      acc += dt * RATE;
+      while (acc >= 1) {
+        acc -= 1;
+        const before = inBeat;
+        inBeat += 1 / RATE;
+        if (inBeat >= 60 / bpm) inBeat -= 60 / bpm;
+        // the B jumps on the R wave
+        if (!calm && before < 0.22 && inBeat >= 0.22) {
+          beatEl?.animate([{ transform: 'scale(1.8)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          bigBpm?.animate([{ transform: 'scale(1.025)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+        }
+        samples.push(calm ? 0 : ecg(inBeat));
+        if (samples.length > WIN * RATE) samples.shift();
+      }
+      if (path) {
+        let d = '';
+        const n = samples.length;
+        for (let i = 0; i < n; i++) {
+          const x = (i / (n - 1)) * 800;
+          const y = 150 - samples[i] * 120;
+          d += `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+        }
+        path.setAttribute('d', d);
+        if (pen && n) pen.style.top = `${((150 - samples[n - 1] * 120) / 2).toFixed(2)}%`;
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+
+    // ---- hold to brew (slow fill, snappy release); each coffee adds caffeine
+    const brew = root.querySelector<HTMLButtonElement>('[data-brew]');
+    const cups = root.querySelector<HTMLElement>('[data-cups]');
+    if (brew && cups) {
+      const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: 'numeric', hour12: false }).format(new Date()));
+      let n = Math.max(0, Math.min(4, Math.floor((hour - 6) / 3)));
+      cups.textContent = String(n);
+      const dots = [...root.querySelectorAll<HTMLElement>('[data-cupdots] i')];
+      const paint = () => dots.forEach((d, i) => d.classList.toggle('is-on', i < n));
+      paint();
+      let t = 0;
+      const label = brew.querySelector<HTMLElement>('[data-brew-t]')!;
+      let rest = label.textContent ?? '';
+      const start = (e: Event) => {
+        e.preventDefault();
+        brew.classList.add('is-holding');
+        label.textContent = 'Brewing…';
+        t = window.setTimeout(() => {
+          n++;
+          caffeine += 1;
+          cups.textContent = String(n);
+          paint();
+          dots[Math.min(n, dots.length) - 1]?.animate([{ transform: 'scale(2)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          cups.animate([{ transform: 'translateY(40%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          brew.classList.remove('is-holding');
+          label.textContent = n > 5 ? 'Enough' : 'Another';
+          rest = label.textContent;
+        }, 1200);
+      };
+      const stop = () => {
+        clearTimeout(t);
+        if (brew.classList.contains('is-holding')) label.textContent = rest;
+        brew.classList.remove('is-holding');
+      };
+      brew.addEventListener('pointerdown', start);
+      brew.addEventListener('pointerup', stop);
+      brew.addEventListener('pointerleave', stop);
+      brew.addEventListener('pointercancel', stop);
+      brew.addEventListener('keydown', (e) => e.key === ' ' && !e.repeat && start(e));
+      brew.addEventListener('keyup', (e) => e.key === ' ' && stop());
+    }
+
+    // ---- text scramble: letters settle out of random glyphs, left to right
+    const GLYPHS = 'abcdefghijklmnopqrstuvwxyz/—_·';
+    const scramble = (el: HTMLElement) => {
+      const final = el.textContent ?? '';
+      if (calm) return;
+      const t0 = performance.now();
+      const step = () => {
+        const p = (performance.now() - t0) / 900;
+        let out = '';
+        for (let i = 0; i < final.length; i++) {
+          const ch = final[i];
+          out += ch === ' ' || p > i / final.length + 0.25 ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+        }
+        el.textContent = out;
+        if (p < 1.3) requestAnimationFrame(step);
+        else el.textContent = final;
+      };
+      step();
+    };
+    const sio = new IntersectionObserver((es) =>
+      es.forEach((e) => {
+        if (!e.isIntersecting) return;
+        sio.unobserve(e.target);
+        scramble(e.target as HTMLElement);
+      }),
+    );
+    root.querySelectorAll<HTMLElement>('[data-scramble], .a9__label').forEach((el) => sio.observe(el));
+
+    // ---- a logo pill trails the cursor over the experience rows
+    const jobsEl = root.querySelector<HTMLElement>('[data-jobs]');
+    const trail = root.querySelector<HTMLElement>('[data-trail]');
+    if (jobsEl && trail && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      const img = trail.querySelector('img')!;
+      let tx = 0, ty = 0, x = 0, y = 0, raf = 0;
+      const follow = () => {
+        x += (tx - x) * 0.15;
+        y += (ty - y) * 0.15;
+        trail.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotate(${Math.max(-10, Math.min(10, (tx - x) * 0.1)).toFixed(2)}deg)`;
+        raf = requestAnimationFrame(follow);
+      };
+      jobsEl.addEventListener('pointermove', (e) => {
+        tx = e.clientX + 90;
+        ty = e.clientY;
+        const li = (e.target as Element).closest<HTMLElement>('li');
+        const src = li?.dataset.logo;
+        if (src) {
+          if (img.getAttribute('src') !== src) img.src = src;
+          if (!trail.classList.contains('is-on')) {
+            x = tx;
+            y = ty;
+            trail.classList.add('is-on');
+            cancelAnimationFrame(raf);
+            follow();
+          }
+        }
+      });
+      jobsEl.addEventListener('pointerleave', () => {
+        trail.classList.remove('is-on');
+        setTimeout(() => cancelAnimationFrame(raf), 300);
+      });
+    }
+
+    // ---- CTA: the outline fills as the section arrives (all of it on
+    // hover); the orb rests by the word and follows the pointer over it
+    const end = root.querySelector<HTMLElement>('[data-end]');
+    const cta = root.querySelector<HTMLElement>('[data-cta]');
+    const fill = root.querySelector<HTMLElement>('[data-fill]');
+    const orb = root.querySelector<HTMLElement>('[data-orb]');
+    const huge = root.querySelector<HTMLElement>('.a9__huge-o')!;
+    // size the word to run edge to edge of the content box
+    const fitWord = () => {
+      if (!cta || !huge) return;
+      huge.parentElement!.style.setProperty('--fit', '1');
+      const k = cta.clientWidth / huge.scrollWidth;
+      huge.parentElement!.style.setProperty('--fit', (k * 0.995).toFixed(4));
+    };
+    fitWord();
+    document.fonts?.ready.then(fitWord);
+    addEventListener('resize', fitWord);
+    root.querySelector('[data-top]')?.addEventListener('click', () => scrollTo({ top: 0, behavior: calm ? 'auto' : 'smooth' }));
+    if (end && cta && fill && orb) {
+      const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+      let over = false;
+      let mx = 0;
+      let my = 0;
+      let f = 0;
+      let ox = -1;
+      let oy = 0;
+      let os = 1;
+      let press = false;
+      let raf = 0;
+      cta.addEventListener('pointerenter', () => fine && (over = true));
+      cta.addEventListener('pointerleave', () => (over = press = false));
+      cta.addEventListener('pointermove', (e) => {
+        const r = cta.getBoundingClientRect();
+        mx = e.clientX - r.left;
+        my = e.clientY - r.top;
+      });
+      cta.addEventListener('pointerdown', () => (press = true));
+      addEventListener('pointerup', () => (press = false));
+      const step = () => {
+        const r = end.getBoundingClientRect();
+        const arrive = clamp((innerHeight - r.top) / r.height);
+        const tf = over ? 1 : calm ? 1 : clamp((arrive - 0.25) / 0.7);
+        f += (tf - f) * (over ? 0.12 : 0.2);
+        fill.style.setProperty('--f', f.toFixed(4));
+        // rest: just right of the "k", on the word's middle
+        const W = cta.clientWidth;
+        const rx = W - orb.offsetWidth * 0.75;
+        const ry = huge.offsetTop + orb.offsetHeight * 0.1;
+        const tx = over ? mx : rx;
+        const ty = over ? my : ry;
+        if (ox < 0) {
+          ox = tx;
+          oy = ty;
+        }
+        const k = calm ? 1 : 0.2;
+        ox += (tx - ox) * k;
+        oy += (ty - oy) * k;
+        // a little stretch along the way it's moving, eased back when still
+        const v = Math.min(1, Math.hypot(tx - ox, ty - oy) / 300);
+        os += ((press ? 0.9 : over ? 1.08 : 1) - os) * 0.25;
+        orb.style.transform = `translate(${ox.toFixed(1)}px,${oy.toFixed(1)}px) scale(${(os * (1 + v * 0.08)).toFixed(3)})`;
+        raf = requestAnimationFrame(step);
+      };
+      new IntersectionObserver((es) => {
+        if (es[0].isIntersecting) {
+          if (!raf) raf = requestAnimationFrame(step);
+        } else if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      }).observe(end);
+    }
+
+    // ---- live Kraków time
+    const clock = root.querySelector<HTMLElement>('[data-clock]');
+    const tick = () => {
+      if (clock) clock.textContent = `Kraków, ${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' }).format(new Date())} — open for new work`;
+    };
+    tick();
+    setInterval(tick, 20000);
+  }
+</script>
+
+<script>
+      import * as THREE from 'three';
+      import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+      import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+      import glyphs from '../lib/monogram-b.json';
+      import { hasGPU } from '../lib/gpu';
+
+      const canvas = document.querySelector<HTMLCanvasElement>('[data-monogram]');
+      // no real GPU: a flat silver B instead of the 3D one
+      if (canvas && !hasGPU()) {
+        const [d, b] = glyphs.g.B as [string, number[], number];
+        const box = document.createElement('div');
+        box.className = canvas.className;
+        box.style.cssText = 'position:absolute;inset:0;z-index:2;display:grid;place-items:center;pointer-events:none';
+        box.innerHTML = `<svg viewBox="${b[0]} ${-b[3]} ${b[2] - b[0]} ${b[3] - b[1]}" style="width:min(46vmin,420px);height:auto" aria-hidden="true"><path transform="scale(1,-1)" d="${d}" fill="#d9d9de"/></svg>`;
+        canvas.replaceWith(box);
+      } else if (canvas) {
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      const scene = new THREE.Scene();
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 1.25;
+      const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+      camera.position.set(0, 0, 9);
+
+      // soft key light + a warm rim, on top of the room reflections
+      const key = new THREE.DirectionalLight(0xffffff, 2.4);
+      key.position.set(-3, 4, 6);
+      scene.add(key);
+      // a light that rides with the pointer, so glints run over the chrome
+      const glint = new THREE.PointLight(0xffffff, 0, 0, 1.6);
+      glint.position.set(0, 0, 3);
+      scene.add(glint);
+      const rim = new THREE.DirectionalLight(0xffe2c4, 0.8);
+      rim.position.set(4, -2, -3);
+      scene.add(rim);
+
+
+      // polished black chrome: deep, with crisp reflections running along
+      // the strokes as it turns
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: 0xd9d9de,
+        roughness: 0.16,
+        metalness: 1.0,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05,
+        transparent: true,
+        opacity: 0,
+      });
+
+      const U = glyphs.upm;
+      const shapesOf = (d: string) => {
+        const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`);
+        return data.paths.flatMap((p) => p.toShapes(true));
+      };
+      const letter = (ch: 'B', depth: number) => {
+        const [d] = glyphs.g[ch] as [string, number[], number];
+        const geo = new THREE.ExtrudeGeometry(shapesOf(d), {
+          depth,
+          bevelEnabled: true,
+          bevelThickness: 22,
+          bevelSize: 6,
+          bevelSegments: 6,
+          curveSegments: 28,
+        });
+        geo.computeBoundingBox();
+        const bb = geo.boundingBox!;
+        geo.translate(-(bb.min.x + bb.max.x) / 2, -(bb.min.y + bb.max.y) / 2, -(bb.min.z + bb.max.z) / 2);
+        geo.scale(1 / U, 1 / U, 1 / U);
+        geo.computeVertexNormals();
+        return new THREE.Mesh(geo, mat);
+      };
+
+      // just the B, a slim slab: thin, with a fine bevel catching the light
+      const logo = new THREE.Group();
+      const B = letter('B', 150);
+      B.scale.setScalar(2.35);
+      logo.add(B);
+      scene.add(logo);
+
+      const resize = () => {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        camera.position.z = w < h ? 13 : 9;
+      };
+      addEventListener('resize', resize);
+      resize();
+
+      // slow idle turn; the pointer tilts it (eased, never snaps)
+      let px = 0;
+      let py = 0;
+      addEventListener('pointermove', (e) => {
+        px = (e.clientX / innerWidth) * 2 - 1;
+        py = (e.clientY / innerHeight) * 2 - 1;
+      });
+      let rx = 0;
+      let ry = 0;
+      let sy = 0; // the scroll, smoothed
+      const t0 = performance.now();
+      // entrance (as the dark page opens): it rises a little, turns in from a
+      // three-quarter view and grows to size on a long ease-out
+      const IN_DELAY = 0.45;
+      const IN_DUR = 1.8;
+      const easeOut = (x: number) => 1 - Math.pow(1 - x, 4);
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // ---- the next section opens out of the B's edge: at the moment the
+      // turning letter is side-on (a thin sliver), a slit the size of that
+      // sliver opens behind it to the full screen, the B flying on in front
+      const who = calm ? null : document.querySelector<HTMLElement>('[data-who]');
+      if (who) (window as any).__a9Mask = true;
+      B.geometry.computeBoundingBox();
+      const bb = B.geometry.boundingBox!;
+      const corners = Array.from({ length: 8 }, () => new THREE.Vector3());
+      // the scroll value at which the letter turns side-on (rotation.y hits
+      // 3π/2 on its way round), found once
+      const flyAt = (s: number) => {
+        const z = Math.min(1, Math.max(0, (s - 0.42) / 0.5));
+        return z * z * (3 - 2 * z);
+      };
+      let sEdge = 0.75;
+      for (let s = 0.42; s <= 1; s += 0.001) {
+        if (s * Math.PI * 2 + flyAt(s) * 0.9 >= Math.PI * 1.5) {
+          sEdge = s;
+          break;
+        }
+      }
+      let sent = false;
+      const project = () => {
+        logo.updateMatrixWorld(true);
+        const W = canvas.clientWidth;
+        const H = canvas.clientHeight;
+        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+        let k = 0;
+        for (const x of [bb.min.x, bb.max.x]) for (const y of [bb.min.y, bb.max.y]) for (const z of [bb.min.z, bb.max.z]) {
+          const c = corners[k++].set(x, y, z).applyMatrix4(B.matrixWorld).project(camera);
+          const sx = (c.x * 0.5 + 0.5) * W;
+          const sy2 = (-c.y * 0.5 + 0.5) * H;
+          x0 = Math.min(x0, sx); x1 = Math.max(x1, sx);
+          y0 = Math.min(y0, sy2); y1 = Math.max(y1, sy2);
+        }
+        return { x0: Math.max(0, x0), y0: Math.max(0, y0), x1: Math.min(W, x1), y1: Math.min(H, y1), W, H };
+      };
+      const uncover = () => {
+        if (!who) return;
+        // hold the section in place while it opens
+        const top = who.offsetTop - scrollY;
+        who.style.transform = top > 0 ? `translate3d(0,${(-top).toFixed(1)}px,0)` : '';
+        if (top <= 0) {
+          who.style.clipPath = '';
+          who.style.webkitMaskImage = who.style.maskImage = '';
+          return;
+        }
+        const raw = Math.min(1, Math.max(0, (sy - sEdge) / 0.2));
+        if (raw <= 0) {
+          who.style.clipPath = 'inset(50% 50% 50% 50%)';
+          who.style.webkitMaskImage = who.style.maskImage = '';
+          return;
+        }
+        who.style.clipPath = '';
+        // the window follows the letter itself: it is the B's own on-screen
+        // box (live, so it moves and grows with it), opening out to the
+        // whole screen as the letter closes in. Its edges are feathered, so
+        // there's never a hard cut through the text beside the B.
+        const pr = project();
+        const e = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+        const F = Math.max(60, Math.min(pr.W, pr.H) * 0.12);
+        const l = pr.x0 + (-F - pr.x0) * e;
+        const r = pr.x1 + (pr.W + F - pr.x1) * e;
+        const t = pr.y0 + (-F - pr.y0) * e;
+        const b = pr.y1 + (pr.H + F - pr.y1) * e;
+        const g = (dir: string, a: number, z: number) =>
+          `linear-gradient(${dir}, transparent ${a.toFixed(1)}px, #000 ${(a + F).toFixed(1)}px, #000 ${(z - F).toFixed(1)}px, transparent ${z.toFixed(1)}px)`;
+        const m = `${g('to right', l, r)}, ${g('to bottom', t, b)}`;
+        who.style.webkitMaskImage = who.style.maskImage = m;
+        if (!sent && raw > 0.25) {
+          sent = true;
+          dispatchEvent(new Event('a9:reveal'));
+        }
+      };
+      const tick = () => {
+        const t = (performance.now() - t0) / 1000;
+        const idle = calm ? 0 : Math.sin(t * 0.45) * 0.35;
+        ry += (idle + px * 0.5 - ry) * 0.05;
+        rx += (py * 0.3 - rx) * 0.05;
+        const k = calm ? 1 : easeOut(Math.min(1, Math.max(0, (t - IN_DELAY) / IN_DUR)));
+        const sp = (window as any).__a9P ?? 0;
+        sy += (sp - sy) * 0.14;
+        logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6 + sy * Math.PI * 2, (1 - k) * -0.15);
+        logo.position.y = (calm ? 0 : Math.sin(t * 0.8) * 0.05) - (1 - k) * 0.9;
+        logo.scale.setScalar(0.75 + 0.25 * k);
+        // the finale: past halfway the B rushes the camera, half-turning,
+        // until the viewer passes through its bowl into the page
+        const fz = Math.min(1, Math.max(0, (sy - 0.42) / 0.5));
+        const fly = calm ? 0 : fz * fz * (3 - 2 * fz);
+        // it flies on past the camera (no fading: it simply goes by)
+        logo.position.z = fly * fly * (camera.position.z + 1.5);
+        logo.position.x = fly * 0.35;
+        logo.rotation.y += fly * 0.9;
+        logo.rotation.x += fly * -0.25;
+        if (who) uncover();
+        (mat as THREE.MeshPhysicalMaterial).opacity = k;
+        glint.position.x += (px * 3.2 - glint.position.x) * 0.12;
+        glint.position.y += (-py * 2.2 - glint.position.y) * 0.12;
+        glint.intensity += ((px || py ? 26 : 0) * k - glint.intensity) * 0.06;
+        renderer.render(scene, camera);
+        requestAnimationFrame(tick);
+      };
+      tick();
+      }
+</script>

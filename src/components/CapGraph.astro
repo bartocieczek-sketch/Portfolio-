@@ -6,7 +6,7 @@
 // skill; a hub can be dragged and its lines follow. The fan grows out of the
 // centre when it scrolls into view.
 interface Props {
-  groups: { name: string; img?: string | null; items: string[] }[];
+  groups: { name: string; img?: string | null; items: string[]; desc?: string }[];
   /** optional SVG markup for the centre (e.g. the B monogram) instead of a square */
   core?: string;
 }
@@ -20,6 +20,7 @@ const { groups, core } = Astro.props;
     <div class="cg__hub" data-hub={gi} tabindex="0" role="button" aria-label={`${g.name}: ${g.items.join(', ')}`}>
       {g.img && <img src={g.img} alt="" width="48" height="60" loading="lazy" />}
       <span class="cg__hub-t"><i></i>{g.name}</span>
+      {g.desc && <span class="cg__hub-d">{g.desc}</span>}
     </div>
   ))}
   {groups.map((g, gi) =>
@@ -128,6 +129,25 @@ const { groups, core } = Astro.props;
     height: 12px;
     background: var(--ink);
     transition: transform 0.25s var(--e-out, ease-out);
+  }
+  /* an optional line under the hub's name (services) */
+  .cg__hub-d {
+    display: block;
+    width: 24ch;
+    margin: 8px 0 0 21px;
+    font: 400 13px/1.4 var(--font-head);
+    color: rgba(17, 17, 17, 0.55);
+    white-space: normal;
+  }
+  /* hubs near the right edge put their label on the dot's left */
+  .cg__hub.is-flip .cg__hub-t {
+    flex-direction: row-reverse;
+    transform: translateX(calc(-100% + 12px));
+  }
+  .cg__hub.is-flip .cg__hub-d {
+    margin-left: 0;
+    transform: translateX(calc(-100% + 12px));
+    text-align: right;
   }
   .cg__hub.is-on .cg__hub-t i,
   .cg__hub:focus-visible .cg__hub-t i {
@@ -336,7 +356,7 @@ const { groups, core } = Astro.props;
         let bd = SNAP;
         rest.forEach((p, i) => {
           const w = hubs[i].offsetWidth;
-          const mid = p.x - 6 + w / 2;
+          const mid = hubs[i].classList.contains('is-flip') ? p.x + 6 - w / 2 : p.x - 6 + w / 2;
           const d = Math.hypot(Math.max(0, Math.abs(px - mid) - w / 2), py - p.y);
           if (d < bd) {
             bd = d;
@@ -353,14 +373,17 @@ const { groups, core } = Astro.props;
         let ty = 0;
         if (i === pick && !drag && px > -1e3 && !calm) {
           const w = hubs[i].offsetWidth;
-          tx = Math.max(-28, Math.min(28, (px - (p.x - 6 + w / 2)) * 0.3));
+          tx = Math.max(-28, Math.min(28, (px - (hubs[i].classList.contains('is-flip') ? p.x + 6 - w / 2 : p.x - 6 + w / 2)) * 0.3));
           ty = Math.max(-28, Math.min(28, (py - p.y) * 0.4));
         }
         h.mx += (tx - h.mx) * 0.25;
         h.my += (ty - h.my) * 0.25;
         return { x: p.x + h.mx, y: p.y + h.my };
       });
-      hp.forEach((p, i) => (hubs[i].style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px)`));
+      hp.forEach((p, i) => {
+        hubs[i].style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px)`;
+        hubs[i].classList.toggle('is-flip', p.x + hubs[i].scrollWidth > W - 12);
+      });
       // the dots follow their hub a little when it's dragged
       let best = 1e9;
       let nb = -1;
