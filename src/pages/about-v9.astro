@@ -199,6 +199,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
               <li data-in data-svc={i} tabindex="0">
                 <h3><i aria-hidden="true" />{sv.t}</h3>
                 <p>{sv.d}</p>
+                <ul class="a9__svc-sub">{(caps[i]?.items ?? []).map((it) => <li>{it}</li>)}</ul>
               </li>
             ))}
           </ul>
@@ -265,38 +266,37 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     )}
 
     <!-- 5 -->
-    <!-- 5: the pulse, in the graph's language: one thin trace across the
-         page, a dot leading it with the rate beside it like a hub's label,
-         and a small line of text with the brew button underneath -->
-    <section class="a9__heart is-min" data-heart>
-      <div class="a9__hm-mid" data-hm-mid>
-        <div class="a9__hm-trace">
-          <svg class="a9__ecg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-label="Heart rate trace"><path data-ecg d="" /></svg>
-          <span class="a9__pen" aria-hidden="true" data-pen>
-            <span class="a9__pen-l" data-bpm-big>
-              <strong data-bpm aria-label="62 beats per minute">
-                {[0, 1, 2].map(() => (
-                  <span class="a9__dg" aria-hidden="true">
-                    <span class="a9__dg-col">{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => <span>{d}</span>)}</span>
-                  </span>
-                ))}
-              </strong>
-              <span>bpm</span>
-            </span>
-          </span>
-        </div>
+    <!-- 5: the pulse, as the graph's centre: one dot that beats, a thin
+         ring going out from it on every beat (faster as the coffee goes in),
+         eight small dots round it for today's coffees. Hold the dot to brew:
+         a hairline fills round it, and the beat quickens. -->
+    <section class="a9__heart is-ring" data-heart>
+      <div class="a9__ring" data-in>
+        <svg class="a9__ring-svg" viewBox="-200 -200 400 400" aria-hidden="true">
+          <g data-waves></g>
+          <circle class="a9__ring-orbit" r="118" />
+          <circle class="a9__ring-prog" r="34" pathLength="100" />
+          <circle class="a9__cup" cx="0.0" cy="-118.0" r="4" data-cup /><circle class="a9__cup" cx="83.44" cy="-83.44" r="4" data-cup /><circle class="a9__cup" cx="118.0" cy="0.0" r="4" data-cup /><circle class="a9__cup" cx="83.44" cy="83.44" r="4" data-cup /><circle class="a9__cup" cx="0.0" cy="118.0" r="4" data-cup /><circle class="a9__cup" cx="-83.44" cy="83.44" r="4" data-cup /><circle class="a9__cup" cx="-118.0" cy="0.0" r="4" data-cup /><circle class="a9__cup" cx="-83.44" cy="-83.44" r="4" data-cup />
+        </svg>
+        <button class="a9__core" type="button" data-brew aria-label="Hold to brew a coffee">
+          <span class="a9__core-dot" data-beat></span>
+          <span class="a9__sr" data-brew-t>Hold to brew</span>
+        </button>
+        <p class="a9__ring-l">
+          <strong data-bpm aria-label="62 beats per minute">
+            {[0, 1, 2].map(() => (
+              <span class="a9__dg" aria-hidden="true">
+                <span class="a9__dg-col">{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => <span>{d}</span>)}</span>
+              </span>
+            ))}
+          </strong>
+          <span>bpm</span>
+        </p>
       </div>
-      <div class="a9__hm-low">
-        <p class="a9__hm-say" data-in><span class="a9__beat" aria-hidden="true" data-beat />Coffee in, sport out. Every coffee you brew raises my pulse.</p>
-        <div class="a9__brew-row" data-in>
-          <button class="a9__brew" type="button" data-brew>
-            <span class="a9__brew-fill" aria-hidden="true"></span>
-            <span class="a9__brew-t" data-brew-t>Hold to brew</span>
-          </button>
-          <p class="a9__cups"><span data-cups>0</span> today</p>
-          <span class="a9__cupdots" aria-hidden="true" data-cupdots>{Array.from({ length: 8 }, () => <i />)}</span>
-        </div>
-      </div>
+      <p class="a9__ring-t" data-in>
+        Coffee in, sport out. <span>Hold the dot to brew one. Every coffee raises my pulse.</span>
+        <span class="a9__ring-c"><b data-cups>0</b> today</span>
+      </p>
     </section>
 
     <!-- 6 -->
@@ -1056,6 +1056,19 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     background: var(--ink);
     transition: transform 0.25s var(--e-out);
   }
+  /* what each service covers, in very small print */
+  .a9__svc-sub {
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 11px;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    color: var(--grey);
+  }
+  .a9__svc-sub li::before {
+    content: '— ';
+  }
   .a9__svc-list p {
     max-width: 34ch;
     margin: 0;
@@ -1156,6 +1169,145 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .a9__heart.is-min .a9__brew {
     padding: 8px 14px;
     font-size: 14px;
+  }
+
+  /* 5, ring: the pulse drawn with the graph's marks */
+  .a9__heart.is-ring {
+    display: grid;
+    justify-items: center;
+    gap: clamp(20px, 3vw, 40px);
+    padding: clamp(80px, 14vh, 160px) var(--pad);
+  }
+  .a9__ring {
+    position: relative;
+    width: min(400px, 86vw);
+    aspect-ratio: 1;
+  }
+  .a9__ring-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .a9__ring-svg circle {
+    vector-effect: non-scaling-stroke;
+  }
+  .a9__ring-orbit {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 1;
+  }
+  .a9__ring-wave {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.5);
+    stroke-width: 1;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  /* hold progress: a hairline fills round the dot (slow while held, snaps back) */
+  .a9__ring-prog {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.5;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    transform: rotate(-90deg);
+    transition: stroke-dashoffset 0.2s var(--e-out);
+  }
+  .a9__ring:has(.is-holding) .a9__ring-prog {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1.2s linear;
+  }
+  .a9__cup {
+    fill: var(--bg);
+    stroke: rgba(255, 255, 255, 0.35);
+    stroke-width: 1;
+    transition:
+      fill 0.3s ease,
+      stroke 0.3s ease;
+  }
+  .a9__cup.is-on {
+    fill: var(--ink);
+    stroke: var(--ink);
+  }
+  .a9__core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin: -32px 0 0 -32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: transform 0.16s var(--e-out);
+  }
+  .a9__core:active {
+    transform: scale(0.94);
+  }
+  .a9__core:focus-visible {
+    outline: 1px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 4px;
+  }
+  .a9__core-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+  .a9__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  /* the rate sits by the dot like a hub's name */
+  .a9__ring-l {
+    position: absolute;
+    left: calc(50% + 30px);
+    top: 50%;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: -0.5em 0 0;
+    font: 500 15px/1 var(--font-head);
+    color: var(--ink);
+    pointer-events: none;
+  }
+  .a9__ring-l > span {
+    color: var(--grey);
+  }
+  .a9__ring-l strong {
+    display: flex;
+    font-weight: inherit;
+  }
+  .a9__ring-t {
+    max-width: 40ch;
+    margin: 0;
+    text-align: center;
+    font: 500 15px/1.45 var(--font-head);
+    color: var(--ink);
+  }
+  .a9__ring-t > span {
+    color: var(--grey);
+  }
+  .a9__ring-c {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  .a9__ring-c b {
+    font-weight: 500;
+    color: var(--ink);
   }
 
   /* 3b: numbers — no boxes: each figure set as big as the pulse readout,
@@ -1992,6 +2144,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     const beatEl = root.querySelector<HTMLElement>('[data-beat]');
     const pen = root.querySelector<HTMLElement>('[data-pen]');
     const bigBpm = root.querySelector<HTMLElement>('[data-bpm-big]');
+    const waves = root.querySelector<SVGGElement>('[data-waves]');
+    let heartOn = false;
+    const heartEl = root.querySelector('[data-heart]');
+    if (heartEl) new IntersectionObserver((es) => (heartOn = es[0].isIntersecting)).observe(heartEl);
     const WIN = 4; // seconds on screen
     const samples: number[] = [];
     const RATE = 60; // samples per second
@@ -2131,7 +2287,21 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         if (inBeat >= 60 / bpm) inBeat -= 60 / bpm;
         // the B jumps on the R wave
         if (!calm && before < 0.22 && inBeat >= 0.22) {
-          beatEl?.animate([{ transform: 'scale(1.8)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          beatEl?.animate([{ transform: 'scale(1.6)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          // a thin ring goes out from the dot (only while it's on screen)
+          if (waves && heartOn) {
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('r', '20');
+            c.setAttribute('class', 'a9__ring-wave');
+            waves.append(c);
+            c.animate(
+              [
+                { transform: 'scale(1)', opacity: 0.7 },
+                { transform: 'scale(9)', opacity: 0 },
+              ],
+              { duration: 2200, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+            ).onfinish = () => c.remove();
+          }
           bigBpm?.animate([{ transform: 'translateY(-100%) scale(1.08)' }, { transform: 'translateY(-100%)' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
         }
         samples.push(calm ? 0 : ecg(inBeat));
@@ -2159,7 +2329,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: 'numeric', hour12: false }).format(new Date()));
       let n = Math.max(0, Math.min(4, Math.floor((hour - 6) / 3)));
       cups.textContent = String(n);
-      const dots = [...root.querySelectorAll<HTMLElement>('[data-cupdots] i')];
+      const dots = [...root.querySelectorAll<Element>('[data-cupdots] i, [data-cup]')];
       const paint = () => dots.forEach((d, i) => d.classList.toggle('is-on', i < n));
       paint();
       let t = 0;
@@ -2174,7 +2344,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           caffeine += 1;
           cups.textContent = String(n);
           paint();
-          dots[Math.min(n, dots.length) - 1]?.animate([{ transform: 'scale(2)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          (dots[Math.min(n, dots.length) - 1] as SVGElement | undefined)?.animate([{ opacity: 0.2 }, { opacity: 1 }], { duration: 420, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
           cups.animate([{ transform: 'translateY(40%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
           brew.classList.remove('is-holding');
           label.textContent = n > 5 ? 'Enough' : 'Another';
@@ -2462,7 +2632,17 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         }
         let best = -1;
         let bk = -1;
-        for (let k = 0; k < N * N; k++) if (!ink(k) && !out[k] && dist[k] > best) { best = dist[k]; bk = k; }
+        // aim for the round loop at the B's upper left (its "o"): in the
+        // drawing (y down = font units) that's the left part, toward high y
+        for (let k = 0; k < N * N; k++) {
+          const gx = ((k % N) - 2) * sc + bb[0];
+          const gy = (Math.floor(k / N) - 2) * sc + bb[1];
+          if (ink(k) || gx < bb[0] + w * 0.05 || gx > bb[0] + w * 0.4 || gy < bb[1] + h * 0.45 || gy > bb[1] + h * 0.85) continue;
+          if (dist[k] > best) {
+            best = dist[k];
+            bk = k;
+          }
+        }
         if (bk < 0) return { x: 0, y: 0 };
         const fx = ((bk % N) - 2) * sc + bb[0];
         const fy = (Math.floor(bk / N) - 2) * sc + bb[1];
@@ -2517,7 +2697,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       let sEdge = 0.75;
       for (let s = 0.42; s <= 1; s += 0.001) {
         const fa = flyAt(s);
-        if (s * Math.PI * 2 + 4 * fa * (1 - fa) * 0.9 >= Math.PI * 1.5) {
+        if (Math.min(1, s / 0.8) * Math.PI * 2 + (fa < 0.7 ? Math.sin((Math.PI * fa) / 0.7) : 0) * 0.9 >= Math.PI * 1.5) {
           sEdge = s;
           break;
         }
@@ -2591,7 +2771,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const k = calm ? 1 : easeOut(Math.min(1, Math.max(0, (t - IN_DELAY) / IN_DUR)));
         const sp = (window as any).__a9P ?? 0;
         sy += (sp - sy) * 0.14;
-        logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6 + sy * Math.PI * 2, (1 - k) * -0.15);
+        logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6 + Math.min(1, sy / 0.8) * Math.PI * 2, (1 - k) * -0.15);
         logo.position.y = (calm ? 0 : Math.sin(t * 0.8) * 0.05) - (1 - k) * 0.9;
         logo.scale.setScalar(0.75 + 0.25 * k);
         // the finale: past halfway the B rushes the camera, half-turning,
@@ -2600,9 +2780,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const fly = calm ? 0 : fz * fz * (3 - 2 * fz);
         // it rushes the camera, half-turning on the way and squaring up at
         // the end, lined up so the camera passes clean through its bowl
-        const bell = 4 * fly * (1 - fly);
+        // the half-turn happens early; it has squared up well before the pass
+        const bell = fly < 0.7 ? Math.sin((Math.PI * fly) / 0.7) : 0;
         logo.position.z = fly * fly * (camera.position.z + 1.5);
-        const aim = fly * fly;
+        const am = Math.min(1, fly / 0.8);
+        const aim = am * am * (3 - 2 * am);
         logo.position.x = fly * 0.35 * (1 - aim) - hole.x * aim;
         logo.position.y = logo.position.y * (1 - aim) - hole.y * aim;
         logo.rotation.y += bell * 0.9;
