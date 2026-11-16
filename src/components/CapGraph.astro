@@ -92,10 +92,6 @@ const { groups, core } = Astro.props;
   .cg__core--mark :global(svg) {
     width: 38px;
     height: auto;
-    transition: transform 0.6s var(--e-out, ease-out);
-  }
-  .cg:has(.cg__hub.is-on) .cg__core--mark :global(svg) {
-    transform: perspective(200px) rotateY(180deg);
   }
   .cg__hub {
     margin: -6px 0 0 -6px;
@@ -202,7 +198,10 @@ const { groups, core } = Astro.props;
           ];
     let seed = 7;
     const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
-    const hubPos = hubs.map((_, i) => ({ ...base[i % base.length], ox: 0, oy: 0, ph: rnd() * 6.28 }));
+    const hubPos = hubs.map((_, i) => ({ ...base[i % base.length], ox: 0, oy: 0, mx: 0, my: 0, ph: rnd() * 6.28 }));
+    // magnet: a hub reaches for the pointer once it's within this distance
+    // of its label, so it doesn't need to be hit exactly
+    const SNAP = 90;
     // each skill sits somewhere in the cone between the centre and its hub
     const dotPos = dots.map((d) => {
       const g = Number(d.dataset.dot);
@@ -224,6 +223,7 @@ const { groups, core } = Astro.props;
     let px = -1e4;
     let py = -1e4;
     let drag: { i: number; sx: number; sy: number; ox: number; oy: number } | null = null;
+    let focused = -1;
     let grow = calm ? 1 : 0;
     let growing = false;
 
@@ -232,14 +232,18 @@ const { groups, core } = Astro.props;
       hubs.forEach((h, k) => h.classList.toggle('is-on', k === i));
     };
     hubs.forEach((h, i) => {
-      h.addEventListener('pointerenter', () => setHot(i));
-      h.addEventListener('pointerleave', () => !drag && setHot(-1));
-      h.addEventListener('focus', () => setHot(i));
-      h.addEventListener('blur', () => setHot(-1));
+      h.addEventListener('focus', () => (focused = i));
+      h.addEventListener('blur', () => (focused = -1));
       h.addEventListener('pointerdown', (e) => {
         h.setPointerCapture(e.pointerId);
         drag = { i, sx: e.clientX, sy: e.clientY, ox: hubPos[i].ox, oy: hubPos[i].oy };
       });
+    });
+    // a snapped hub can be grabbed from anywhere within its pull
+    box.addEventListener('pointerdown', (e) => {
+      if (drag || hot < 0 || (e.target as HTMLElement).closest('[data-hub]')) return;
+      box.setPointerCapture(e.pointerId);
+      drag = { i: hot, sx: e.clientX, sy: e.clientY, ox: hubPos[hot].ox, oy: hubPos[hot].oy };
     });
     box.addEventListener('pointermove', (e) => {
       const r = box.getBoundingClientRect();
@@ -254,7 +258,6 @@ const { groups, core } = Astro.props;
       px = py = -1e4;
     });
     addEventListener('pointerup', () => {
-      if (drag) setHot(-1);
       drag = null;
     });
 
@@ -282,10 +285,41 @@ const { groups, core } = Astro.props;
       const cx = W / 2;
       const cy = Hh / 2;
       core.style.transform = `translate(${cx}px,${cy}px)`;
-      const hp = hubPos.map((h) => ({
+      // where each hub would sit, then the nearest one within SNAP of the
+      // pointer leans toward it (a quick spring) and lights up
+      const rest = hubPos.map((h) => ({
         x: cx + (h.x * W - cx) * grow + h.ox + Math.sin(t * 0.5 + h.ph) * 6,
         y: cy + (h.y * Hh - cy) * grow + h.oy + Math.cos(t * 0.4 + h.ph) * 6,
       }));
+      let pick = drag ? drag.i : -1;
+      if (!drag) {
+        let bd = SNAP;
+        rest.forEach((p, i) => {
+          const w = hubs[i].offsetWidth;
+          const mid = p.x - 6 + w / 2;
+          const d = Math.hypot(Math.max(0, Math.abs(px - mid) - w / 2), py - p.y);
+          if (d < bd) {
+            bd = d;
+            pick = i;
+          }
+        });
+      }
+      if (pick < 0) pick = focused;
+      if (pick !== hot) setHot(pick);
+      box.style.cursor = hot >= 0 && focused !== hot ? (drag ? 'grabbing' : 'grab') : '';
+      const hp = rest.map((p, i) => {
+        const h = hubPos[i];
+        let tx = 0;
+        let ty = 0;
+        if (i === pick && !drag && px > -1e3 && !calm) {
+          const w = hubs[i].offsetWidth;
+          tx = Math.max(-28, Math.min(28, (px - (p.x - 6 + w / 2)) * 0.3));
+          ty = Math.max(-28, Math.min(28, (py - p.y) * 0.4));
+        }
+        h.mx += (tx - h.mx) * 0.25;
+        h.my += (ty - h.my) * 0.25;
+        return { x: p.x + h.mx, y: p.y + h.my };
+      });
       hp.forEach((p, i) => (hubs[i].style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px)`));
       // the dots follow their hub a little when it's dragged
       let best = 1e9;
