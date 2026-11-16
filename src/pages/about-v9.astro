@@ -61,6 +61,9 @@ const caps = [
 const [bPath, bBox] = glyphs.g.B as [string, number[], number];
 const bView = `${bBox[0]} ${-bBox[3]} ${bBox[2] - bBox[0]} ${bBox[3] - bBox[1]}`;
 const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}" fill="currentColor"/></svg>`;
+// the same B as a mask: the next section is seen through it as the 3D one
+// reaches the camera
+const bMask = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bView}" preserveAspectRatio="none"><path transform="scale(1,-1)" d="${bPath}" fill="#000"/></svg>`)}")`;
 ---
 
 <Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
@@ -83,7 +86,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     </section>
 
     <!-- 2 -->
-    <section class="a9__sec a9__who" data-who>
+    <section class="a9__sec a9__who" data-who data-mask={bMask}>
       <p class="a9__label" data-in>Who I am</p>
       <div class="a9__who-c">
         <p class="a9__beat-n" data-in>01 — Who</p>
@@ -320,10 +323,19 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
 
   /* the next section doesn't wait for the hero to unpin: it slides up over
      the hero's last stretch, so the B's fly-through hands straight over */
+  /* the next section sits over the hero's last screen and is uncovered by
+     the B: as the chrome letter reaches the camera, the section shows
+     through its shape, held in place, until the letter has passed */
   .a9__who {
     position: relative;
     z-index: 3;
-    margin-top: -55svh;
+    margin-top: -100svh;
+    background: var(--bg);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+  .a9__who.is-flat {
+    margin-top: 0;
   }
   /* 2: who — no scrubbing here (the hero has that); it simply arrives:
      the lead sharpens out of a blur word by word, the beats follow */
@@ -1097,11 +1109,28 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         }),
       { rootMargin: '0px 0px -10% 0px' },
     );
+    const later: HTMLElement[] = [];
     root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid]').forEach((el) => {
       const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
       el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 60}ms`);
-      io.observe(el);
+      // the section behind the B only starts once it's being uncovered
+      if (el.closest('[data-who]')) later.push(el);
+      else io.observe(el);
     });
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      later.forEach((el) => io.observe(el));
+    };
+    addEventListener('a9:reveal', reveal);
+    // no 3D (or calm): nothing to uncover it, so it just follows the hero
+    setTimeout(() => {
+      if (!(window as any).__a9Mask) {
+        root.querySelector('[data-who]')?.classList.add('is-flat');
+        reveal();
+      }
+    }, 1500);
 
     // ---- 5: a real ECG trace. One beat is a sum of gaussians at clinical
     // timings (P 0.10s, Q 0.20s, R 0.22s, S 0.245s, T 0.42s); the beat
@@ -1536,6 +1565,54 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const IN_DUR = 1.8;
       const easeOut = (x: number) => 1 - Math.pow(1 - x, 4);
       const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // ---- the B as a window onto the next section
+      const who = calm ? null : document.querySelector<HTMLElement>('[data-who]');
+      const maskUrl = who?.dataset.mask ?? '';
+      if (who) (window as any).__a9Mask = true;
+      B.geometry.computeBoundingBox();
+      const bb = B.geometry.boundingBox!;
+      const corners = [0, 1, 2, 3].map(() => new THREE.Vector3());
+      let sent = false;
+      const uncover = (fly: number) => {
+        if (!who) return;
+        // hold the section in place while it's being uncovered
+        const top = who.offsetTop - scrollY;
+        who.style.transform = top > 0 ? `translate3d(0,${(-top).toFixed(1)}px,0)` : '';
+        if (fly < 0.35 || top <= 0) {
+          const m = top <= 0 ? 'none' : `${maskUrl}`;
+          who.style.webkitMaskImage = who.style.maskImage = m;
+          if (top > 0) who.style.webkitMaskSize = who.style.maskSize = '0px 0px';
+          return;
+        }
+        // the front face's corners, projected to the screen
+        logo.updateMatrixWorld(true);
+        const z = bb.max.z;
+        corners[0].set(bb.min.x, bb.min.y, z);
+        corners[1].set(bb.max.x, bb.min.y, z);
+        corners[2].set(bb.min.x, bb.max.y, z);
+        corners[3].set(bb.max.x, bb.max.y, z);
+        const W = canvas.clientWidth;
+        const H = canvas.clientHeight;
+        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+        for (const c of corners) {
+          c.applyMatrix4(B.matrixWorld).project(camera);
+          const sx = (c.x * 0.5 + 0.5) * W;
+          const sy2 = (-c.y * 0.5 + 0.5) * H;
+          x0 = Math.min(x0, sx); x1 = Math.max(x1, sx);
+          y0 = Math.min(y0, sy2); y1 = Math.max(y1, sy2);
+        }
+        // last stretch: the window opens up to the whole screen
+        const all = Math.min(1, Math.max(0, (fly - 0.8) / 0.14));
+        who.style.webkitMaskImage = who.style.maskImage = `${maskUrl}, linear-gradient(rgba(0,0,0,${all.toFixed(3)}), rgba(0,0,0,${all.toFixed(3)}))`;
+        const sz = `${(x1 - x0).toFixed(1)}px ${(y1 - y0).toFixed(1)}px, 100% 100%`;
+        const ps = `${x0.toFixed(1)}px ${y0.toFixed(1)}px, 0 0`;
+        who.style.webkitMaskSize = who.style.maskSize = sz;
+        who.style.webkitMaskPosition = who.style.maskPosition = ps;
+        if (!sent && fly > 0.55) {
+          sent = true;
+          dispatchEvent(new Event('a9:reveal'));
+        }
+      };
       const tick = () => {
         const t = (performance.now() - t0) / 1000;
         const idle = calm ? 0 : Math.sin(t * 0.45) * 0.35;
@@ -1552,9 +1629,15 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const fz = Math.min(1, Math.max(0, (sy - 0.42) / 0.5));
         const fly = calm ? 0 : fz * fz * (3 - 2 * fz);
         logo.position.z = fly * fly * (camera.position.z - 0.6);
-        logo.position.x = fly * 0.35;
-        logo.rotation.y += fly * 0.9;
-        logo.rotation.x += fly * -0.25;
+        // it squares up to the camera on the way, so its outline is the
+        // window the next section shows through
+        const wrap = (v: number) => Math.atan2(Math.sin(v), Math.cos(v));
+        const face = Math.min(1, fly * 1.6);
+        logo.rotation.x = wrap(logo.rotation.x) * (1 - face);
+        logo.rotation.y = wrap(logo.rotation.y) * (1 - face);
+        logo.rotation.z = wrap(logo.rotation.z) * (1 - face);
+        logo.position.y *= 1 - face;
+        if (who) uncover(fly);
         (mat as THREE.MeshPhysicalMaterial).opacity = k * (1 - Math.min(1, Math.max(0, (fly - 0.72) / 0.22)));
         glint.position.x += (px * 3.2 - glint.position.x) * 0.12;
         glint.position.y += (-py * 2.2 - glint.position.y) * 0.12;
