@@ -1190,7 +1190,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const fly = smooth(clamp((p - 0.5) / 0.45));
         say.style.transform = `translateY(${(-p * 6).toFixed(2)}vh) scale(${(1 - fly * 0.14).toFixed(4)})`;
         say.style.filter = fly > 0.001 ? `blur(${(fly * 10).toFixed(2)}px)` : '';
-        say.style.opacity = String(1 - fly * 0.85);
+        // gone completely before the B has passed: nothing left behind it
+        const gone = smooth(clamp((p - 0.5) / 0.32));
+        say.style.opacity = (1 - gone).toFixed(3);
+        say.style.visibility = gone > 0.995 ? 'hidden' : '';
         sayWrap.parentElement!.style.setProperty('--p', p.toFixed(3));
         (window as any).__a9P = p;
       }
