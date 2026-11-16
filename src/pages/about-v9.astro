@@ -197,9 +197,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     <section class="a9__nums">
       <p class="a9__label" data-in>In numbers</p>
       <div class="a9__nm" data-nm>
-        <span class="a9__nm-line" aria-hidden="true" />
         {stats.map((st, i) => (
-          <div class={`a9__nm-c ${st.up ? 'is-up' : 'is-down'}`} style={`--h:${st.h};grid-column:${st.c}`} data-drop={st.up ? 2 + i : i}>
+          <div class="a9__nm-c" style={`--x:${[0, 34, 10, 52, 24][i] ?? 0}%`} data-drop={i}>
             <p class="a9__nm-v"><span data-count={st.v}>{st.v}</span>{st.suf}</p>
             <p class="a9__nm-l">{st.l}</p>
           </div>
@@ -1018,111 +1017,46 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     }
   }
 
-  /* 3b: numbers — boxes hang off one hairline across the page, above and
-     below it in turn, offset like a timeline. The line draws first; each
-     box then grows out of it (up or down) and its figure counts up. */
-  .a9__nums {
-    padding: clamp(96px, 18vh, 200px) var(--pad);
-  }
-  .a9__nums > .a9__label {
-    margin-bottom: clamp(32px, 5vw, 64px);
-  }
+  /* 3b: numbers — no boxes: each figure set as big as the pulse readout,
+     its label beside it, the rows stepping in and out across the page.
+     They drop in like bricks and count once they've landed. */
   .a9__nm {
-    --half: clamp(200px, 30vh, 320px);
-    --hl: rgba(255, 255, 255, 0.16);
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-template-rows: var(--half) var(--half);
-  }
-  .a9__nm-line {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: var(--half);
-    height: 1px;
-    background: rgba(255, 255, 255, 0.28);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 1.2s var(--e-expo);
-  }
-  .a9__nm.is-in .a9__nm-line {
-    transform: none;
-  }
-  .a9__nm-c {
-    position: relative;
-    height: calc(var(--h) * 100%);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    padding: 16px 18px 18px;
-    border-left: 1px solid var(--hl);
-    border-right: 1px solid var(--hl);
+    gap: clamp(8px, 1.4vw, 24px);
+  }
+  .a9__nm-c {
+    display: flex;
+    align-items: flex-end;
+    gap: clamp(12px, 1.6vw, 28px);
+    margin-left: var(--x);
     opacity: 0;
-    transition: background-color 0.25s ease;
   }
   .a9__nm.is-in .a9__nm-c {
     opacity: 1;
   }
-  .a9__nm-c.is-up {
-    grid-row: 1;
-    align-self: end;
-    border-top: 1px solid var(--hl);
-  }
-  .a9__nm-c.is-down {
-    grid-row: 2;
-    align-self: start;
-    margin-top: 1px;
-    border-bottom: 1px solid var(--hl);
-  }
   .a9__nm-v {
     margin: 0;
-    font: 500 clamp(44px, 5.2vw, 92px) / 0.9 var(--font-head);
-    letter-spacing: -0.05em;
+    font: 500 clamp(96px, 15vw, 260px) / 0.8 var(--font-head);
+    letter-spacing: -0.06em;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
   .a9__nm-l {
-    max-width: 18ch;
-    margin: 0;
-    font-size: 13px;
+    max-width: 16ch;
+    margin: 0 0 0.6em;
+    font-size: 14px;
     color: var(--grey);
-    transition: color 0.25s ease;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .a9__nm-c:hover {
-      background-color: rgba(255, 255, 255, 0.035);
-    }
-    .a9__nm-c:hover .a9__nm-l {
-      color: var(--ink);
-    }
   }
   @media (max-width: 809px) {
-    .a9__nm {
-      display: flex;
-      flex-direction: column;
+    .a9__nm-c {
+      margin-left: calc(var(--x) * 0.4);
     }
-    .a9__nm-line {
-      display: none;
+    .a9__nm-v {
+      font-size: 24vw;
     }
-    .a9__nm-c,
-    .a9__nm-c.is-up,
-    .a9__nm-c.is-down {
-      height: auto;
-      min-height: 140px;
-      margin: 0 0 -1px;
-      border: 1px solid var(--hl);
-    }
-    .a9__nm-c:nth-child(odd) {
-      margin-left: 18%;
-    }
-    .a9__nm-c:nth-child(even) {
-      margin-right: 18%;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .a9__nm-line {
-      transform: none;
-      transition: none;
+    .a9__nm-l {
+      font-size: 13px;
     }
   }
 
