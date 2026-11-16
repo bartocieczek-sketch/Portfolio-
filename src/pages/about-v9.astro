@@ -273,9 +273,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       <div class="a9__ring" data-in>
         <svg class="a9__ring-svg" viewBox="-200 -200 400 400" aria-hidden="true">
           <g data-waves></g>
-          <circle class="a9__ring-orbit" r="118" />
+          <g data-rings></g>
           <circle class="a9__ring-prog" r="34" pathLength="100" />
-          <circle class="a9__cup" cx="0.0" cy="-118.0" r="4" data-cup /><circle class="a9__cup" cx="83.44" cy="-83.44" r="4" data-cup /><circle class="a9__cup" cx="118.0" cy="0.0" r="4" data-cup /><circle class="a9__cup" cx="83.44" cy="83.44" r="4" data-cup /><circle class="a9__cup" cx="0.0" cy="118.0" r="4" data-cup /><circle class="a9__cup" cx="-83.44" cy="83.44" r="4" data-cup /><circle class="a9__cup" cx="-118.0" cy="0.0" r="4" data-cup /><circle class="a9__cup" cx="-83.44" cy="-83.44" r="4" data-cup />
         </svg>
         <button class="a9__core" type="button" data-brew aria-label="Hold to brew a coffee">
           <span class="a9__core-dot" data-beat></span>
@@ -1205,15 +1204,16 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     height: 100%;
     overflow: visible;
   }
-  .a9__ring-svg circle {
+  .a9__ring-svg :global(circle) {
     vector-effect: non-scaling-stroke;
   }
-  .a9__ring-orbit {
+  .a9__ring-svg :global(.a9__ring-orbit) {
     fill: none;
+    stroke-dasharray: 100;
     stroke: rgba(255, 255, 255, 0.1);
     stroke-width: 1;
   }
-  .a9__ring-wave {
+  .a9__ring-svg :global(.a9__ring-wave) {
     fill: none;
     stroke: rgba(255, 255, 255, 0.5);
     stroke-width: 1;
@@ -1234,7 +1234,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     stroke-dashoffset: 0;
     transition: stroke-dashoffset 1.2s linear;
   }
-  .a9__cup {
+  .a9__ring-svg :global(.a9__cup) {
+    transform-box: fill-box;
+    transform-origin: center;
     fill: var(--bg);
     stroke: rgba(255, 255, 255, 0.35);
     stroke-width: 1;
@@ -1242,7 +1244,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       fill 0.3s ease,
       stroke 0.3s ease;
   }
-  .a9__cup.is-on {
+  .a9__ring-svg :global(.a9__cup.is-on) {
     fill: var(--ink);
     stroke: var(--ink);
   }
@@ -1328,9 +1330,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   .a9__ring-c {
     margin-top: 10px !important;
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: 13px;
     color: var(--grey);
   }
   .a9__ring-c b {
@@ -2358,8 +2358,49 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: 'numeric', hour12: false }).format(new Date()));
       let n = Math.max(0, Math.min(4, Math.floor((hour - 6) / 3)));
       cups.textContent = String(n);
-      const dots = [...root.querySelectorAll<Element>('[data-cupdots] i, [data-cup]')];
-      const paint = () => dots.forEach((d, i) => d.classList.toggle('is-on', i < n));
+      // coffees as dots on rings round the pulse: eight to a ring; when a
+      // ring is full the next, a little wider, draws itself round it
+      const NS = 'http://www.w3.org/2000/svg';
+      const ringsG = root.querySelector<SVGGElement>('[data-rings]');
+      const dots: SVGCircleElement[] = [];
+      let rings = 0;
+      const addRing = (animate: boolean) => {
+        if (!ringsG || rings >= 3) return;
+        const R = 118 + rings * 40;
+        const orbit = document.createElementNS(NS, 'circle');
+        orbit.setAttribute('r', String(R));
+        orbit.setAttribute('pathLength', '100');
+        orbit.setAttribute('class', 'a9__ring-orbit');
+        ringsG.append(orbit);
+        const off = rings * 22.5; // each ring's dots sit between the last one's
+        const made: SVGCircleElement[] = [];
+        for (let k = 0; k < 8; k++) {
+          const a = ((-90 + off + k * 45) * Math.PI) / 180;
+          const c = document.createElementNS(NS, 'circle');
+          c.setAttribute('cx', (Math.cos(a) * R).toFixed(2));
+          c.setAttribute('cy', (Math.sin(a) * R).toFixed(2));
+          c.setAttribute('r', '4');
+          c.setAttribute('class', 'a9__cup');
+          ringsG.append(c);
+          made.push(c);
+        }
+        dots.push(...made);
+        rings++;
+        if (!animate || calm) return;
+        orbit.animate([{ strokeDashoffset: 100 }, { strokeDashoffset: 0 }], { duration: 1100, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+        made.forEach((c, k) =>
+          c.animate([{ opacity: 0, transform: 'scale(0.4)' }, { opacity: 1, transform: 'none' }], {
+            duration: 420,
+            delay: 250 + k * 70,
+            easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+            fill: 'backwards',
+          }),
+        );
+      };
+      const paint = (animate = false) => {
+        while (rings < Math.min(3, Math.floor(n / 8) + 1)) addRing(animate);
+        dots.forEach((d, i) => d.classList.toggle('is-on', i < n));
+      };
       paint();
       let t = 0;
       const label = brew.querySelector<HTMLElement>('[data-brew-t]')!;
@@ -2372,11 +2413,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           n++;
           caffeine += 1;
           cups.textContent = String(n);
-          paint();
-          (dots[Math.min(n, dots.length) - 1] as SVGElement | undefined)?.animate([{ opacity: 0.2 }, { opacity: 1 }], { duration: 420, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          paint(true);
+          dots[Math.min(n, dots.length) - 1]?.animate([{ transform: 'scale(1.8)' }, { transform: 'none' }], { duration: 420, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
           cups.animate([{ transform: 'translateY(40%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
           brew.classList.remove('is-holding');
-          label.textContent = n > 5 ? 'Enough' : 'Another';
+          label.textContent = 'Another';
           rest = label.textContent;
         }, 1200);
       };
