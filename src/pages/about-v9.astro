@@ -1087,66 +1087,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         opacity: 0,
       });
 
-      // Where the B crosses a letter of the statement, its flat faces open
-      // up (the text shows through) and only its walls stay: the B reads as
-      // a chrome stroke over the words. The letters are drawn into a mask the
-      // size of the stage, matched to the live DOM text every frame.
-      const maskCv = document.createElement('canvas');
-      const mctx = maskCv.getContext('2d')!;
-      const maskTex = new THREE.CanvasTexture(maskCv);
-      maskTex.minFilter = THREE.LinearFilter;
-      maskTex.generateMipmaps = false;
-      const uRes = new THREE.Vector2(1, 1);
-      mat.onBeforeCompile = (sh) => {
-        sh.uniforms.uMask = { value: maskTex };
-        sh.uniforms.uRes = { value: uRes };
-        sh.vertexShader = sh.vertexShader
-          .replace('#include <common>', '#include <common>\nvarying vec3 vObjN;')
-          .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nvObjN = objectNormal;');
-        sh.fragmentShader = sh.fragmentShader
-          .replace('#include <common>', '#include <common>\nuniform sampler2D uMask;\nuniform vec2 uRes;\nvarying vec3 vObjN;')
-          .replace(
-            '#include <clipping_planes_fragment>',
-            '#include <clipping_planes_fragment>\nif (texture2D(uMask, gl_FragCoord.xy / uRes).a > 0.5 && abs(vObjN.z) > 0.6) discard;',
-          );
-      };
-      const sayEl = document.querySelector<HTMLElement>('[data-say]');
-      const drawMask = () => {
-        const W = canvas.clientWidth;
-        const H = canvas.clientHeight;
-        if (maskCv.width !== W || maskCv.height !== H) {
-          maskCv.width = W;
-          maskCv.height = H;
-        }
-        mctx.clearRect(0, 0, maskCv.width, maskCv.height);
-        if (!sayEl) return;
-        const cr = canvas.getBoundingClientRect();
-        const cs = getComputedStyle(sayEl);
-        mctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-        mctx.letterSpacing = cs.letterSpacing === 'normal' ? '0px' : cs.letterSpacing;
-        mctx.textBaseline = 'alphabetic';
-        mctx.fillStyle = '#000';
-        mctx.strokeStyle = '#000';
-        mctx.lineJoin = 'round';
-        mctx.lineWidth = 3; // a hair wider than the letters, so they sit clear of the chrome
-        // baseline inside each word's line box, from the font's own metrics
-        const fm = mctx.measureText('H');
-        const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize);
-        const base = (lh - (fm.fontBoundingBoxAscent + fm.fontBoundingBoxDescent)) / 2 + fm.fontBoundingBoxAscent;
-        const upper = cs.textTransform === 'uppercase';
-        sayEl.querySelectorAll<HTMLElement>('.swi').forEach((w) => {
-          const r = w.getBoundingClientRect();
-          const t = upper ? (w.textContent ?? '').toUpperCase() : (w.textContent ?? '');
-          const x = r.left - cr.left;
-          const y = r.top - cr.top + base;
-          mctx.strokeText(t, x, y);
-          mctx.fillText(t, x, y);
-        });
-        maskTex.needsUpdate = true;
-        const db = renderer.getDrawingBufferSize(new THREE.Vector2());
-        uRes.set(db.x, db.y);
-      };
-
       const U = glyphs.upm;
       const shapesOf = (d: string) => {
         const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`);
@@ -1217,7 +1157,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         logo.position.y = (calm ? 0 : Math.sin(t * 0.8) * 0.05) - (1 - k) * 0.9;
         logo.scale.setScalar(0.75 + 0.25 * k);
         (mat as THREE.MeshPhysicalMaterial).opacity = k;
-        drawMask();
         renderer.render(scene, camera);
         requestAnimationFrame(tick);
       };
