@@ -1,0 +1,763 @@
+---
+// Draft: About, cut down to six beats and built from the home page's
+// language (white page, pill-shaped pictures, the thin line, small grey
+// labels, Neue Montreal) with the B woven through:
+// 1 big uppercase statement (who / what / into), lit word by word as you
+//   scroll, the B turning in the corner;
+// 2 who I am — a pill portrait and a short text;
+// 3 experience & what I do;
+// 4 how it connects — the capabilities graph with the B at its centre;
+// 5 coffee & heart — a real ECG trace; every coffee raises the rate;
+// 6 the call to action.
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import CapGraph from '../components/CapGraph.astro';
+import { ABOUT_QUERY, HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+import { load } from '../lib/load';
+import glyphs from '../lib/monogram-b.json';
+
+const [settings, about, home] = await Promise.all([
+  load(Astro.locals, SETTINGS_QUERY),
+  load(Astro.locals, ABOUT_QUERY),
+  load(Astro.locals, HOME_QUERY),
+]);
+if (!settings || !about) return new Response('Content not found', { status: 500 });
+
+const yy = (s: string) => {
+  const m = s.match(/(\d{4})\D+(\d{4}|present)/i);
+  if (!m) return '';
+  const a = `’${m[1].slice(2)}`;
+  return /present/i.test(m[2]) ? `${a}–now` : `${a}–’${m[2].slice(2)}`;
+};
+const title = (s: string) =>
+  s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\bUi\b/g, 'UI').replace(/\bUx\b/g, 'UX');
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const jobs = ((about.experience ?? []) as any[]).map((e) => ({
+  role: title(e.role ?? ''),
+  company: e.company as string,
+  when: yy(e.period ?? ''),
+  now: /present/i.test(e.period ?? ''),
+  logo: e.logo?.asset ? urlFor(e.logo).width(96).height(96).fit('crop').url() : null,
+}));
+const nice = (f: string) => {
+  const s = f.toLowerCase().replace(/\b(ux|ui|ai)\b/g, (m) => m.toUpperCase());
+  return s.replace(/(^|\s)(\w)/g, (_m, a, b) => a + b.toUpperCase()).replace('Nocode', 'No-code');
+};
+const focus: string[] = (about.focus ?? []).map(nice);
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const projects = ((home?.projects ?? []) as any[]).filter(Boolean);
+const portrait = about.portrait?.asset ? urlFor(about.portrait).width(700).height(930).fit('crop').url() : null;
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
+const caps = [
+  { name: 'Design', img: pix(projects[0]), items: ['UX/UI', 'Art direction', 'Design systems', 'Prototyping', 'Typography', 'Motion', 'Branding', 'Research'] },
+  { name: 'Technology', img: pix(projects[1]), items: ['No-code', 'Astro', 'Sanity CMS', 'WebGL', 'Three.js', 'Animation', 'Performance', 'Accessibility'] },
+  { name: 'AI & Play', img: pix(projects[2]), items: ['AI workflows', 'Generative UI', 'Prompting', 'Game design', 'Interaction', 'Playtesting'] },
+];
+const [bPath, bBox] = glyphs.g.B as [string, number[], number];
+const bView = `${bBox[0]} ${-bBox[3]} ${bBox[2] - bBox[0]} ${bBox[3] - bBox[1]}`;
+const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}" fill="currentColor"/></svg>`;
+---
+
+<Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
+  <main class="a7" data-a7>
+    <header class="a7__nav">
+      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
+    </header>
+
+    <!-- 1 -->
+    <section class="a7__intro" data-intro>
+      <div class="a7__pin">
+        <p class="a7__label a7__label--top">About</p>
+        <span class="a7__mark" set:html={bSvg} data-mark aria-hidden="true" />
+        <h1 class="a7__say" data-lit>
+          Hi, I’m Bart — a design engineer from Warsaw. I design and build bold web experiences with AI in the loop. Into sport, games and way too much coffee.
+        </h1>
+        <p class="a7__hint" data-hint>Scroll</p>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="a7__sec a7__who">
+      <p class="a7__label" data-in>Who I am</p>
+      <div class="a7__who-grid">
+        <figure class="a7__pill" data-in>
+          {portrait ? <img src={portrait} alt="Bart Ocieczek" width="700" height="930" loading="lazy" /> : <span />}
+        </figure>
+        <div class="a7__who-t">
+          <p class="a7__big" data-words>{about.introLead}</p>
+          <p class="a7__p" data-in>{about.introBody}</p>
+          <p class="a7__p a7__p--dim" data-in>{about.experienceBody}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="a7__sec">
+      <p class="a7__label" data-in>Experience & what I do</p>
+      <div class="a7__two">
+        <ul class="a7__jobs">
+          {jobs.map((j, i) => (
+            <li data-in>
+              <span class="a7__n">{String(i + 1).padStart(2, '0')}</span>
+              <span class="a7__co">
+                {j.logo && <img src={j.logo} alt="" width="96" height="96" loading="lazy" />}
+                <span>{j.company}</span>
+              </span>
+              <span class="a7__dim">{j.role}</span>
+              <span class="a7__when">{j.now && <b>now</b>}{j.when}</span>
+            </li>
+          ))}
+        </ul>
+        <ul class="a7__focus">
+          {focus.map((f) => <li data-in>{f}</li>)}
+        </ul>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="a7__caps">
+      <p class="a7__label a7__caps-label">How it connects — point at a hub, drag it</p>
+      <CapGraph groups={caps} core={bSvg} />
+    </section>
+
+    <!-- 5 -->
+    <section class="a7__sec a7__heart">
+      <p class="a7__label" data-in>Off-screen</p>
+      <div class="a7__heart-grid">
+        <div class="a7__heart-l">
+          <p class="a7__big" data-words>Coffee in, sport out. Brew one and watch what it does.</p>
+          <div class="a7__brew-row" data-in>
+            <button class="a7__brew" type="button" data-brew>
+              <span class="a7__brew-fill" aria-hidden="true"></span>
+              <span class="a7__brew-t">Hold to brew a coffee</span>
+            </button>
+            <p class="a7__cups"><span data-cups>0</span> today</p>
+          </div>
+        </div>
+        <div class="a7__monitor" data-in>
+          <div class="a7__mon-top">
+            <span class="a7__beat" aria-hidden="true" set:html={bSvg} data-beat />
+            <span><strong data-bpm>62</strong> bpm</span>
+          </div>
+          <svg class="a7__ecg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-label="Heart rate trace"><path data-ecg d="" /></svg>
+          <p class="a7__mon-s">Resting 62 bpm. Each coffee adds about 8, wearing off over a few minutes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="a7__sec a7__end">
+      <a class="a7__cta" href={settings.callUrl ?? '#'} target="_blank" rel="noopener" data-in>
+        <span class="a7__cta-q">{about.ctaText?.split('?')[0]}?</span>
+        <span class="a7__cta-go">Let’s talk <i>↗</i></span>
+      </a>
+      <p class="a7__clock" data-in><span data-clock>Warsaw</span></p>
+    </section>
+  </main>
+</Base>
+
+<style>
+  .a7 {
+    --e-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --e-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ink: rgb(17, 17, 17);
+    --grey: rgb(140, 140, 140);
+    --faint: rgb(216, 216, 216);
+    --rule: rgba(17, 17, 17, 0.1);
+    --pad: var(--gutter);
+    background: #fff;
+    color: var(--ink);
+  }
+  .a7__nav {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 10;
+    padding: var(--gutter);
+  }
+  .a7__label {
+    margin: 0;
+    font: 500 13px/1.2 var(--font-head);
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+  .a7__sec {
+    padding: clamp(80px, 14vh, 150px) var(--pad);
+    border-top: 1px solid var(--rule);
+  }
+  .a7__sec > .a7__label {
+    margin-bottom: clamp(36px, 6vh, 64px);
+  }
+
+  /* 1: the big statement, home's display type */
+  .a7__intro {
+    height: 260svh;
+  }
+  .a7__pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 0 var(--pad);
+  }
+  .a7__label--top {
+    position: absolute;
+    left: var(--pad);
+    top: 96px;
+  }
+  .a7__mark {
+    position: absolute;
+    right: var(--pad);
+    top: 90px;
+    width: clamp(40px, 4vw, 60px);
+    will-change: transform;
+  }
+  .a7__mark :global(svg),
+  .a7__beat :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .a7__say {
+    max-width: 1200px;
+    margin: 0;
+    text-align: center;
+    font: 500 clamp(36px, 6vw, 100px) / 0.92 var(--font-display);
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+  }
+  :global(.a7 .lw) {
+    color: var(--faint);
+    transition: color 0.2s linear;
+  }
+  :global(.a7 .lw.on) {
+    color: var(--ink);
+  }
+  .a7__hint {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+    margin: 0;
+    font: 500 12px/1 var(--font-head);
+    text-transform: uppercase;
+    color: var(--grey);
+    transition: opacity 0.4s ease;
+  }
+
+  /* 2 */
+  .a7__who-grid {
+    display: grid;
+    grid-template-columns: minmax(200px, 0.6fr) minmax(0, 1.4fr);
+    gap: clamp(24px, 5vw, 96px);
+    align-items: start;
+  }
+  /* the home page's pill shape */
+  .a7__pill {
+    margin: 0;
+    aspect-ratio: 0.75;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #f2f2f2;
+  }
+  .a7__pill img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: grayscale(1);
+    transition:
+      filter 0.6s var(--e-out),
+      transform 0.8s var(--e-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a7__pill:hover img {
+      filter: none;
+      transform: scale(1.04);
+    }
+  }
+  .a7__big {
+    max-width: 22em;
+    margin: 0 0 32px;
+    font: 500 clamp(26px, 2.8vw, 46px) / 1.06 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+  .a7__p {
+    max-width: 34ch;
+    margin: 0 0 16px;
+    font: 500 clamp(16px, 1.25vw, 20px) / 1.35 var(--font-head);
+    letter-spacing: -0.02em;
+  }
+  .a7__p--dim,
+  .a7__dim {
+    color: var(--grey);
+  }
+
+  /* 3 */
+  .a7__two {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: clamp(24px, 5vw, 96px);
+  }
+  .a7__jobs,
+  .a7__focus {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .a7__jobs li {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr) 120px;
+    gap: 14px;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--rule);
+    font: 500 clamp(15px, 1.2vw, 19px) / 1.1 var(--font-head);
+    letter-spacing: -0.02em;
+  }
+  .a7__n {
+    font-size: 12px;
+    color: var(--grey);
+  }
+  .a7__co {
+    display: inline-flex;
+    align-items: center;
+  }
+  .a7__co img {
+    width: 0;
+    height: 28px;
+    border-radius: 999px;
+    object-fit: cover;
+    opacity: 0;
+    transition:
+      width 0.35s var(--e-out),
+      margin 0.35s var(--e-out),
+      opacity 0.25s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a7__jobs li:hover .a7__co img {
+      width: 28px;
+      margin-right: 10px;
+      opacity: 1;
+    }
+  }
+  .a7__when {
+    justify-self: end;
+    font-size: 13px;
+    color: var(--grey);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .a7__when b {
+    margin-right: 8px;
+    padding: 4px 7px;
+    border-radius: 99px;
+    background: var(--ink);
+    color: #fff;
+    font-weight: 500;
+    font-size: 11px;
+  }
+  .a7__focus li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+    font: 500 clamp(24px, 2.6vw, 42px) / 1 var(--font-head);
+    letter-spacing: -0.045em;
+    transition: transform 0.45s var(--e-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a7__focus li:hover {
+      transform: translateX(10px);
+    }
+  }
+
+  /* 4 */
+  .a7__caps {
+    position: relative;
+    border-top: 1px solid var(--rule);
+  }
+  .a7__caps-label {
+    position: absolute;
+    top: 24px;
+    left: var(--pad);
+    z-index: 2;
+  }
+
+  /* 5 */
+  .a7__heart-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: clamp(24px, 5vw, 96px);
+    align-items: center;
+  }
+  .a7__brew-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .a7__cups {
+    margin: 0;
+    font: 500 15px/1 var(--font-head);
+    color: var(--grey);
+  }
+  .a7__cups span {
+    display: inline-block;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  /* hold to brew: slow, deliberate fill; snappy release */
+  .a7__brew {
+    position: relative;
+    overflow: hidden;
+    padding: 16px 22px;
+    border: 1px solid rgba(17, 17, 17, 0.2);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    font: 500 15px/1 var(--font-head);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    transition: transform 0.16s var(--e-out);
+  }
+  .a7__brew:active {
+    transform: scale(0.97);
+  }
+  .a7__brew-fill {
+    position: absolute;
+    inset: 0;
+    background: #c9a27a;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.2s var(--e-out);
+  }
+  .a7__brew.is-holding .a7__brew-fill {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 1.2s linear;
+  }
+  .a7__brew-t {
+    position: relative;
+  }
+  .a7__monitor {
+    padding: 24px;
+    border-radius: 28px;
+    background: #f4f4f2;
+  }
+  .a7__mon-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font: 500 14px/1 var(--font-head);
+    color: var(--grey);
+  }
+  .a7__mon-top strong {
+    font: 500 clamp(40px, 4vw, 64px) / 1 var(--font-head);
+    letter-spacing: -0.05em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  /* the B beats with the heart */
+  .a7__beat {
+    width: 34px;
+    color: #e5484d;
+    transform-origin: 50% 60%;
+  }
+  .a7__ecg {
+    display: block;
+    width: 100%;
+    height: clamp(120px, 18vh, 200px);
+    margin: 12px 0;
+  }
+  .a7__ecg path {
+    fill: none;
+    stroke: #e5484d;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .a7__mon-s {
+    margin: 0;
+    font: 500 13px/1.3 var(--font-head);
+    color: var(--grey);
+  }
+
+  /* 6 */
+  .a7__end {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 40px;
+    min-height: 70svh;
+  }
+  .a7__cta {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .a7__cta-q {
+    display: block;
+    max-width: 22em;
+    font: 500 clamp(22px, 2.4vw, 38px) / 1.1 var(--font-head);
+    letter-spacing: -0.035em;
+    color: var(--grey);
+    transition: color 0.3s ease;
+  }
+  .a7__cta-go {
+    display: block;
+    margin-top: 12px;
+    font: 500 clamp(64px, 12vw, 220px) / 0.9 var(--font-display);
+    letter-spacing: -0.06em;
+    text-transform: uppercase;
+  }
+  .a7__cta-go i {
+    display: inline-block;
+    font-style: normal;
+    font-size: 0.4em;
+    vertical-align: 0.9em;
+    transition: transform 0.45s var(--e-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a7__cta:hover .a7__cta-q {
+      color: var(--ink);
+    }
+    .a7__cta:hover i {
+      transform: translate(0.12em, -0.12em);
+    }
+  }
+  .a7__clock {
+    margin: 0;
+    font: 500 13px/1 var(--font-head);
+    color: var(--grey);
+  }
+
+  /* reveals */
+  [data-in] {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.8s var(--e-out),
+      transform 1s var(--e-expo);
+    transition-delay: var(--d, 0s);
+  }
+  [data-in].is-in {
+    opacity: 1;
+    transform: none;
+  }
+  :global(.a7 .w) {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    padding-bottom: 0.1em;
+    margin-bottom: -0.1em;
+  }
+  :global(.a7 .wi) {
+    display: inline-block;
+    transform: translateY(110%);
+    transition: transform 1s var(--e-expo);
+    transition-delay: calc(var(--k) * 22ms);
+  }
+  :global(.a7 .is-in .wi) {
+    transform: none;
+  }
+
+  @media (max-width: 809px) {
+    .a7__who-grid,
+    .a7__two,
+    .a7__heart-grid {
+      grid-template-columns: 1fr;
+    }
+    .a7__pill {
+      width: 62%;
+    }
+    .a7__jobs li {
+      grid-template-columns: 24px 1fr auto;
+    }
+    .a7__jobs .a7__dim {
+      grid-column: 2;
+      grid-row: 2;
+      font-size: 14px;
+    }
+    .a7__when {
+      grid-row: 1 / span 2;
+      grid-column: 3;
+      align-self: start;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-in],
+    :global(.a7 .wi) {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-a7]');
+  if (root) {
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+
+    // ---- 1: words to light
+    const say = root.querySelector<HTMLElement>('[data-lit]')!;
+    const words = (say.textContent ?? '').trim().split(/\s+/).map((w, i, all) => {
+      const s = document.createElement('span');
+      s.className = 'lw';
+      s.textContent = w;
+      return s;
+    });
+    say.textContent = '';
+    words.forEach((w, i) => {
+      say.append(w);
+      if (i < words.length - 1) say.append(' ');
+    });
+
+    // ---- masked word rise for [data-words]
+    root.querySelectorAll<HTMLElement>('[data-words]').forEach((el) => {
+      const t = (el.textContent ?? '').trim().split(/\s+/);
+      el.textContent = '';
+      t.forEach((w, k) => {
+        const o = document.createElement('span');
+        o.className = 'w';
+        const i = document.createElement('span');
+        i.className = 'wi';
+        i.style.setProperty('--k', String(k));
+        i.textContent = w;
+        o.append(i);
+        el.append(o);
+        if (k < t.length - 1) el.append(' ');
+      });
+    });
+
+    // ---- reveal once, staggered among siblings
+    const io = new IntersectionObserver(
+      (es) =>
+        es.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('is-in');
+          io.unobserve(e.target);
+        }),
+      { rootMargin: '0px 0px -10% 0px' },
+    );
+    root.querySelectorAll<HTMLElement>('[data-in], [data-words]').forEach((el) => {
+      const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
+      el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 60}ms`);
+      io.observe(el);
+    });
+
+    // ---- 5: a real ECG trace. One beat is a sum of gaussians at clinical
+    // timings (P 0.10s, Q 0.20s, R 0.22s, S 0.245s, T 0.42s); the beat
+    // interval is 60/bpm, so a faster rate packs beats closer while the
+    // complex keeps its shape — like a real monitor.
+    const g = (t: number, at: number, w: number, a: number) => a * Math.exp(-((t - at) ** 2) / (2 * w * w));
+    const ecg = (t: number) =>
+      g(t, 0.1, 0.022, 0.12) + g(t, 0.2, 0.009, -0.12) + g(t, 0.22, 0.01, 1) + g(t, 0.245, 0.011, -0.25) + g(t, 0.42, 0.045, 0.3);
+    const path = root.querySelector<SVGPathElement>('[data-ecg]');
+    const bpmEl = root.querySelector<HTMLElement>('[data-bpm]');
+    const beatEl = root.querySelector<HTMLElement>('[data-beat]');
+    const WIN = 4; // seconds on screen
+    const samples: number[] = [];
+    const RATE = 60; // samples per second
+    let caffeine = 0;
+    let bpm = 62;
+    let inBeat = 0; // seconds since this beat started
+    let acc = 0;
+    let last = performance.now();
+    // pre-fill so the trace is full from the start
+    for (let i = 0; i < WIN * RATE; i++) {
+      inBeat += 1 / RATE;
+      if (inBeat >= 60 / bpm) inBeat -= 60 / bpm;
+      samples.push(ecg(inBeat));
+    }
+
+    // ---- scroll-driven bits + the monitor, in one loop
+    const intro = root.querySelector<HTMLElement>('[data-intro]');
+    const mark = root.querySelector<HTMLElement>('[data-mark]');
+    const hint = root.querySelector<HTMLElement>('[data-hint]');
+    let markR = 0;
+    const frame = (now: number) => {
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      if (intro) {
+        const r = intro.getBoundingClientRect();
+        const p = clamp(-r.top / (r.height - innerHeight));
+        const n = Math.round(clamp(p / 0.85) * words.length);
+        words.forEach((w, k) => w.classList.toggle('on', k < n));
+        if (hint) hint.style.opacity = String(1 - clamp(p * 8));
+        if (mark && !calm) {
+          markR += (p * 360 - markR) * 0.1;
+          mark.style.transform = `perspective(300px) rotateY(${markR.toFixed(2)}deg)`;
+        }
+      }
+      // heart: caffeine wears off ~1 coffee per 40s; the rate eases toward its target
+      caffeine = Math.max(0, caffeine - dt / 40);
+      const target = 62 + Math.min(caffeine, 8) * 8;
+      bpm += (target - bpm) * Math.min(1, dt * 0.8);
+      if (bpmEl) bpmEl.textContent = String(Math.round(bpm));
+      acc += dt * RATE;
+      while (acc >= 1) {
+        acc -= 1;
+        const before = inBeat;
+        inBeat += 1 / RATE;
+        if (inBeat >= 60 / bpm) inBeat -= 60 / bpm;
+        // the B jumps on the R wave
+        if (beatEl && !calm && before < 0.22 && inBeat >= 0.22)
+          beatEl.animate([{ transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+        samples.push(calm ? 0 : ecg(inBeat));
+        if (samples.length > WIN * RATE) samples.shift();
+      }
+      if (path) {
+        let d = '';
+        const n = samples.length;
+        for (let i = 0; i < n; i++) {
+          const x = (i / (n - 1)) * 800;
+          const y = 140 - samples[i] * 110;
+          d += `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+        }
+        path.setAttribute('d', d);
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+
+    // ---- hold to brew (slow fill, snappy release); each coffee adds caffeine
+    const brew = root.querySelector<HTMLButtonElement>('[data-brew]');
+    const cups = root.querySelector<HTMLElement>('[data-cups]');
+    if (brew && cups) {
+      const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: 'numeric', hour12: false }).format(new Date()));
+      let n = Math.max(0, Math.min(4, Math.floor((hour - 6) / 3)));
+      cups.textContent = String(n);
+      let t = 0;
+      const start = (e: Event) => {
+        e.preventDefault();
+        brew.classList.add('is-holding');
+        t = window.setTimeout(() => {
+          n++;
+          caffeine += 1;
+          cups.textContent = String(n);
+          cups.animate([{ transform: 'translateY(40%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+          brew.classList.remove('is-holding');
+          brew.querySelector('.a7__brew-t')!.textContent = n > 5 ? 'Maybe that’s enough' : 'Hold to brew another';
+        }, 1200);
+      };
+      const stop = () => {
+        clearTimeout(t);
+        brew.classList.remove('is-holding');
+      };
+      brew.addEventListener('pointerdown', start);
+      brew.addEventListener('pointerup', stop);
+      brew.addEventListener('pointerleave', stop);
+      brew.addEventListener('pointercancel', stop);
+      brew.addEventListener('keydown', (e) => e.key === ' ' && !e.repeat && start(e));
+      brew.addEventListener('keyup', (e) => e.key === ' ' && stop());
+    }
+
+    // ---- live Warsaw time
+    const clock = root.querySelector<HTMLElement>('[data-clock]');
+    const tick = () => {
+      if (clock) clock.textContent = `Warsaw, ${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' }).format(new Date())} — open for new work`;
+    };
+    tick();
+    setInterval(tick, 20000);
+  }
+</script>

@@ -7,13 +7,15 @@
 // centre when it scrolls into view.
 interface Props {
   groups: { name: string; img?: string | null; items: string[] }[];
+  /** optional SVG markup for the centre (e.g. the B monogram) instead of a square */
+  core?: string;
 }
-const { groups } = Astro.props;
+const { groups, core } = Astro.props;
 ---
 
 <div class="cg" data-cg>
   <svg class="cg__lines" aria-hidden="true" data-cg-svg></svg>
-  <span class="cg__core" aria-hidden="true" data-cg-core></span>
+  {core ? <span class="cg__core cg__core--mark" aria-hidden="true" data-cg-core set:html={core} /> : <span class="cg__core" aria-hidden="true" data-cg-core />}
   {groups.map((g, gi) => (
     <div class="cg__hub" data-hub={gi} tabindex="0" role="button" aria-label={`${g.name}: ${g.items.join(', ')}`}>
       {g.img && <img src={g.img} alt="" width="48" height="60" loading="lazy" />}
@@ -73,6 +75,27 @@ const { groups } = Astro.props;
     height: 14px;
     margin: -7px 0 0 -7px;
     background: var(--ink);
+  }
+  /* a mark in the centre instead of the square: it sits on a disc that
+     hides the lines' ends, and turns a little with the hovered hub */
+  .cg__core--mark {
+    z-index: 1;
+    width: 64px;
+    height: 64px;
+    margin: -32px 0 0 -32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #ece9e3;
+    color: var(--ink);
+  }
+  .cg__core--mark :global(svg) {
+    width: 38px;
+    height: auto;
+    transition: transform 0.6s var(--e-out, ease-out);
+  }
+  .cg:has(.cg__hub.is-on) .cg__core--mark :global(svg) {
+    transform: perspective(200px) rotateY(180deg);
   }
   .cg__hub {
     margin: -6px 0 0 -6px;
