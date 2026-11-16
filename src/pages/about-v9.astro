@@ -210,38 +210,43 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       </div>
     </section>
 
-    <!-- 3b: in numbers, with the companies under them (both editable in
+    <!-- 3b: in numbers and clients, set like the experience list above:
+         a label on the left, hairline rows on the right (both editable in
          the CMS: About page → In numbers / Clients & brands) -->
-    <section class="a9__nums">
-      <div class="a9__nm" data-nm>
+    <section class="a9__sec a9__rows-sec">
+      <p class="a9__label" data-in>In numbers</p>
+      <ul class="a9__jobs a9__nmr" data-nm>
         {stats.map((st, i) => (
-          <div class="a9__nm-c" style={`--x:${[0, 34, 10, 52, 24, 40, 6][i] ?? 0}%;--i:${i}`} data-drop={i}>
-            <p class="a9__nm-v"><span class="a9__nm-in"><span data-count={st.v}>{st.v}</span>{st.suf}</span></p>
-            <p class="a9__nm-l">{st.l}</p>
-          </div>
+          <li data-in data-drop={i}>
+            <span>{st.l}</span>
+            <span class="a9__dim" />
+            <span class="a9__when a9__nmr-v"><span data-count={st.v}>{st.v}</span>{st.suf}</span>
+          </li>
         ))}
-      </div>
-      {clients.length > 0 && (
-        <div class="a9__cl" data-cl>
-          <p class="a9__cl-t">Worked with</p>
-          <ul>
-            {clients.map((c, i) => {
-              const inner = (
-                <>
-                  <span class={`a9__cl-logo${c.svg ? ' is-svg' : ''}`}>{c.logo ? <img src={c.logo} alt="" loading="lazy" /> : <b>{c.name.slice(0, 1)}</b>}</span>
-                  <span class="a9__cl-n">{c.name}</span>
-                </>
-              );
-              return (
-                <li style={`--i:${i}`}>
-                  {c.url ? <a href={c.url} target="_blank" rel="noopener">{inner}</a> : <span class="a9__cl-w">{inner}</span>}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+      </ul>
     </section>
+
+    {clients.length > 0 && (
+      <section class="a9__sec a9__rows-sec">
+        <p class="a9__label" data-in>Worked with</p>
+        <ul class="a9__jobs a9__clr">
+          {clients.map((c) => {
+            const host = c.url ? c.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '') : '';
+            const row = (
+              <>
+                <span class="a9__clr-n">
+                  <span class={`a9__clr-logo${c.svg ? ' is-svg' : ''}`}>{c.logo ? <img src={c.logo} alt="" loading="lazy" /> : <b>{c.name.slice(0, 1)}</b>}</span>
+                  {c.name}
+                </span>
+                <span class="a9__dim">{host}</span>
+                <span class="a9__when">{c.url ? '↗' : ''}</span>
+              </>
+            );
+            return <li data-in>{c.url ? <a href={c.url} target="_blank" rel="noopener">{row}</a> : row}</li>;
+          })}
+        </ul>
+      </section>
+    )}
 
     <!-- 5 -->
     <section class="a9__heart" data-heart>
@@ -1143,8 +1148,51 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     }
   }
 
-  .a9__nums {
-    padding: clamp(96px, 18vh, 200px) var(--pad);
+  /* numbers and clients as rows like the experience list */
+  .a9__rows-sec {
+    padding-top: 0;
+  }
+  .a9__sec:has(+ .a9__rows-sec) {
+    padding-bottom: clamp(56px, 8vh, 96px);
+  }
+  .a9__nmr-v {
+    color: var(--ink);
+  }
+  .a9__clr a {
+    display: contents;
+    color: inherit;
+    text-decoration: none;
+  }
+  .a9__clr-n {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .a9__clr-logo {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #1a1a1a;
+  }
+  .a9__clr-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .a9__clr-logo.is-svg {
+    padding: 4px;
+  }
+  .a9__clr-logo.is-svg img {
+    object-fit: contain;
+  }
+  .a9__clr-logo b {
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--grey);
   }
   /* logos under the numbers: a row of tiles with names, arriving in turn
      with the same blur-clear as everything else */
