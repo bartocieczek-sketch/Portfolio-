@@ -1,0 +1,607 @@
+---
+// Draft: a typographic About page. One unusual element up top — the B
+// monogram filled with live type: rows of what I do and where I've been,
+// sliding in alternating directions inside the letter; the pointer speeds
+// them up and nudges them sideways. Below it, an editorial page: a big
+// statement, then label / text rows (About, Services, Path, Recognition,
+// Contact) with numbers that count up and experience rows that reveal the
+// company's logo on hover. Content from Sanity.
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import { ABOUT_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+import { load } from '../lib/load';
+import glyphs from '../lib/monogram-b.json';
+
+const [settings, about] = await Promise.all([load(Astro.locals, SETTINGS_QUERY), load(Astro.locals, ABOUT_QUERY)]);
+if (!settings || !about) return new Response('Content not found', { status: 500 });
+
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const jobs = ((about.experience ?? []) as any[]).map((e) => ({
+  company: e.company as string,
+  role: (e.role as string)?.toLowerCase(),
+  period: ((e.period as string) ?? '').toLowerCase(),
+  now: /present/i.test(e.period ?? ''),
+  logo: e.logo?.asset ? urlFor(e.logo).width(120).height(120).fit('crop').url() : null,
+}));
+const nice = (f: string) => {
+  const s = f.toLowerCase().replace(/\b(ux|ui|ai)\b/g, (m) => m.toUpperCase());
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+const focus: string[] = (about.focus ?? []).map(nice);
+// years since the first role (the oldest period's year)
+const firstYear = Math.min(...jobs.map((j) => Number(j.period.match(/\d{4}/)?.[0] ?? 9999)));
+const years = Number.isFinite(firstYear) ? new Date().getFullYear() - firstYear : 7;
+
+// the B as a CSS mask
+const [bPath, bBox] = glyphs.g.B as [string, number[], number];
+const bw = bBox[2] - bBox[0];
+const bh = bBox[3] - bBox[1];
+const maskSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bBox[0]} ${-bBox[3]} ${bw} ${bh}"><path transform="scale(1,-1)" d="${bPath}"/></svg>`;
+const mask = `url("data:image/svg+xml,${encodeURIComponent(maskSvg)}")`;
+// the rows of type inside the B
+const words = [...focus, ...jobs.map((j) => j.company), 'Design engineer', 'Warsaw', 'Coffee', 'Sport', 'AI'];
+const ROWS = 26;
+const rows = Array.from({ length: ROWS }, (_, r) => {
+  const shift = (r * 3) % words.length;
+  return [...words.slice(shift), ...words.slice(0, shift)];
+});
+---
+
+<Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
+  <main class="about t3" data-t3>
+    <header class="t3__nav">
+      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
+    </header>
+
+    <!-- the one unusual thing: a B made of moving type -->
+    <section class="t3__hero">
+      <div class="t3__b" style={`--mask:${mask};--ar:${bw / bh};--rows:${ROWS}`} data-b aria-hidden="true">
+        {rows.map((r, i) => (
+          <div class="t3__row" style={`--dir:${i % 2 ? 1 : -1};--sp:${0.6 + ((i * 7) % 5) * 0.12}`} data-row>
+            <span>{[...r, ...r].map((w) => <i>{w}</i>)}</span>
+          </div>
+        ))}
+      </div>
+      <h1 class="t3__name" data-in>
+        <span>Bart Ocieczek</span>
+        <span class="t3__role">Design engineer, Warsaw</span>
+      </h1>
+      <p class="t3__hint" data-in>Move the cursor over the B</p>
+    </section>
+
+    <!-- statement -->
+    <section class="t3__statement">
+      <p class="t3__big" data-words>{about.introLead}</p>
+    </section>
+
+    <!-- editorial rows: label / content -->
+    <section class="t3__rows">
+      <div class="t3__r">
+        <h2 class="t3__label" data-in>About</h2>
+        <div class="t3__c">
+          <p class="t3__p" data-in>{about.introBody}</p>
+          <p class="t3__p t3__p--dim" data-in>{about.experienceBody}</p>
+          <div class="t3__stats">
+            <div data-in>
+              <strong data-count={years}>0</strong><span>+</span>
+              <em>years designing</em>
+            </div>
+            <div data-in>
+              <strong data-count={jobs.length}>0</strong>
+              <em>teams & studios</em>
+            </div>
+            <div data-in>
+              <strong data-count={focus.length}>0</strong>
+              <em>disciplines</em>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="t3__r">
+        <h2 class="t3__label" data-in>Services</h2>
+        <ol class="t3__c t3__services">
+          {focus.map((f, i) => (
+            <li data-in>
+              <span class="t3__n">{String(i + 1).padStart(2, '0')}</span>
+              <span class="t3__s">{f}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div class="t3__r">
+        <h2 class="t3__label" data-in>Path</h2>
+        <div class="t3__c">
+          <p class="t3__p" data-in>{about.experienceLead}</p>
+          <ul class="t3__jobs">
+            {jobs.map((j) => (
+              <li data-in>
+                <span class="t3__co">
+                  {j.logo && <img src={j.logo} alt="" width="120" height="120" loading="lazy" />}
+                  <span>{j.company}</span>
+                </span>
+                <span class="t3__role2">{j.role}</span>
+                <span class="t3__per">{j.now ? <b>now</b> : null}{j.period}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div class="t3__r">
+        <h2 class="t3__label" data-in>Belief</h2>
+        <div class="t3__c">
+          <blockquote class="t3__quote" data-words>{about.quote}</blockquote>
+        </div>
+      </div>
+
+      <div class="t3__r t3__r--cta">
+        <h2 class="t3__label" data-in>Contact</h2>
+        <div class="t3__c">
+          <p class="t3__p" data-in>{about.ctaText}</p>
+          <a class="t3__cta" href={settings.callUrl ?? '#'} target="_blank" rel="noopener" data-in>
+            <span class="t3__cta-a">Let’s talk</span><span class="t3__cta-b" aria-hidden="true">Let’s talk</span>
+            <span class="t3__arrow" aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<style>
+  .t3 {
+    --e-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --e-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --col: clamp(120px, 22vw, 360px);
+    color: var(--text-primary);
+    background: var(--surface-dark);
+  }
+  .t3__nav {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 20;
+    padding: var(--gutter);
+    mix-blend-mode: difference;
+  }
+
+  /* ---------- hero: the B of type ---------- */
+  .t3__hero {
+    position: relative;
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 96px var(--gutter) 48px;
+    overflow: hidden;
+  }
+  .t3__b {
+    /* the B's height, from whichever of width/height limits it */
+    --bh: min(calc(80vw / var(--ar)), 76svh);
+    width: calc(var(--bh) * var(--ar));
+    height: var(--bh);
+    display: flex;
+    flex-direction: column;
+    -webkit-mask: var(--mask) center / contain no-repeat;
+    mask: var(--mask) center / contain no-repeat;
+    user-select: none;
+  }
+  .t3__row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+    /* rows sized to fill the letter edge to edge */
+    font: 700 calc(var(--bh) / var(--rows) * 0.96) / 1 var(--font-head);
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+  .t3__row > span {
+    display: inline-block;
+    will-change: transform;
+  }
+  .t3__row i {
+    font-style: normal;
+    margin-right: 0.9em;
+  }
+  .t3__row:nth-child(3n) i:nth-child(odd) {
+    color: var(--text-secondary);
+  }
+  .t3__name {
+    position: absolute;
+    left: var(--gutter);
+    bottom: 40px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font: 500 clamp(18px, 1.5vw, 22px) / 1 var(--font-head);
+    letter-spacing: -0.03em;
+  }
+  .t3__role {
+    color: var(--text-secondary);
+  }
+  .t3__hint {
+    position: absolute;
+    right: var(--gutter);
+    bottom: 40px;
+    margin: 0;
+    font: 500 12px/1 var(--font-head);
+    color: var(--text-secondary);
+  }
+
+  /* ---------- statement ---------- */
+  .t3__statement {
+    padding: clamp(80px, 18vh, 200px) var(--gutter);
+  }
+  .t3__big {
+    max-width: 24ch;
+    margin: 0 0 0 var(--col);
+    font: 500 clamp(34px, 5vw, 84px) / 1 var(--font-head);
+    letter-spacing: -0.05em;
+    text-indent: -0.42em; /* hang the opening "Hi," a little */
+  }
+
+  /* ---------- editorial rows ---------- */
+  .t3__rows {
+    padding: 0 var(--gutter) clamp(80px, 14vh, 160px);
+  }
+  .t3__r {
+    display: grid;
+    grid-template-columns: var(--col) minmax(0, 1fr);
+    gap: 24px;
+    padding: 40px 0 72px;
+    border-top: 1px solid var(--line);
+  }
+  .t3__label {
+    margin: 0;
+    font: 500 13px/1.2 var(--font-head);
+    letter-spacing: 0.01em;
+    color: var(--text-secondary);
+    position: sticky;
+    top: 80px;
+    align-self: start;
+  }
+  .t3__c {
+    min-width: 0;
+  }
+  .t3__p {
+    max-width: 34ch;
+    margin: 0 0 24px;
+    font: 500 clamp(22px, 2.2vw, 34px) / 1.12 var(--font-head);
+    letter-spacing: -0.035em;
+  }
+  .t3__p--dim {
+    color: var(--text-secondary);
+  }
+  .t3__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    max-width: 760px;
+    margin-top: 56px;
+  }
+  .t3__stats strong,
+  .t3__stats span {
+    font: 500 clamp(56px, 7vw, 120px) / 0.9 var(--font-head);
+    letter-spacing: -0.06em;
+    font-variant-numeric: tabular-nums;
+  }
+  .t3__stats em {
+    display: block;
+    margin-top: 10px;
+    font: 500 13px/1.2 var(--font-head);
+    font-style: normal;
+    color: var(--text-secondary);
+  }
+  .t3__services {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .t3__services li {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    padding: 6px 0;
+  }
+  .t3__n {
+    font: 500 12px/1 var(--font-head);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+  .t3__s {
+    font: 500 clamp(32px, 4.4vw, 72px) / 1 var(--font-head);
+    letter-spacing: -0.05em;
+    transition: color 0.3s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .t3__services:hover .t3__s {
+      color: var(--text-secondary);
+    }
+    .t3__services li:hover .t3__s {
+      color: var(--text-primary);
+    }
+  }
+  .t3__jobs {
+    list-style: none;
+    margin: 32px 0 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+  .t3__jobs li {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 170px;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+    font: 500 clamp(16px, 1.3vw, 20px) / 1.1 var(--font-head);
+    letter-spacing: -0.02em;
+  }
+  .t3__co {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+  }
+  /* the logo slides in before the name on hover; the name makes room */
+  .t3__co img {
+    width: 0;
+    height: 28px;
+    border-radius: 7px;
+    object-fit: cover;
+    opacity: 0;
+    transition:
+      width 0.35s var(--e-out),
+      margin 0.35s var(--e-out),
+      opacity 0.25s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .t3__jobs li:hover .t3__co img {
+      width: 28px;
+      margin-right: 12px;
+      opacity: 1;
+    }
+  }
+  .t3__role2 {
+    color: var(--text-secondary);
+    text-transform: capitalize;
+  }
+  .t3__per {
+    justify-self: end;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .t3__per b {
+    margin-right: 8px;
+    padding: 4px 7px;
+    border-radius: 99px;
+    background: #4ade80;
+    color: #062b14;
+    font-weight: 500;
+    font-size: 11px;
+  }
+  .t3__quote {
+    max-width: 22ch;
+    margin: 0;
+    font: 500 clamp(30px, 4vw, 64px) / 1.02 var(--font-head);
+    letter-spacing: -0.045em;
+    text-indent: -0.4em; /* hanging opening quote */
+  }
+  /* CTA: the label rolls up to a copy of itself on hover */
+  .t3__cta {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.25em;
+    margin-top: 16px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font: 500 clamp(56px, 9vw, 160px) / 1 var(--font-head);
+    letter-spacing: -0.06em;
+    overflow: hidden;
+  }
+  .t3__cta-a,
+  .t3__cta-b {
+    display: inline-block;
+    transition: transform 0.55s var(--e-out);
+  }
+  .t3__cta-b {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translateY(100%);
+  }
+  .t3__arrow {
+    font-size: 0.5em;
+    transition: transform 0.45s var(--e-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .t3__cta:hover .t3__cta-a {
+      transform: translateY(-100%);
+    }
+    .t3__cta:hover .t3__cta-b {
+      transform: none;
+    }
+    .t3__cta:hover .t3__arrow {
+      transform: translate(0.12em, -0.12em);
+    }
+  }
+
+  /* ---------- reveals ---------- */
+  [data-in] {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.8s var(--e-out),
+      transform 1s var(--e-expo);
+    transition-delay: var(--d, 0s);
+  }
+  [data-in].is-in {
+    opacity: 1;
+    transform: none;
+  }
+  :global(.t3 .w) {
+    display: inline-block;
+    text-indent: 0;
+    overflow: hidden;
+    vertical-align: top;
+    padding-bottom: 0.1em;
+    margin-bottom: -0.1em;
+  }
+  :global(.t3 .wi) {
+    display: inline-block;
+    transform: translateY(110%);
+    transition: transform 1s var(--e-expo);
+    transition-delay: calc(var(--k) * 24ms);
+  }
+  :global(.t3 .is-in .wi) {
+    transform: none;
+  }
+
+  @media (max-width: 809px) {
+    .t3 {
+      --col: 0px;
+    }
+    .t3__r {
+      grid-template-columns: 1fr;
+      gap: 16px;
+      padding: 28px 0 48px;
+    }
+    .t3__label {
+      position: static;
+    }
+    .t3__big,
+    .t3__quote {
+      text-indent: 0;
+    }
+    .t3__jobs li {
+      grid-template-columns: 1fr auto;
+    }
+    .t3__role2 {
+      grid-column: 1;
+      grid-row: 2;
+      font-size: 14px;
+    }
+    .t3__per {
+      grid-row: 1 / span 2;
+      align-self: start;
+    }
+    .t3__hint {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-in],
+    :global(.t3 .wi) {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-t3]');
+  if (root) {
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---- split [data-words] into masked words
+    root.querySelectorAll<HTMLElement>('[data-words]').forEach((el) => {
+      let k = 0;
+      const parts = (el.textContent ?? '').trim().split(/\s+/);
+      el.textContent = '';
+      parts.forEach((p, i) => {
+        const w = document.createElement('span');
+        w.className = 'w';
+        const s = document.createElement('span');
+        s.className = 'wi';
+        s.style.setProperty('--k', String(k++));
+        s.textContent = p;
+        w.append(s);
+        el.append(w);
+        if (i < parts.length - 1) el.append(' ');
+      });
+    });
+
+    // ---- reveal once in view; siblings stagger 50ms
+    const io = new IntersectionObserver(
+      (es) =>
+        es.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('is-in');
+          io.unobserve(e.target);
+          const n = e.target.querySelector<HTMLElement>('[data-count]');
+          if (n) count(n);
+        }),
+      { rootMargin: '0px 0px -10% 0px' },
+    );
+    root.querySelectorAll<HTMLElement>('[data-in], [data-words]').forEach((el) => {
+      const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
+      el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 50}ms`);
+      io.observe(el);
+    });
+
+    // ---- numbers count up (ease-out), once
+    const count = (el: HTMLElement) => {
+      const to = Number(el.dataset.count);
+      if (calm) return void (el.textContent = String(to));
+      const t0 = performance.now();
+      const step = () => {
+        const p = Math.min(1, (performance.now() - t0) / 1100);
+        el.textContent = String(Math.round(to * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+
+    // ---- the B of type: rows drift in alternating directions; the pointer
+    // speeds them up (eased) and leans them toward it
+    const b = root.querySelector<HTMLElement>('[data-b]');
+    const rows = [...root.querySelectorAll<HTMLElement>('[data-row]')].map((el) => ({
+      el,
+      inner: el.firstElementChild as HTMLElement,
+      dir: Number(el.style.getPropertyValue('--dir')),
+      sp: Number(el.style.getPropertyValue('--sp')),
+      x: Math.random() * 400,
+    }));
+    if (b && rows.length && !calm) {
+      let boost = 0;
+      let target = 0;
+      let lean = 0;
+      let leanT = 0;
+      let py = -1;
+      b.addEventListener('pointermove', (e) => {
+        const r = b.getBoundingClientRect();
+        target = 1;
+        leanT = ((e.clientX - r.left) / r.width - 0.5) * 2;
+        py = (e.clientY - r.top) / r.height;
+      });
+      b.addEventListener('pointerleave', () => {
+        target = 0;
+        leanT = 0;
+        py = -1;
+      });
+      let last = performance.now();
+      const frame = (now: number) => {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        boost += (target - boost) * 0.06;
+        lean += (leanT - lean) * 0.08;
+        rows.forEach((r, i) => {
+          // rows near the pointer go fastest
+          const near = py < 0 ? 0 : Math.max(0, 1 - Math.abs(i / (rows.length - 1) - py) * 3);
+          const v = (28 + boost * 90 + near * 160) * r.sp;
+          r.x += r.dir * v * dt + lean * near * 40 * dt;
+          const w = r.inner.scrollWidth / 2;
+          if (w > 0) r.x = ((r.x % w) + w) % w;
+          r.inner.style.transform = `translate3d(${(-r.x).toFixed(1)}px,0,0)`;
+        });
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    }
+    root.querySelectorAll('.t3__hero [data-in]').forEach((el) => el.classList.add('is-in'));
+  }
+</script>
