@@ -123,27 +123,30 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     </section>
 
     <!-- 2 -->
-    <!-- 2: about me — a held stage (after ref.digital/about): a list of
-         titles on the right, the one in play opens up to its two columns;
-         the left echoes its title. Scrolling moves through them. -->
-    <section class="a9__who a9__ab" data-who data-ab style={`--n:${abItems.length}`}>
-      <div class="a9__ab-pin">
-        <p class="a9__ab-side" aria-hidden="true"><i /><span class="a9__ab-cur"><span data-ab-cur>{abItems[0].t}</span></span></p>
-        <ol class="a9__ab-list">
-          {abItems.map((it, i) => (
-            <li class={`a9__ab-it${i === 0 ? ' is-on' : ''}`} data-ab-it={i}>
-              <h3>{it.t}</h3>
-              <div class="a9__ab-body">
-                <div class={`a9__ab-in${it.pic && portrait ? ' has-pic' : ''}`}>
-                  {it.pic && portrait && <img class="a9__ab-pic" src={portrait} alt="Bart Ocieczek" width="700" height="930" loading="lazy" />}
-                  <p>{it.a}</p>
-                  {it.b && <p>{it.b}</p>}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
+    <!-- 2: about me — one long paragraph, full width, with small objects
+         set into the line like words (DRAFT copy) -->
+    <section class="a9__who a9__prose-sec" data-who>
+      <p class="a9__prose" data-prose>
+        Hi, I’m Bart
+        {portrait ? <img class="ob ob--pic" src={portrait} alt="" width="700" height="930" /> : null}
+        — a design engineer
+        <span class="ob ob--b" aria-hidden="true" set:html={bSvg} />
+        from Kraków. By day I’m {nowJobs[0] ? `${nice(nowJobs[0].role ?? '')} at ${nowJobs[0].company}` : 'designing for the web'}
+        {nowJobs[0]?.logo ? <img class="ob ob--logo" src={nowJobs[0].logo} alt="" width="96" height="96" /> : <span class="ob ob--tag" aria-hidden="true">{nowJobs[0]?.company?.slice(0, 1) ?? 'B'}</span>}
+        and on the side I judge sites for the Awwwards Young Jury
+        <span class="ob ob--star" aria-hidden="true"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M20 8l3.2 8.1 8.6.6-6.6 5.5 2.1 8.4L20 26l-7.3 4.6 2.1-8.4-6.6-5.5 8.6-.6z" fill="currentColor" /></svg></span>.
+        I design and build in one loop — with AI
+        <span class="ob ob--spark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 2c1.4 9.6 4.4 14.6 18 18-13.6 3.4-16.6 8.4-18 18-1.4-9.6-4.4-14.6-18-18C15.6 16.6 18.6 11.6 20 2z" fill="currentColor" /><path d="M33 3c.5 3.4 1.6 5.2 6 6-4.4.8-5.5 2.6-6 6-.5-3.4-1.6-5.2-6-6 4.4-.8 5.5-2.6 6-6z" fill="currentColor" opacity=".55" /></svg></span>
+        in the loop, too. Off-screen it’s sport
+        <span class="ob ob--watch" aria-hidden="true"><svg viewBox="0 0 40 40"><rect x="16" y="1" width="8" height="4" rx="1.5" fill="currentColor" /><circle cx="20" cy="23" r="15" fill="none" stroke="currentColor" stroke-width="2.5" /><path class="ob-hand" d="M20 23V13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" /><circle cx="20" cy="23" r="2" fill="currentColor" /></svg></span>,
+        games
+        <span class="ob ob--pad" aria-hidden="true"><svg viewBox="0 0 56 36"><path d="M14 4h28c7 0 11 6 12.5 15S55 34 49 34c-4.5 0-6-6-11-6H18c-5 0-6.5 6-11 6S0 28 1.5 19 7 4 14 4z" fill="currentColor" /><path d="M14 13v10M9 18h10" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" /><circle cx="39" cy="15" r="2.6" fill="#0a0a0a" /><circle cx="44" cy="20" r="2.6" fill="#0a0a0a" /></svg></span>
+        and way too much coffee
+        <span class="ob ob--cup" aria-hidden="true"><svg viewBox="0 0 40 48"><path class="ob-steam" d="M14 12c-3-3 3-5 0-9M21 12c-3-3 3-5 0-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /><path d="M6 16h28l-3.5 29a3 3 0 0 1-3 2.6h-15a3 3 0 0 1-3-2.6z" fill="currentColor" /><rect x="4" y="14" width="32" height="5" rx="2" fill="currentColor" /><path d="M10 28h20" stroke="#0a0a0a" stroke-width="5" /></svg></span>
+        — my pulse
+        <span class="ob ob--ecg" aria-hidden="true"><svg viewBox="0 0 80 32"><path d="M0 18h20l4-5 4 5h6l3 10 5-26 5 22 3-6h30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" /></svg></span>
+        can prove it.
+      </p>
     </section>
 
     <!-- 2b: services — what I do, then how it connects -->
@@ -410,7 +413,141 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .a9__who.is-flat {
     margin-top: 0;
   }
-  /* 2: about me — held stage, one beat open at a time. Sizes after
+  /* 2: about me as one paragraph. Words sharpen in one after another;
+     the objects in the line pop in on their turn, and each one does a
+     little thing of its own (steam, a ticking hand, a running trace). */
+  .a9__prose-sec {
+    padding: clamp(110px, 20vh, 220px) var(--pad);
+  }
+  .a9__prose {
+    margin: 0;
+    font: 500 clamp(32px, 4.7vw, 86px) / 1.08 var(--font-head);
+    letter-spacing: -0.045em;
+    color: var(--ink);
+  }
+  .a9__prose :global(.bw) {
+    display: inline-block;
+    opacity: 0.12;
+    filter: blur(8px);
+    transition:
+      opacity 0.8s var(--e-out),
+      filter 0.9s var(--e-out);
+    transition-delay: calc(var(--k) * 26ms);
+  }
+  .a9__prose.is-in :global(.bw) {
+    opacity: 1;
+    filter: none;
+  }
+  .ob {
+    display: inline-block;
+    height: 0.86em;
+    margin: 0 0.1em;
+    vertical-align: -0.1em;
+    color: var(--ink);
+    transform: scale(0.4) rotate(-14deg);
+    opacity: 0;
+    transition:
+      transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+      opacity 0.3s ease;
+    transition-delay: calc(var(--k) * 26ms + 120ms);
+  }
+  .a9__prose.is-in .ob {
+    transform: none;
+    opacity: 1;
+  }
+  .ob :global(svg) {
+    display: block;
+    height: 100%;
+    width: auto;
+  }
+  .ob--pic {
+    width: 0.74em;
+    border-radius: 999px;
+    object-fit: cover;
+    filter: grayscale(1);
+  }
+  .ob--logo,
+  .ob--tag {
+    width: 0.86em;
+    border-radius: 0.2em;
+    object-fit: cover;
+  }
+  .ob--tag {
+    display: inline-grid;
+    place-items: center;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 0.5em;
+    height: 1.6em;
+    width: 1.6em;
+    vertical-align: 0.05em;
+    letter-spacing: 0;
+  }
+  .ob--b {
+    height: 0.9em;
+    color: #d9d9de;
+  }
+  .ob--pad {
+    height: 0.7em;
+    vertical-align: -0.02em;
+  }
+  .ob--ecg {
+    height: 0.62em;
+    vertical-align: 0.02em;
+  }
+  /* the little lives of the objects */
+  .ob--cup .ob-steam {
+    animation: ob-steam 2.4s ease-in-out infinite;
+  }
+  .ob--watch .ob-hand {
+    transform-origin: 20px 23px;
+    animation: ob-tick 6s steps(12) infinite;
+  }
+  .ob--ecg path {
+    stroke-dasharray: 160;
+    animation: ob-trace 1.8s linear infinite;
+  }
+  .ob--spark svg {
+    animation: ob-twinkle 3s ease-in-out infinite;
+  }
+  @keyframes ob-steam {
+    0%, 100% { opacity: 0.2; transform: translateY(2px); }
+    50% { opacity: 1; transform: translateY(-2px); }
+  }
+  @keyframes ob-tick {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes ob-trace {
+    from { stroke-dashoffset: 160; }
+    to { stroke-dashoffset: -160; }
+  }
+  @keyframes ob-twinkle {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(0.82) rotate(20deg); }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__prose.is-in .ob:hover {
+      transform: scale(1.18) rotate(-6deg);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .ob--pic:hover {
+      filter: grayscale(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__prose :global(.bw) {
+      filter: none;
+    }
+    .ob {
+      transform: none;
+    }
+    .ob *,
+    .ob :global(svg) {
+      animation: none !important;
+    }
+  }
+
+  /* 2 (old): about me — held stage, one beat open at a time. Sizes after
      ref.digital/about: the list takes the right half, rows ~59px with a
      ~30px title, the open one shows two equal columns of 13px text */
   .a9__ab {
@@ -1587,7 +1724,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       li.addEventListener('blur', off);
     });
     const later: HTMLElement[] = [];
-    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid], [data-nm]').forEach((el) => {
+    root.querySelectorAll<HTMLElement>('[data-in], [data-words], [data-blur], [data-hm-mid], [data-nm], [data-prose]').forEach((el) => {
       const sib = [...(el.parentElement?.children ?? [])].filter((s) => s.hasAttribute('data-in'));
       el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 60}ms`);
       // the section behind the B only starts once it's being uncovered
@@ -1654,6 +1791,32 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     // ---- scroll-driven bits + the monitor, in one loop
     const intro = root.querySelector<HTMLElement>('[data-intro]');
     const smooth = (v: number) => v * v * (3 - 2 * v);
+    // the about paragraph: wrap its words (text only) and number every
+    // word and object in order, so they arrive one after another
+    root.querySelectorAll<HTMLElement>('[data-prose]').forEach((el) => {
+      let k = 0;
+      [...el.childNodes].forEach((n) => {
+        if (n.nodeType === 3) {
+          const parts = (n.textContent ?? '').split(/(\s+)/);
+          const frag = document.createDocumentFragment();
+          parts.forEach((p) => {
+            if (!p) return;
+            if (/^\s+$/.test(p)) {
+              frag.append(' ');
+              return;
+            }
+            const sp = document.createElement('span');
+            sp.className = 'bw';
+            sp.style.setProperty('--k', String(k++));
+            sp.textContent = p;
+            frag.append(sp);
+          });
+          n.replaceWith(frag);
+        } else if (n instanceof HTMLElement) {
+          n.style.setProperty('--k', String(k++));
+        }
+      });
+    });
     // who: the lead, word by word
     root.querySelectorAll<HTMLElement>('[data-blur]').forEach((el) => {
       const ws = (el.textContent ?? '').trim().split(/\s+/);
@@ -2036,7 +2199,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       // just the B, a slim slab: thin, with a fine bevel catching the light
       const logo = new THREE.Group();
       const B = letter('B', 150);
-      B.scale.setScalar(2.35);
+      B.scale.setScalar(3.1);
       logo.add(B);
       scene.add(logo);
 
@@ -2113,6 +2276,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         if (top <= 0) {
           who.style.clipPath = '';
           who.style.webkitMaskImage = who.style.maskImage = '';
+          // (arrived without passing the reveal, e.g. a reload further down)
+          if (!sent) {
+            sent = true;
+            dispatchEvent(new Event('a9:reveal'));
+          }
           return;
         }
         const raw = Math.min(1, Math.max(0, (sy - sEdge) / 0.2));
