@@ -1,0 +1,640 @@
+---
+// Draft (direction of /about-me, taken further): one dark, cinematic stage
+// that plays as you scroll, with the chrome B as the lead. Six scenes:
+// 1 the statement lights up word by word over the B;
+// 2 the B steps aside and the numbers count with the scroll;
+// 3 credits roll — each company drops in big, the B turns one notch per role;
+// 4 the disciplines orbit the B in a 3D ring that the scroll spins;
+// 5 the quote lights up while the B floats above it;
+// 6 the B comes forward, follows the pointer, and the CTA lands.
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import { ABOUT_QUERY, SETTINGS_QUERY } from '../lib/sanity';
+import { load } from '../lib/load';
+
+const [settings, about] = await Promise.all([load(Astro.locals, SETTINGS_QUERY), load(Astro.locals, ABOUT_QUERY)]);
+if (!settings || !about) return new Response('Content not found', { status: 500 });
+
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const jobs = ((about.experience ?? []) as any[]).map((e) => ({
+  company: e.company as string,
+  role: (e.role as string)?.toLowerCase(),
+  period: ((e.period as string) ?? '').toLowerCase(),
+}));
+const nice = (f: string) => {
+  const s = f.toLowerCase().replace(/\b(ux|ui|ai)\b/g, (m) => m.toUpperCase());
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+const focus: string[] = (about.focus ?? []).map(nice);
+const firstYear = Math.min(...jobs.map((j) => Number(j.period.match(/\d{4}/)?.[0] ?? 9999)));
+const years = Number.isFinite(firstYear) ? new Date().getFullYear() - firstYear : 7;
+const quote: string = (about.quote ?? '').replace(/^[“"]|[”"]$/g, '');
+---
+
+<Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
+  <main class="about a4" data-a4>
+    <header class="a4__nav">
+      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
+    </header>
+
+    <section class="a4__stage">
+      <!-- 1 statement -->
+      <div class="a4__sc a4__s1" data-sc="0">
+        <h1 class="a4__say" data-lit>
+          Hi, I’m Bart — a design engineer pushing my horizons further with AI every day. Fuelled by sport and way too much coffee.
+        </h1>
+      </div>
+
+      <!-- 2 numbers -->
+      <div class="a4__sc a4__s2" data-sc="1">
+        <div class="a4__nums">
+          <p><strong data-scrub={years}>0</strong><span>+</span><em>years of designing</em></p>
+          <p><strong data-scrub={jobs.length}>0</strong><em>teams, studios & juries</em></p>
+          <p><strong data-scrub={focus.length}>0</strong><em>disciplines, one person</em></p>
+        </div>
+      </div>
+
+      <!-- 3 credits -->
+      <div class="a4__sc a4__s3" data-sc="2">
+        <p class="a4__kick">Path</p>
+        <div class="a4__credits" data-credits>
+          {jobs.map((j) => (
+            <div class="a4__credit">
+              <span class="a4__co">{j.company}</span>
+              <span class="a4__meta">{j.role} · {j.period}</span>
+            </div>
+          ))}
+        </div>
+        <p class="a4__count"><span data-credit-n>01</span> / {String(jobs.length).padStart(2, '0')}</p>
+      </div>
+
+      <!-- 4 ring -->
+      <div class="a4__sc a4__s4" data-sc="3">
+        <p class="a4__kick">What I do</p>
+        <div class="a4__ring" data-ring>
+          {focus.map((f) => <span>{f}</span>)}
+        </div>
+      </div>
+
+      <!-- 5 quote -->
+      <div class="a4__sc a4__s5" data-sc="4">
+        <blockquote class="a4__quote" data-lit>“{quote}”</blockquote>
+      </div>
+
+      <!-- 6 cta -->
+      <div class="a4__sc a4__s6" data-sc="5">
+        <p class="a4__cta-t">{about.ctaText}</p>
+        <a class="a4__btn" href={settings.callUrl ?? '#'} target="_blank" rel="noopener" data-magnet><span>Let’s talk</span></a>
+      </div>
+
+      <canvas class="a4__mark" data-monogram aria-label="B monogram" role="img"></canvas>
+      <div class="a4__bar" aria-hidden="true"><span data-bar></span></div>
+      <span class="a4__hint" aria-hidden="true" data-hint>Scroll</span>
+    </section>
+  </main>
+</Base>
+
+<style>
+  .a4 {
+    --e-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --e-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --e-io: cubic-bezier(0.77, 0, 0.175, 1);
+    position: relative;
+    height: 1100svh;
+    background: var(--surface-dark);
+    color: var(--text-primary);
+  }
+  .a4__nav {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 10;
+    padding: var(--gutter);
+  }
+  .a4__stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+  }
+  .a4__mark {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+  }
+  /* every scene fills the stage; the script fades/lifts it in its window */
+  .a4__sc {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    padding: 0 var(--gutter);
+    opacity: 0;
+    visibility: hidden;
+    will-change: opacity, transform;
+  }
+  .a4__kick {
+    position: absolute;
+    top: 96px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    font: 500 12px/1 var(--font-head);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  /* 1 + 5: words lit by the scroll */
+  .a4__say,
+  .a4__quote {
+    max-width: 1000px;
+    margin: 0;
+    text-align: center;
+    font: 500 clamp(28px, 4.4vw, 68px) / 0.98 var(--font-head);
+    letter-spacing: -0.045em;
+  }
+  .a4__quote {
+    max-width: 900px;
+    margin-top: 22vh;
+    font-size: clamp(26px, 3.6vw, 56px);
+  }
+  :global(.a4 .lw) {
+    opacity: var(--lit, 0.22);
+    transition: opacity 0.25s linear;
+  }
+
+  /* 2: numbers on the left, the B steps right */
+  .a4__s2 {
+    justify-items: start;
+    padding-left: clamp(24px, 9vw, 180px);
+  }
+  .a4__nums {
+    display: grid;
+    gap: clamp(14px, 3vh, 36px);
+  }
+  .a4__nums p {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.06em;
+  }
+  .a4__nums strong,
+  .a4__nums span {
+    font: 500 clamp(64px, 10vw, 160px) / 0.86 var(--font-head);
+    letter-spacing: -0.06em;
+    font-variant-numeric: tabular-nums;
+  }
+  .a4__nums em {
+    margin-left: 18px;
+    font: 500 14px/1.2 var(--font-head);
+    font-style: normal;
+    color: var(--text-secondary);
+    max-width: 12ch;
+  }
+
+  /* 3: credits — one company at a time, rising through a mask */
+  .a4__credits {
+    position: relative;
+    width: 100%;
+    height: clamp(120px, 22vh, 220px);
+    overflow: hidden;
+    text-align: center;
+  }
+  .a4__credit {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    transform: translateY(105%);
+    transition: transform 0.9s var(--e-expo);
+  }
+  .a4__credit.is-past {
+    transform: translateY(-105%);
+  }
+  .a4__credit.is-now {
+    transform: none;
+  }
+  .a4__co {
+    font: 500 clamp(56px, 11vw, 190px) / 0.9 var(--font-head);
+    letter-spacing: -0.06em;
+    white-space: nowrap;
+  }
+  .a4__meta {
+    font: 500 14px/1 var(--font-head);
+    color: var(--text-secondary);
+    text-transform: capitalize;
+  }
+  .a4__count {
+    position: absolute;
+    bottom: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    font: 500 13px/1 var(--font-head);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 4: a ring of words around the B (placed by the script) */
+  .a4__ring {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    perspective: 1400px;
+  }
+  .a4__ring span {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    font: 500 clamp(28px, 4vw, 64px) / 1 var(--font-head);
+    letter-spacing: -0.045em;
+    white-space: nowrap;
+    will-change: transform, opacity;
+  }
+
+  /* 6: the CTA under the B */
+  .a4__s6 {
+    align-content: end;
+    padding-bottom: 12vh;
+    gap: 28px;
+    justify-items: center;
+  }
+  .a4__cta-t {
+    max-width: 26ch;
+    margin: 0;
+    text-align: center;
+    font: 500 clamp(20px, 2vw, 30px) / 1.15 var(--font-head);
+    letter-spacing: -0.03em;
+    color: var(--text-secondary);
+  }
+  .a4__btn {
+    position: relative;
+    z-index: 3;
+    display: inline-grid;
+    place-items: center;
+    padding: 20px 34px;
+    border-radius: 999px;
+    background: #f2f2f2;
+    color: #0b0b0b;
+    font: 500 16px/1 var(--font-head);
+    text-decoration: none;
+    pointer-events: auto;
+    transition: transform 0.16s var(--e-out);
+  }
+  .a4__btn:active {
+    scale: 0.97;
+  }
+  .a4__btn span {
+    display: block;
+  }
+
+  /* progress + hint */
+  .a4__bar {
+    position: absolute;
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: 22px;
+    z-index: 4;
+    height: 1px;
+    background: var(--line);
+  }
+  .a4__bar span {
+    display: block;
+    height: 100%;
+    background: var(--text-primary);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+  .a4__hint {
+    position: absolute;
+    left: 50%;
+    bottom: 40px;
+    z-index: 4;
+    transform: translateX(-50%);
+    font: 500 12px/1 var(--font-head);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    transition: opacity 0.4s ease;
+  }
+
+  @media (max-width: 809px) {
+    .a4__s2 {
+      justify-items: center;
+      padding-left: var(--gutter);
+      align-content: end;
+      padding-bottom: 14vh;
+    }
+    .a4__nums strong,
+    .a4__nums span {
+      font-size: clamp(48px, 15vw, 80px);
+    }
+    .a4__co {
+      font-size: 10.5vw;
+    }
+    .a4__ring span {
+      font-size: 22px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a4__credit {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // The scene script: reads the scroll, decides which scene is on, and sets
+  // the B's pose for the three.js side (window.__abPose).
+  const root = document.querySelector<HTMLElement>('[data-a4]');
+  if (root) {
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const scenes = [...root.querySelectorAll<HTMLElement>('[data-sc]')];
+    // scene windows on the 0..1 scroll: [start, end]
+    const W: [number, number][] = [
+      [0, 0.17],
+      [0.17, 0.32],
+      [0.32, 0.6],
+      [0.6, 0.78],
+      [0.78, 0.9],
+      [0.9, 1.01],
+    ];
+    const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+    const smooth = (v: number) => v * v * (3 - 2 * v);
+
+    // words to light
+    const lit = [...root.querySelectorAll<HTMLElement>('[data-lit]')].map((el) => {
+      const parts = (el.textContent ?? '').trim().split(/\s+/);
+      el.textContent = '';
+      return parts.map((p, i) => {
+        const s = document.createElement('span');
+        s.className = 'lw';
+        s.textContent = p;
+        el.append(s);
+        if (i < parts.length - 1) el.append(' ');
+        return s;
+      });
+    });
+    const lightUp = (ws: HTMLElement[], t: number) => {
+      const f = t * (ws.length + 3) - 3;
+      ws.forEach((w, k) => w.style.setProperty('--lit', (0.22 + 0.78 * clamp((f - k + 3) / 3)).toFixed(3)));
+    };
+
+    const scrub = [...root.querySelectorAll<HTMLElement>('[data-scrub]')];
+    const credits = [...root.querySelectorAll<HTMLElement>('.a4__credit')];
+    const creditN = root.querySelector<HTMLElement>('[data-credit-n]');
+    const ring = [...root.querySelectorAll<HTMLElement>('[data-ring] span')];
+    const bar = root.querySelector<HTMLElement>('[data-bar]');
+    const hint = root.querySelector<HTMLElement>('[data-hint]');
+    let lastCredit = -1;
+
+    const frame = () => {
+      const max = root.offsetHeight - innerHeight;
+      const p = max > 0 ? clamp(scrollY / max) : 0;
+      const portrait = innerWidth < innerHeight;
+      if (bar) bar.style.transform = `scaleX(${p.toFixed(4)})`;
+      if (hint) hint.style.opacity = String(1 - clamp(p * 30));
+
+      // scenes: fade + lift in over the first 18% of their window, out over the last 18%
+      scenes.forEach((el, i) => {
+        const [a, b] = W[i];
+        const t = (p - a) / (b - a);
+        const inn = clamp(t / 0.18);
+        const out = i === scenes.length - 1 ? 1 : clamp((1 - t) / 0.18);
+        const v = Math.min(inn, out);
+        el.style.opacity = v.toFixed(3);
+        el.style.visibility = v > 0.001 ? 'visible' : 'hidden';
+        el.style.transform = calm ? '' : `translateY(${((1 - inn) * 40 - (1 - out) * 40).toFixed(1)}px)`;
+      });
+      const local = (i: number) => clamp((p - W[i][0]) / (W[i][1] - W[i][0]));
+
+      // 1 + 5: light the words
+      lightUp(lit[0], clamp(local(0) / 0.8));
+      lightUp(lit[1], clamp((local(4) - 0.1) / 0.7));
+
+      // 2: numbers count with the scroll
+      const n2 = smooth(clamp((local(1) - 0.1) / 0.55));
+      scrub.forEach((el) => (el.textContent = String(Math.round(Number(el.dataset.scrub) * n2))));
+
+      // 3: credits, one per slot
+      const c = clamp(Math.floor(local(2) * credits.length), 0, credits.length - 1);
+      if (c !== lastCredit) {
+        credits.forEach((el, k) => {
+          el.classList.toggle('is-now', k === c);
+          el.classList.toggle('is-past', k < c);
+        });
+        if (creditN) creditN.textContent = String(c + 1).padStart(2, '0');
+        lastCredit = c;
+      }
+
+      // 4: the ring spins with the scroll; the front word is bright
+      const R = Math.min(innerWidth * (portrait ? 0.24 : 0.26), 420);
+      const spin = local(3) * Math.PI * 2 * 0.9 + 0.4;
+      ring.forEach((el, k) => {
+        const a = (k / ring.length) * Math.PI * 2 + spin;
+        const x = Math.sin(a) * R;
+        const z = Math.cos(a) * R;
+        const y = Math.cos(a * 1) * (portrait ? 40 : 60) - 20;
+        const front = (Math.cos(a) + 1) / 2;
+        el.style.transform = `translate(-50%,-50%) translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,${z.toFixed(1)}px)`;
+        el.style.opacity = (0.12 + 0.88 * Math.pow(front, 2)).toFixed(3);
+        el.style.zIndex = String(Math.round(front * 10) + (front > 0.5 ? 3 : 0));
+      });
+
+      // the B's pose for each scene, blended across the boundaries
+      const poses = [
+        { x: 0, y: 0, s: 1, r: 0 },
+        { x: portrait ? 0 : 2.2, y: portrait ? 2.6 : 0, s: portrait ? 0.55 : 0.8, r: 0.6 },
+        { x: 0, y: 0, s: 0.85, r: 0.6 + c * (Math.PI / 3) },
+        { x: 0, y: 0, s: 0.62, r: 0.6 + credits.length * (Math.PI / 3) + spin },
+        { x: 0, y: portrait ? 2.8 : 1.6, s: 0.42, r: 0.6 + credits.length * (Math.PI / 3) + Math.PI * 2 },
+        { x: 0, y: portrait ? 1.6 : 0.7, s: 1.1, r: 0.6 + credits.length * (Math.PI / 3) + Math.PI * 4 },
+      ];
+      let si = 0;
+      for (let i = 0; i < W.length; i++) if (p >= W[i][0]) si = i;
+      (window as any).__abPose = poses[si];
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+
+    // magnetic CTA (spring), only on fine pointers
+    const mag = root.querySelector<HTMLElement>('[data-magnet]');
+    if (mag && !calm && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      const label = mag.querySelector('span')!;
+      let tx = 0, ty = 0, x = 0, y = 0, vx = 0, vy = 0, raf = 0;
+      const step = () => {
+        vx = (vx + (tx - x) * 0.12) * 0.72;
+        vy = (vy + (ty - y) * 0.12) * 0.72;
+        x += vx;
+        y += vy;
+        mag.style.transform = `translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0)`;
+        label.style.transform = `translate3d(${(x * 0.3).toFixed(2)}px,${(y * 0.3).toFixed(2)}px,0)`;
+        raf = Math.abs(vx) + Math.abs(vy) + Math.abs(tx - x) + Math.abs(ty - y) > 0.05 ? requestAnimationFrame(step) : 0;
+      };
+      addEventListener('pointermove', (e) => {
+        const r = mag.getBoundingClientRect();
+        const dx = e.clientX - (r.left + r.width / 2 - x);
+        const dy = e.clientY - (r.top + r.height / 2 - y);
+        const near = Math.hypot(dx, dy) < Math.max(r.width, 140);
+        tx = near ? dx * 0.3 : 0;
+        ty = near ? dy * 0.3 : 0;
+        if (!raf) raf = requestAnimationFrame(step);
+      });
+    }
+  }
+</script>
+
+<script>
+      import * as THREE from 'three';
+      import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+      import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+      import glyphs from '../lib/monogram-b.json';
+      import { hasGPU } from '../lib/gpu';
+
+      const canvas = document.querySelector<HTMLCanvasElement>('[data-monogram]');
+      // no real GPU: a flat silver B instead of the 3D one
+      if (canvas && !hasGPU()) {
+        const [d, b] = glyphs.g.B as [string, number[], number];
+        const box = document.createElement('div');
+        box.className = canvas.className;
+        box.style.cssText = 'position:absolute;inset:0;z-index:2;display:grid;place-items:center;pointer-events:none;perspective:900px';
+        box.innerHTML = `<svg viewBox="${b[0]} ${-b[3]} ${b[2] - b[0]} ${b[3] - b[1]}" style="height:44svh;width:auto;will-change:transform" aria-hidden="true"><path transform="scale(1,-1)" d="${d}" fill="#d9d9de"/></svg>`;
+        canvas.replaceWith(box);
+        // follow the same choreography as the 3D B, in CSS
+        const svg = box.firstElementChild as SVGElement;
+        const cur = { x: 0, y: 0, s: 1, r: 0 };
+        const unit = () => innerHeight / ((window as any).__abPortrait ? 6.97 : 4.82);
+        const follow = () => {
+          const pose = (window as any).__abPose ?? cur;
+          cur.x += (pose.x - cur.x) * 0.08;
+          cur.y += (pose.y - cur.y) * 0.08;
+          cur.s += (pose.s - cur.s) * 0.08;
+          cur.r += (pose.r - cur.r) * 0.06;
+          svg.style.transform = `translate3d(${(cur.x * unit()).toFixed(1)}px,${(-cur.y * unit()).toFixed(1)}px,0) scale(${cur.s.toFixed(3)}) rotateY(${cur.r.toFixed(3)}rad)`;
+          requestAnimationFrame(follow);
+        };
+        (window as any).__abPortrait = innerWidth < innerHeight;
+        follow();
+      } else if (canvas) {
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      const scene = new THREE.Scene();
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 1.25;
+      const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+      camera.position.set(0, 0, 9);
+
+      // soft key light + a warm rim, on top of the room reflections
+      const key = new THREE.DirectionalLight(0xffffff, 2.4);
+      key.position.set(-3, 4, 6);
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0xffe2c4, 0.8);
+      rim.position.set(4, -2, -3);
+      scene.add(rim);
+
+
+      // polished black chrome: deep, with crisp reflections running along
+      // the strokes as it turns
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: 0xd9d9de,
+        roughness: 0.16,
+        metalness: 1.0,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05,
+        transparent: true,
+        opacity: 0,
+      });
+
+      const U = glyphs.upm;
+      const shapesOf = (d: string) => {
+        const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`);
+        return data.paths.flatMap((p) => p.toShapes(true));
+      };
+      const letter = (ch: 'B', depth: number) => {
+        const [d] = glyphs.g[ch] as [string, number[], number];
+        const geo = new THREE.ExtrudeGeometry(shapesOf(d), {
+          depth,
+          bevelEnabled: true,
+          bevelThickness: 22,
+          bevelSize: 6,
+          bevelSegments: 6,
+          curveSegments: 28,
+        });
+        geo.computeBoundingBox();
+        const bb = geo.boundingBox!;
+        geo.translate(-(bb.min.x + bb.max.x) / 2, -(bb.min.y + bb.max.y) / 2, -(bb.min.z + bb.max.z) / 2);
+        geo.scale(1 / U, 1 / U, 1 / U);
+        geo.computeVertexNormals();
+        return new THREE.Mesh(geo, mat);
+      };
+
+      // just the B, a slim slab: thin, with a fine bevel catching the light
+      const logo = new THREE.Group();
+      const B = letter('B', 150);
+      B.scale.setScalar(3.1);
+      logo.add(B);
+      scene.add(logo);
+
+      const resize = () => {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        camera.position.z = w < h ? 13 : 9;
+        (window as any).__abPortrait = w < h;
+      };
+      addEventListener('resize', resize);
+      resize();
+
+      // slow idle turn; the pointer tilts it (eased, never snaps)
+      let px = 0;
+      let py = 0;
+      addEventListener('pointermove', (e) => {
+        px = (e.clientX / innerWidth) * 2 - 1;
+        py = (e.clientY / innerHeight) * 2 - 1;
+      });
+      let rx = 0;
+      let ry = 0;
+      const cur = { x: 0, y: 0, s: 1, r: 0 };
+      const t0 = performance.now();
+      // entrance (as the dark page opens): it rises a little, turns in from a
+      // three-quarter view and grows to size on a long ease-out
+      const IN_DELAY = 0.45;
+      const IN_DUR = 1.8;
+      const easeOut = (x: number) => 1 - Math.pow(1 - x, 4);
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const tick = () => {
+        const t = (performance.now() - t0) / 1000;
+        const idle = calm ? 0 : Math.sin(t * 0.45) * 0.35;
+        ry += (idle + px * 0.5 - ry) * 0.05;
+        rx += (py * 0.3 - rx) * 0.05;
+        const k = calm ? 1 : easeOut(Math.min(1, Math.max(0, (t - IN_DELAY) / IN_DUR)));
+        // the page's choreography (set by the scene script): where the B
+        // stands, how big, and how far it has turned — eased toward it
+        const pose = (window as any).__abPose ?? { x: 0, y: 0, s: 1, r: 0 };
+        cur.x += (pose.x - cur.x) * 0.07;
+        cur.y += (pose.y - cur.y) * 0.07;
+        cur.s += (pose.s - cur.s) * 0.07;
+        cur.r += (pose.r - cur.r) * 0.06;
+        logo.rotation.set(rx + (1 - k) * 0.5, ry - (1 - k) * 1.6 + cur.r, (1 - k) * -0.15);
+        logo.position.set(cur.x, cur.y + (calm ? 0 : Math.sin(t * 0.8) * 0.05) - (1 - k) * 0.9, 0);
+        logo.scale.setScalar((0.75 + 0.25 * k) * cur.s);
+        (mat as THREE.MeshPhysicalMaterial).opacity = k;
+        renderer.render(scene, camera);
+        requestAnimationFrame(tick);
+      };
+      tick();
+      }
+</script>
