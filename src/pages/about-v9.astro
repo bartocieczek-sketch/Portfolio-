@@ -355,6 +355,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     z-index: 3;
     margin-top: -100svh;
     background: var(--bg);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
   }
   .a9__who.is-flat {
     margin-top: 0;
@@ -1740,7 +1742,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           break;
         }
       }
-      let slit: { x0: number; y0: number; x1: number; y1: number } | null = null;
       let sent = false;
       const project = () => {
         logo.updateMatrixWorld(true);
@@ -1764,23 +1765,31 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         who.style.transform = top > 0 ? `translate3d(0,${(-top).toFixed(1)}px,0)` : '';
         if (top <= 0) {
           who.style.clipPath = '';
+          who.style.webkitMaskImage = who.style.maskImage = '';
           return;
         }
-        const raw = Math.min(1, Math.max(0, (sy - sEdge) / 0.16));
+        const raw = Math.min(1, Math.max(0, (sy - sEdge) / 0.2));
         if (raw <= 0) {
-          slit = null;
           who.style.clipPath = 'inset(50% 50% 50% 50%)';
+          who.style.webkitMaskImage = who.style.maskImage = '';
           return;
         }
+        who.style.clipPath = '';
+        // the window follows the letter itself: it is the B's own on-screen
+        // box (live, so it moves and grows with it), opening out to the
+        // whole screen as the letter closes in. Its edges are feathered, so
+        // there's never a hard cut through the text beside the B.
         const pr = project();
-        if (!slit) slit = { x0: pr.x0, y0: pr.y0, x1: pr.x1, y1: pr.y1 };
-        // strong ease-in-out: the slit eases open, then sweeps out
         const e = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
-        const t = slit.y0 * (1 - e);
-        const l = slit.x0 * (1 - e);
-        const rr = (pr.W - slit.x1) * (1 - e);
-        const b = (pr.H - slit.y1) * (1 - e);
-        who.style.clipPath = `inset(${t.toFixed(1)}px ${rr.toFixed(1)}px ${b.toFixed(1)}px ${l.toFixed(1)}px)`;
+        const F = Math.max(60, Math.min(pr.W, pr.H) * 0.12);
+        const l = pr.x0 + (-F - pr.x0) * e;
+        const r = pr.x1 + (pr.W + F - pr.x1) * e;
+        const t = pr.y0 + (-F - pr.y0) * e;
+        const b = pr.y1 + (pr.H + F - pr.y1) * e;
+        const g = (dir: string, a: number, z: number) =>
+          `linear-gradient(${dir}, transparent ${a.toFixed(1)}px, #000 ${(a + F).toFixed(1)}px, #000 ${(z - F).toFixed(1)}px, transparent ${z.toFixed(1)}px)`;
+        const m = `${g('to right', l, r)}, ${g('to bottom', t, b)}`;
+        who.style.webkitMaskImage = who.style.maskImage = m;
         if (!sent && raw > 0.25) {
           sent = true;
           dispatchEvent(new Event('a9:reveal'));
