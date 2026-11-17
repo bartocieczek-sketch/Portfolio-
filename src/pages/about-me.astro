@@ -559,6 +559,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .a9__nav :global(.nav__toggle) {
     transition: color 0.3s ease;
   }
+  /* the B's thickness copies in the same solid colour, so it stays white
+     (or black) all the way round as it turns */
+  .a9__nav :global(.nav__home svg.is-side) {
+    filter: none;
+  }
   .a9__nav :global(.is-on-white) {
     color: var(--bg) !important;
     --text-primary: var(--bg);
