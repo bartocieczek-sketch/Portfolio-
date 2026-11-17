@@ -77,9 +77,9 @@ const LAPS = 3;
 
 <div class="preload" aria-hidden="true" data-preload>
   <div class="preload__lock">
-    <span class="preload__side preload__side--l"><span class="preload__w">Bart</span><span class="preload__w">Designer</span></span>
+    <span class="preload__side preload__side--l"><span class="preload__w">Bart</span><span class="preload__w">Digital Designer</span></span>
     <canvas class="preload__mark" data-preload-mark></canvas>
-    <span class="preload__side preload__side--r"><span class="preload__w">Ocieczek</span><span class="preload__w">&amp; Developer</span></span>
+    <span class="preload__side preload__side--r"><span class="preload__w">Ocieczek</span><span class="preload__w">Developer</span></span>
   </div>
 </div>
 <script is:inline>
@@ -143,7 +143,7 @@ const LAPS = 3;
       ]);
       // the 3D side reads this timeline to spin away in step with the fall
       window.__preloadMark = { anim: a, leave: LEAVE, out: 520 };
-      // [Bart, Designer] on the left, [Ocieczek, & Developer] 60ms behind
+      // [Bart, Digital Designer] on the left, [Ocieczek, Developer] 60ms behind
       [0, 2].forEach(function (i, side) {
         var lag = side * 60;
         track(words[i], [
