@@ -69,6 +69,7 @@ export const aboutPage = defineType({
     { name: 'services', title: 'Services' },
     { name: 'work', title: 'Experience & numbers' },
     { name: 'pulse', title: 'Pulse' },
+    { name: 'hours', title: 'After hours' },
     { name: 'talk', title: 'Let’s talk & footer' },
     { name: 'old', title: 'Older fields' },
   ],
@@ -105,6 +106,26 @@ export const aboutPage = defineType({
     defineField({ name: 'experienceLabel', title: 'Experience label', type: 'string', group: 'work', placeholder: 'Experience & what I do' }),
     defineField({ name: 'pulseTitle', title: 'Pulse headline', type: 'string', group: 'pulse', placeholder: 'Coffee in, sport out.' }),
     defineField({ name: 'pulseText', title: 'Pulse instruction', type: 'text', rows: 2, group: 'pulse', placeholder: 'Hold the dot to brew a coffee, it fills a ring. Then hold Run: the laps burn the coffees off again.' }),
+    defineField({ name: 'hoursTitle', title: 'Headline', type: 'string', group: 'hours', placeholder: 'After hours' }),
+    defineField({
+      name: 'hours',
+      title: 'Chapters',
+      type: 'array',
+      group: 'hours',
+      description: 'Each chapter swaps the word under the headline while its photos fly past. Empty = Running, Gym, Gaming with placeholder photos.',
+      of: [
+        {
+          type: 'object',
+          name: 'hoursChapter',
+          fields: [
+            defineField({ name: 'word', title: 'Word', type: 'string', validation: (r) => r.required(), description: 'e.g. Running' }),
+            defineField({ name: 'note', title: 'Small line', type: 'string', description: 'e.g. 5 am, before the city wakes up' }),
+            defineField({ name: 'photos', title: 'Photos', type: 'array', of: [{ type: 'image', options: { hotspot: true } }], description: '3 or 4 work best; portrait and landscape mixed.' }),
+          ],
+          preview: { select: { title: 'word', subtitle: 'note', media: 'photos.0' } },
+        },
+      ],
+    }),
     defineField({
       name: 'talkText',
       title: 'Let’s talk paragraph',

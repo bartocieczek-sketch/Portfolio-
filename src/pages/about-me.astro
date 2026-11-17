@@ -161,6 +161,40 @@ const icons: Record<string, { c: string; svg: string }> = {
   coffee: { c: 'cup', svg: '<svg viewBox="0 0 40 48"><path class="ob-steam" d="M14 12c-3-3 3-5 0-9M21 12c-3-3 3-5 0-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6 16h28l-3.5 29a3 3 0 0 1-3 2.6h-15a3 3 0 0 1-3-2.6z" fill="currentColor"/><rect x="4" y="14" width="32" height="5" rx="2" fill="currentColor"/><path d="M10 28h20" stroke="#0a0a0a" stroke-width="5"/></svg>' },
   pulse: { c: 'ecg', svg: '<svg viewBox="0 0 80 32"><path d="M0 18h20l4-5 4 5h6l3 10 5-26 5 22 3-6h30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg>' },
 };
+// after hours: chapters of a white, pinned gallery (CMS, or the defaults
+// with placeholder photos); each photo gets a slot, a depth and a size
+const ahDefault = [
+  { word: 'Running', note: '5 am, before the city wakes up', photos: ['5009c121e6f7216b837353fb1721965198551efe-1400x933', '1269da8e1d49b6afe6cdbc9811eb419422c21eba-1400x2100', '74d6c346bc830552fac92a8a8b5e46d24eebb6fe-1400x933', '036ae164d283377e9645937a542c204696a69f73-1400x2100'] },
+  { word: 'Gym', note: 'Four times a week, no skipped legs', photos: ['c7a150a82205c88425b164e643f6e91d1f518974-1400x2100', '2e32c04d8a22b3e54b55ef62bb39b519bfda729b-1400x933', '9d75abfb776324a9793ee7acc4963a9acb631491-1400x2102', '1d14fca35afb6ff353731307d90b0a07de962f0a-1400x937'] },
+  { word: 'Gaming', note: 'Late nights, just one more round', photos: ['b6ab206903e9e08aceb8153b096aaa9bf0529ff0-1400x788', '1a10904b8798698f3406b6ae96190484b3238d69-1400x2488', 'a292284f84020bd9504b1d5ff378e65d93bcffd5-1400x933', '3ca4169a65c58e5b4d9acbce7acbcb30540bc319-1400x935'] },
+].map((c) => ({
+  ...c,
+  photos: c.photos.map((id) => {
+    const [, w, h] = id.match(/-(\d+)x(\d+)$/)!;
+    return { src: `https://cdn.sanity.io/images/jf65lv25/production/${id}.jpg?w=900&auto=format&q=75`, ratio: Number(w) / Number(h) };
+  }),
+}));
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const cmsHours = ((about.hours ?? []) as any[]).filter((c) => c?.word);
+const ahChapters: { word: string; note: string; photos: { src: string; ratio: number }[] }[] = cmsHours.length
+  ? cmsHours.map((c) => ({
+      word: c.word,
+      note: c.note ?? '',
+      // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+      photos: ((c.photos ?? []) as any[])
+        .filter((p) => p?.asset)
+        .map((p) => ({ src: urlFor(p).width(900).auto('format').quality(75).url(), ratio: p.asset.metadata?.dimensions?.aspectRatio ?? 1.5 })),
+    }))
+  : ahDefault;
+const ahTitle: string = about.hoursTitle || 'After hours';
+// where photo i of a chapter sits: left edge (vw), width (vw), depth (how
+// fast it flies: deeper = slower, smaller, behind the headline)
+const ahSlots = [
+  { x: 5, w: 24, d: 1.25 },
+  { x: 66, w: 15, d: 0.6 },
+  { x: 30, w: 12, d: 0.45 },
+  { x: 72, w: 22, d: 1.05 },
+];
 const heroTitle: string = about.heroTitle || 'About me';
 const experienceLabel: string = about.experienceLabel || 'Experience & what I do';
 const pulseTitle: string = about.pulseTitle || 'Coffee in, sport out.';
@@ -341,6 +375,45 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           <span class="a9__brew-t" data-run-t>Hold to run</span>
         </button>
         <p class="a9__ring-c"><b data-cups>0</b> coffees · <b data-km>0.0</b> km today</p>
+      </div>
+    </section>
+
+    <!-- 5b: after hours. A small white square rises to the middle and grows
+         into a white sheet; the headline lands, then each chapter's word
+         rolls in while its photos fly past at different depths -->
+    <section class="ah" data-ah aria-label={ahTitle} style={`--n:${ahChapters.length}`}>
+      <div class="ah__pin">
+        <div class="ah__sheet" data-ah-sheet>
+          <div class="ah__head" data-ah-head>
+            <h2 class="ah__t">{ahTitle}</h2>
+            <p class="ah__w" aria-live="polite">
+              <span class="ah__w-roll" data-ah-roll>
+                {ahChapters.map((c) => <span>{c.word}</span>)}
+              </span>
+            </p>
+            <p class="ah__note">
+              <span class="ah__note-roll" data-ah-notes>
+                {ahChapters.map((c) => <span>{c.note}</span>)}
+              </span>
+            </p>
+          </div>
+          {ahChapters.map((c, ci) =>
+            c.photos.slice(0, 4).map((p, pi) => {
+              const sl = ahSlots[pi % ahSlots.length];
+              return (
+                <figure
+                  class="ah__pic"
+                  data-ah-pic
+                  data-c={ci}
+                  data-d={sl.d}
+                  style={`left:${sl.x}vw;width:${sl.w}vw;aspect-ratio:${p.ratio.toFixed(3)};z-index:${sl.d > 0.9 ? 3 : 1}`}
+                >
+                  <img src={p.src} alt="" loading="lazy" decoding="async" />
+                </figure>
+              );
+            }),
+          )}
+        </div>
       </div>
     </section>
 
@@ -1645,6 +1718,93 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   @media (prefers-reduced-motion: reduce) {
     .a9__lt-now i {
       animation: none;
+    }
+  }
+
+  /* after hours: a tall section with a pinned stage; scroll drives it */
+  .ah {
+    position: relative;
+    height: calc(100svh + var(--n, 3) * 120svh + 80svh);
+  }
+  .ah__pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+  }
+  .ah__sheet {
+    position: absolute;
+    inset: 0;
+    background: var(--ink);
+    color: var(--bg);
+    /* starts as a small square in the middle; JS opens it up */
+    clip-path: inset(calc(50% - 22px) calc(50% - 22px) round 4px);
+    will-change: clip-path;
+  }
+  .ah__head {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .ah__t {
+    margin: 0;
+    font: 500 clamp(56px, 11vw, 200px) / 0.9 var(--font-head);
+    letter-spacing: -0.05em;
+  }
+  /* the word: a stack in a one-line window, rolled by scroll */
+  .ah__w {
+    height: 1.18em;
+    margin: -0.02em 0 0;
+    overflow: hidden;
+    font: 500 clamp(56px, 11vw, 200px) / 1.18 var(--font-head);
+    letter-spacing: -0.05em;
+    color: rgb(150, 150, 150);
+  }
+  .ah__w-roll,
+  .ah__note-roll {
+    display: grid;
+    will-change: transform;
+  }
+  .ah__w-roll span {
+    height: 1.18em;
+  }
+  .ah__note {
+    height: 1.4em;
+    margin: clamp(12px, 1.6vw, 24px) 0 0;
+    overflow: hidden;
+    font-size: clamp(14px, 1.1vw, 17px);
+    line-height: 1.4;
+    color: rgb(110, 110, 110);
+  }
+  .ah__note-roll span {
+    height: 1.4em;
+  }
+  .ah__pic {
+    position: absolute;
+    top: 0;
+    margin: 0;
+    overflow: hidden;
+    border-radius: 6px;
+    background: rgb(225, 225, 222);
+    transform: translate3d(0, 120svh, 0);
+    will-change: transform;
+  }
+  .ah__pic img {
+    display: block;
+    width: 100%;
+    height: 118%;
+    object-fit: cover;
+    will-change: transform;
+  }
+  @media (max-width: 809px) {
+    .ah__pic {
+      border-radius: 4px;
     }
   }
   /* contact rows: bigger than the experience rows (they're the point of
@@ -3189,6 +3349,93 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       }).observe(end);
     }
 
+    // ---- after hours: the square, the sheet, the words, the photos
+    const ah = root.querySelector<HTMLElement>('[data-ah]');
+    if (ah) {
+      const sheet = ah.querySelector<HTMLElement>('[data-ah-sheet]')!;
+      const head = ah.querySelector<HTMLElement>('[data-ah-head]')!;
+      const roll = ah.querySelector<HTMLElement>('[data-ah-roll]')!;
+      const notes = ah.querySelector<HTMLElement>('[data-ah-notes]')!;
+      const pics = [...ah.querySelectorAll<HTMLElement>('[data-ah-pic]')].map((el) => ({
+        el,
+        img: el.querySelector('img')!,
+        c: Number(el.dataset.c),
+        d: Number(el.dataset.d),
+      }));
+      const nC = Math.max(1, Number(getComputedStyle(ah).getPropertyValue('--n')) || 3);
+      const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+      const io = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2); // ease-in-out cubic
+      const smooth = (t: number) => t * t * (3 - 2 * t);
+      // where things happen, as fractions of the pinned scroll
+      const OPEN = [0, 0.1];
+      const HEAD = [0.06, 0.13];
+      const CH = [0.14, 0.9];
+      const CLOSE = [0.92, 1];
+      let raf = 0;
+      let shown = 0;
+      let vis = false;
+      const render = () => {
+        raf = 0;
+        const r = ah.getBoundingClientRect();
+        const vh = innerHeight;
+        const vw = innerWidth;
+        const total = r.height - vh;
+        const p = clamp(-r.top / total);
+        // 1. the square: rises with the page, then opens to the full sheet;
+        //    at the end it closes back into a square and goes
+        const open = io(clamp((p - OPEN[0]) / (OPEN[1] - OPEN[0])));
+        const close = io(clamp((p - CLOSE[0]) / (CLOSE[1] - CLOSE[0])));
+        const k = open * (1 - close);
+        const side = 44;
+        const ix = (1 - k) * (vw / 2 - side / 2);
+        const iy = (1 - k) * (vh / 2 - side / 2);
+        const rad = 4 + (1 - k) * 0;
+        sheet.style.clipPath = `inset(${iy.toFixed(1)}px ${ix.toFixed(1)}px round ${rad}px)`;
+        sheet.style.opacity = String(1 - smooth(clamp((close - 0.85) / 0.15)));
+        // 2. the headline: in with a small rise and a blur that clears
+        const h = smooth(clamp((p - HEAD[0]) / (HEAD[1] - HEAD[0]))) * (1 - smooth(clamp((p - CLOSE[0]) / 0.03)));
+        head.style.opacity = h.toFixed(3);
+        head.style.transform = `translateY(${((1 - h) * 24).toFixed(1)}px) scale(${(0.97 + h * 0.03).toFixed(4)})`;
+        head.style.filter = calm || h > 0.99 ? 'none' : `blur(${((1 - h) * 8).toFixed(1)}px)`;
+        // 3. chapters: c runs 0..nC across the chapter span; the word rolls
+        //    over in the middle of each hand-off, and holds in between
+        const c = clamp((p - CH[0]) / (CH[1] - CH[0])) * nC;
+        const ci = Math.min(nC - 1, Math.floor(c));
+        const f = c - ci;
+        // hold for most of a chapter, roll in its last 25%
+        const rollT = ci < nC - 1 ? io(clamp((f - 0.75) / 0.25)) : 0;
+        const wi = ci + rollT;
+        roll.style.transform = `translateY(${(-wi * 100) / nC}%)`;
+        notes.style.transform = `translateY(${(-wi * 100) / nC}%)`;
+        if (Math.round(wi) !== shown) shown = Math.round(wi);
+        // 4. photos: each crosses the screen bottom to top around its
+        //    chapter's middle, faster the nearer it is, with the picture
+        //    inside drifting the other way (parallax within parallax)
+        for (const ph of pics) {
+          const mid = ph.c + 0.5;
+          const span = 1.15 / ph.d; // deeper photos stay on screen longer
+          const t = (c - mid) / span; // -0.5..0.5 while crossing
+          const hgt = ph.el.offsetHeight;
+          const y = vh / 2 - hgt / 2 - t * (vh + hgt) * 1.05;
+          const off = Math.abs(t) > 0.6;
+          ph.el.style.visibility = off ? 'hidden' : 'visible';
+          if (off) continue;
+          const sc = 0.92 + ph.d * 0.08;
+          ph.el.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0) scale(${sc.toFixed(3)}) rotate(${(t * (ph.d - 0.8) * 6).toFixed(2)}deg)`;
+          ph.img.style.transform = `translate3d(0, ${(-8 + t * 16).toFixed(2)}%, 0)`;
+        }
+      };
+      const tick = () => {
+        if (!raf && vis) raf = requestAnimationFrame(render);
+      };
+      new IntersectionObserver(([e]) => {
+        vis = e.isIntersecting;
+        tick();
+      }).observe(ah);
+      addEventListener('scroll', tick, { passive: true });
+      addEventListener('resize', tick);
+      render();
+    }
     // ---- footer: the light on the monogram, back to top, the time, and
     // the coffee line counting whatever was brewed in the pulse section
     const mark = root.querySelector<HTMLElement>('[data-lt-mark]');
