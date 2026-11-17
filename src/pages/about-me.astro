@@ -3684,7 +3684,27 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const bpmEl = ah.querySelector<HTMLElement>('[data-ah-bpm]');
       const bpmB = bpmEl?.querySelector('b');
       const bpms: number[] = bpmEl ? JSON.parse(bpmEl.dataset.ahBpm || '[]') : [];
-      let bpmShown = -1;
+      let bpmShown = 62;
+      let bpmTarget = 62;
+      let bpmRaf = 0;
+      let bpmT = 0;
+      // the counter doesn't follow the scroll 1:1: it glides after it with
+      // a little inertia (time-based, so it's the same at 60 and 120 Hz),
+      // which smooths out jumpy wheels and trackpads
+      const bpmGlide = (now: number) => {
+        const dt = bpmT ? Math.min(64, now - bpmT) : 16;
+        bpmT = now;
+        const k = 1 - Math.exp(-dt / (calm ? 1 : 140));
+        bpmShown += (bpmTarget - bpmShown) * k;
+        if (Math.abs(bpmTarget - bpmShown) < 0.005) bpmShown = bpmTarget;
+        setBpm(bpmShown);
+        if (bpmShown !== bpmTarget) bpmRaf = requestAnimationFrame(bpmGlide);
+        else {
+          bpmRaf = 0;
+          bpmT = 0;
+          bpmEl?.style.setProperty('--beat', `${(60 / bpmShown).toFixed(3)}s`);
+        }
+      };
       // the number as an odometer: three columns of digits that scroll with
       // the page. Each strip runs 0, 9, 8 ... 1, 0 from the top, so a rising
       // number drops its new digits in from above; a column only turns over
@@ -3723,6 +3743,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         cols[0].style.width = `${(h * 0.6).toFixed(3)}em`;
         cols[0].style.opacity = h.toFixed(3);
       };
+      if (strips.length) setBpm(62);
       const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
       const io = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2); // ease-in-out cubic
       const smooth = (t: number) => t * t * (3 - 2 * t);
@@ -3810,11 +3831,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           const fr = lo < nC - 1 ? smooth(clamp((c - lo - from) / (1 - from))) : 0;
           const target = bpms[lo] + ((bpms[Math.min(lo + 1, bpms.length - 1)] ?? bpms[lo]) - bpms[lo]) * fr;
           const v = 62 + (target - 62) * smooth(clamp(c / 0.8));
-          if (Math.abs(v - bpmShown) > 0.001) {
-            bpmShown = v;
-            setBpm(v);
-            bpmEl.style.setProperty('--beat', `${(60 / v).toFixed(3)}s`);
-          }
+          bpmTarget = v;
+          if (!bpmRaf) bpmRaf = requestAnimationFrame(bpmGlide);
         }
         // 4. photos: each crosses the screen bottom to top around its
         //    chapter's middle, faster the nearer it is, with the picture
