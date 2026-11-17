@@ -112,7 +112,7 @@ export const aboutPage = defineType({
       title: 'Chapters',
       type: 'array',
       group: 'hours',
-      description: 'Each chapter swaps the word under the headline while its photos fly past. Empty = Running, Cycling, Gaming with placeholder photos.',
+      description: 'Each chapter swaps the word under the headline while its photos fly past. Empty = Running and Cycling with Bart’s photos.',
       of: [
         {
           type: 'object',

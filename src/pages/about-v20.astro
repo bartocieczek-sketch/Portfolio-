@@ -164,16 +164,13 @@ const icons: Record<string, { c: string; svg: string }> = {
 };
 // after hours: chapters of a white, pinned gallery (CMS, or the defaults
 // with placeholder photos); each photo gets a slot, a depth and a size
+// Bart's own photos (in /public, EXIF stripped), two chapters
 const ahDefault = [
-  { word: 'Running', note: '5 am, before the city wakes up', bpm: 158, photos: ['5009c121e6f7216b837353fb1721965198551efe-1400x933', '1269da8e1d49b6afe6cdbc9811eb419422c21eba-1400x2100', '74d6c346bc830552fac92a8a8b5e46d24eebb6fe-1400x933', '036ae164d283377e9645937a542c204696a69f73-1400x2100'] },
-  { word: 'Cycling', note: 'Long rides, longer climbs', bpm: 145, photos: ['354ecb6960f1071561ad124ea51bb23f1743a6bb-1400x1050', 'e5ddf0ce9ed4a1a47345dd42e6510caf1d8634d6-1400x788', '887d309a6738601fbe26118cf4d4d52f3df45c78-1400x930', '0999caa414e7435b6afd3e073d69a86906d9f3d6-1400x920'] },
-  { word: 'Gaming', note: 'Late nights, just one more round', bpm: 96, photos: ['b6ab206903e9e08aceb8153b096aaa9bf0529ff0-1400x788', '1a10904b8798698f3406b6ae96190484b3238d69-1400x2488', 'a292284f84020bd9504b1d5ff378e65d93bcffd5-1400x933', '3ca4169a65c58e5b4d9acbce7acbcb30540bc319-1400x935'] },
+  { word: 'Running', note: 'Early starts, finish-line foil', bpm: 158, photos: ['run-1', 'run-2', 'run-3', 'run-4'] },
+  { word: 'Cycling', note: 'Road, trails and the odd flat tyre', bpm: 145, photos: ['bike-1', 'bike-2', 'bike-3', 'bike-4'] },
 ].map((c) => ({
   ...c,
-  photos: c.photos.map((id) => {
-    const [, w, h] = id.match(/-(\d+)x(\d+)$/)!;
-    return { src: `https://cdn.sanity.io/images/jf65lv25/production/${id}.jpg?w=900&auto=format&q=75`, ratio: Number(w) / Number(h) };
-  }),
+  photos: c.photos.map((id) => ({ src: `/images/after-hours/${id}.jpg`, ratio: 0.75 })),
 }));
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const cmsHours = ((about.hours ?? []) as any[]).filter((c) => c?.word);
