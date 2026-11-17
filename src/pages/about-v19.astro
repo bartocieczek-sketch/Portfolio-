@@ -326,7 +326,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
             </li>
           ))}
         </ul>
-        <div class="a9__trail" aria-hidden="true" data-trail><img alt="" /></div>
+        <div class="a9__trail" aria-hidden="true" data-trail></div>
       </div>
     </section>
 
@@ -1210,30 +1210,39 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       padding-left: 12px;
     }
   }
-  /* a pill with the company's logo trails the cursor over the rows */
+  /* the company's logo follows the cursor over the rows: a softly rounded
+     square that wipes open from the top, and wipes the next logo in over
+     the last one the same way */
   .a9__trail {
     position: fixed;
     left: 0;
     top: 0;
     z-index: 5;
-    width: 136px;
-    height: 136px;
-    margin: -68px 0 0 -68px;
-    border-radius: 14px;
+    width: 184px;
+    height: 184px;
+    margin: -92px 0 0 -92px;
+    border-radius: 16px;
     overflow: hidden;
     background: #1a1a1a;
     pointer-events: none;
-    opacity: 0;
-    scale: 0.6;
-    transition:
-      opacity 0.25s var(--e-out),
-      scale 0.35s var(--e-out);
+    clip-path: inset(0 0 100% 0 round 16px);
+    transition: clip-path 0.5s var(--e-out);
+    will-change: transform, clip-path;
   }
   .a9__trail.is-on {
-    opacity: 1;
-    scale: 1;
+    clip-path: inset(0 0 0 0 round 16px);
   }
-  .a9__trail img {
+  /* leaving: it carries on downwards, the top edge closing to the bottom */
+  .a9__trail.is-out {
+    clip-path: inset(100% 0 0 0 round 16px);
+    transition-duration: 0.35s;
+  }
+  .a9__trail.is-reset {
+    transition: none;
+  }
+  .a9__trail :global(img) {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -3653,38 +3662,88 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     );
     root.querySelectorAll<HTMLElement>('[data-scramble], .a9__label').forEach((el) => sio.observe(el));
 
-    // ---- a logo pill trails the cursor over the experience rows
+    // ---- the logo square follows the cursor over the experience rows
     const jobsEl = root.querySelector<HTMLElement>('[data-jobs]');
     const trail = root.querySelector<HTMLElement>('[data-trail]');
     if (jobsEl && trail && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      const img = trail.querySelector('img')!;
-      let tx = 0, ty = 0, x = 0, y = 0, raf = 0;
-      const follow = () => {
-        x += (tx - x) * 0.15;
-        y += (ty - y) * 0.15;
-        trail.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotate(${Math.max(-10, Math.min(10, (tx - x) * 0.1)).toFixed(2)}deg)`;
-        raf = requestAnimationFrame(follow);
+      // every logo loaded up front, so a swap never shows an empty square
+      const srcs = [...new Set([...jobsEl.querySelectorAll<HTMLElement>('li[data-logo]')].map((li) => li.dataset.logo!).filter(Boolean))];
+      srcs.forEach((src) => {
+        const im = new Image();
+        im.src = src;
+      });
+      let tx = 0, ty = 0, x = 0, y = 0, raf = 0, last = 0;
+      let cur = '';
+      let on = false;
+      let outT = 0;
+      // eased after the cursor (time-based, same feel at 60 and 120 Hz)
+      const follow = (now: number) => {
+        const dt = last ? Math.min(64, now - last) : 16;
+        last = now;
+        const k = 1 - Math.exp(-dt / 90);
+        x += (tx - x) * k;
+        y += (ty - y) * k;
+        trail.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+        raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.2 || on ? requestAnimationFrame(follow) : 0;
+        if (!raf) last = 0;
+      };
+      const layer = (src: string, wipe: boolean) => {
+        const im = document.createElement('img');
+        im.alt = '';
+        im.src = src;
+        trail.append(im);
+        if (wipe && !calm) {
+          im.animate([{ clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)' }], {
+            duration: 450,
+            easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+          }).finished.then(() => {
+            // keep only the top layer once it covers the square
+            while (trail.children.length > 1 && trail.firstElementChild !== im) trail.firstElementChild?.remove();
+          }, () => {});
+        } else {
+          while (trail.children.length > 1) trail.firstElementChild?.remove();
+        }
+      };
+      const show = (src: string) => {
+        clearTimeout(outT);
+        if (!on) {
+          // arriving: jump to the cursor, reset the wipe, then open it
+          x = tx;
+          y = ty;
+          trail.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+          trail.classList.add('is-reset');
+          trail.classList.remove('is-out', 'is-on');
+          trail.replaceChildren();
+          layer(src, false);
+          void trail.offsetWidth;
+          trail.classList.remove('is-reset');
+          trail.classList.add('is-on');
+          on = true;
+          cur = src;
+          if (!raf) raf = requestAnimationFrame(follow);
+          return;
+        }
+        if (src !== cur) {
+          cur = src;
+          layer(src, true);
+        }
+      };
+      const hide = () => {
+        if (!on) return;
+        on = false;
+        cur = '';
+        trail.classList.add('is-out');
+        trail.classList.remove('is-on');
       };
       jobsEl.addEventListener('pointermove', (e) => {
-        tx = e.clientX + 90;
+        tx = e.clientX + 110;
         ty = e.clientY;
-        const li = (e.target as Element).closest<HTMLElement>('li');
-        const src = li?.dataset.logo;
-        if (src) {
-          if (img.getAttribute('src') !== src) img.src = src;
-          if (!trail.classList.contains('is-on')) {
-            x = tx;
-            y = ty;
-            trail.classList.add('is-on');
-            cancelAnimationFrame(raf);
-            follow();
-          }
-        }
+        const src = (e.target as Element).closest<HTMLElement>('li')?.dataset.logo;
+        if (src) show(src);
+        else outT = window.setTimeout(hide, 80);
+        if (!raf) raf = requestAnimationFrame(follow);
       });
-      jobsEl.addEventListener('pointerleave', () => {
-        trail.classList.remove('is-on');
-        setTimeout(() => cancelAnimationFrame(raf), 300);
-      });
+      jobsEl.addEventListener('pointerleave', hide);
     }
 
     // ---- CTA: the outline fills as the section arrives (all of it on
