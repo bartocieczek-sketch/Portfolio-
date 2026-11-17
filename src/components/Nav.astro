@@ -3,22 +3,13 @@ interface Props {
   callUrl?: string;
   socials?: { _key: string; label: string; url: string }[];
   role?: string;
-  email?: string;
 }
 import { href } from '../lib/preview';
 import glyphs from '../lib/monogram-b.json';
 // the B monogram, flat, as the home link (font units are y-up, so flipped)
 const [mPath, mBox] = glyphs.g.B as [string, number[], number];
 const mView = `${mBox[0]} ${-mBox[3]} ${mBox[2] - mBox[0]} ${mBox[3] - mBox[1]}`;
-const { callUrl, socials = [], role, email = 'bartocieczek@gmail.com' } = Astro.props;
-// the contact methods in the Let's cooperate dropdown
-const nice = (l: string) => (/linkedin/i.test(l) ? 'LinkedIn' : l.charAt(0).toUpperCase() + l.slice(1));
-const handle = (u: string, l: string) =>
-  /instagram|dribbble|behance|x\.com|twitter/i.test(u)
-    ? `@${u.replace(/\/$/, '').split('/').pop()}`
-    : /linkedin/i.test(l)
-      ? 'Bartłomiej Ocieczek'
-      : u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+const { callUrl, socials = [], role } = Astro.props;
 const path = Astro.url.pathname;
 const to = (p: string) => href(Astro.locals, p);
 ---
@@ -34,39 +25,7 @@ const to = (p: string) => href(Astro.locals, p);
   </a>
   <div class="nav__links">
     <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
-    <div class="nav__coop" data-coop>
-      <button type="button" class="u-link t-label nav__coop-btn" aria-expanded="false" aria-controls="nav-coop" data-coop-btn>Let's cooperate</button>
-      <div class="nav__coop-panel" id="nav-coop" data-coop-panel hidden>
-        <p class="nav__coop-h">Pick a way to reach me</p>
-        <ul>
-          <li>
-            <button type="button" class="nav__coop-row" data-coop-copy={email}>
-              <span class="nav__coop-n">Email</span>
-              <span class="nav__coop-d" data-coop-copy-t>{email}</span>
-              <span class="nav__coop-a">Copy</span>
-            </button>
-          </li>
-          {callUrl && (
-            <li>
-              <a class="nav__coop-row" href={callUrl} target="_blank" rel="noopener">
-                <span class="nav__coop-n">Book a call</span>
-                <span class="nav__coop-d">30 min, pick a time</span>
-                <span class="nav__coop-a">↗</span>
-              </a>
-            </li>
-          )}
-          {socials.map((so) => (
-            <li>
-              <a class="nav__coop-row" href={so.url} target="_blank" rel="noopener">
-                <span class="nav__coop-n">{nice(so.label)}</span>
-                <span class="nav__coop-d">{handle(so.url, so.label)}</span>
-                <span class="nav__coop-a">↗</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's cooperate</a>}
   </div>
   <button class="nav__toggle t-label" type="button" aria-expanded="false" aria-controls="mobile-menu">
     <span class="nav__toggle-open">Menu</span>
@@ -247,146 +206,6 @@ const to = (p: string) => href(Astro.locals, p);
       width: auto;
     }
   }
-  /* Let's cooperate: a dropdown of ways to get in touch. It grows out of
-     the link (top-right origin, a slight scale + fade, 200ms ease-out),
-     rows stagger in by 30ms; closing is quicker than opening */
-  .nav__coop {
-    position: relative;
-    display: flex;
-  }
-  .nav__coop-btn {
-    padding: 0;
-    border: 0;
-    background: none;
-    cursor: pointer;
-  }
-  .nav__coop-btn[aria-expanded='true']::after {
-    transform: scaleX(1);
-    transform-origin: left;
-  }
-  .nav__coop-panel {
-    position: absolute;
-    top: calc(100% + 14px);
-    right: 0;
-    z-index: 30;
-    width: min(380px, calc(100vw - 32px));
-    padding: 8px;
-    border-radius: 16px;
-    background: rgb(18, 18, 18);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.08),
-      0 24px 48px -16px rgba(0, 0, 0, 0.5);
-    color: rgb(240, 240, 238);
-    text-transform: none;
-    letter-spacing: normal;
-    transform-origin: top right;
-    opacity: 0;
-    transform: translateY(-4px) scale(0.96);
-    transition:
-      opacity 0.15s ease,
-      transform 0.15s cubic-bezier(0.23, 1, 0.32, 1);
-  }
-  .nav__coop-panel.is-open {
-    opacity: 1;
-    transform: none;
-    transition:
-      opacity 0.2s ease,
-      transform 0.22s cubic-bezier(0.23, 1, 0.32, 1);
-  }
-  .nav__coop-h {
-    margin: 6px 10px 8px;
-    font: 500 12px / 1.2 var(--font-head);
-    color: rgb(120, 120, 120);
-  }
-  .nav__coop-panel ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .nav__coop-panel li {
-    opacity: 0;
-    transform: translateY(4px);
-    transition:
-      opacity 0.2s ease,
-      transform 0.25s cubic-bezier(0.23, 1, 0.32, 1);
-  }
-  .nav__coop-panel.is-open li {
-    opacity: 1;
-    transform: none;
-  }
-  .nav__coop-panel.is-open li:nth-child(1) { transition-delay: 30ms; }
-  .nav__coop-panel.is-open li:nth-child(2) { transition-delay: 60ms; }
-  .nav__coop-panel.is-open li:nth-child(3) { transition-delay: 90ms; }
-  .nav__coop-panel.is-open li:nth-child(4) { transition-delay: 120ms; }
-  .nav__coop-panel.is-open li:nth-child(5) { transition-delay: 150ms; }
-  .nav__coop-row {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: baseline;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 10px;
-    border: 0;
-    border-radius: 10px;
-    background: none;
-    font: 500 16px / 1.2 var(--font-head);
-    letter-spacing: -0.02em;
-    color: inherit;
-    text-align: left;
-    text-decoration: none;
-    cursor: pointer;
-    transition:
-      background-color 0.15s ease,
-      transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
-  }
-  .nav__coop-d {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 13px;
-    letter-spacing: 0;
-    color: rgb(120, 120, 120);
-    transition:
-      opacity 0.2s ease,
-      filter 0.2s ease;
-  }
-  .nav__coop-d.is-swap {
-    opacity: 0;
-    filter: blur(2px);
-  }
-  .nav__coop-a {
-    font-size: 13px;
-    color: rgb(120, 120, 120);
-    transition:
-      color 0.15s ease,
-      transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .nav__coop-row:hover {
-      background: rgba(255, 255, 255, 0.06);
-    }
-    .nav__coop-row:hover .nav__coop-a {
-      color: rgb(240, 240, 238);
-      transform: translate(2px, -2px);
-    }
-    button.nav__coop-row:hover .nav__coop-a {
-      transform: none;
-    }
-  }
-  .nav__coop-row:active {
-    transform: scale(0.98);
-  }
-  .nav__coop-row:focus-visible {
-    outline: 1px solid rgba(255, 255, 255, 0.5);
-    outline-offset: -1px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .nav__coop-panel,
-    .nav__coop-panel.is-open,
-    .nav__coop-panel li {
-      transform: none;
-    }
-  }
 </style>
 
 <script>
@@ -412,56 +231,4 @@ const to = (p: string) => href(Astro.locals, p);
   addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') set(false);
   });
-
-  // ---- Let's cooperate dropdown
-  const coop = document.querySelector<HTMLElement>('[data-coop]');
-  const coopBtn = coop?.querySelector<HTMLButtonElement>('[data-coop-btn]');
-  const coopPanel = coop?.querySelector<HTMLElement>('[data-coop-panel]');
-  if (coop && coopBtn && coopPanel) {
-    let t = 0;
-    const open = (v: boolean) => {
-      coopBtn.setAttribute('aria-expanded', String(v));
-      clearTimeout(t);
-      if (v) {
-        coopPanel.hidden = false;
-        requestAnimationFrame(() => requestAnimationFrame(() => coopPanel.classList.add('is-open')));
-      } else {
-        coopPanel.classList.remove('is-open');
-        t = window.setTimeout(() => (coopPanel.hidden = true), 160);
-      }
-    };
-    coopBtn.addEventListener('click', () => open(coopBtn.getAttribute('aria-expanded') !== 'true'));
-    document.addEventListener('pointerdown', (e) => {
-      if (coopBtn.getAttribute('aria-expanded') === 'true' && !coop.contains(e.target as Node)) open(false);
-    });
-    addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && coopBtn.getAttribute('aria-expanded') === 'true') {
-        open(false);
-        coopBtn.focus();
-      }
-    });
-    coopPanel.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => open(false)));
-    // copy the email, say so for a moment
-    const copy = coopPanel.querySelector<HTMLButtonElement>('[data-coop-copy]');
-    const copyT = copy?.querySelector<HTMLElement>('[data-coop-copy-t]');
-    copy?.addEventListener('click', async () => {
-      const mail = copy.dataset.coopCopy || '';
-      try {
-        await navigator.clipboard.writeText(mail);
-      } catch {
-        location.href = `mailto:${mail}`;
-        return;
-      }
-      if (!copyT) return;
-      const swap = (txt: string) => {
-        copyT.classList.add('is-swap');
-        setTimeout(() => {
-          copyT.textContent = txt;
-          copyT.classList.remove('is-swap');
-        }, 150);
-      };
-      swap('Copied to clipboard');
-      setTimeout(() => swap(mail), 1600);
-    });
-  }
 </script>
