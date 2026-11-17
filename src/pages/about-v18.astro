@@ -1972,6 +1972,12 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
 
   /* ---- after-hours layouts (drafts) ---- */
+  /* counter, pared down: just the number, a small bpm and the word */
+  .ah[data-layout='counter'] .ah__t,
+  .ah[data-layout='counter'] .ah__note,
+  .ah[data-layout='counter'] .ah__bpm i {
+    display: none;
+  }
   /* counter: the pulse is the headline, a big live number */
   .ah[data-layout='counter'] .ah__bpm {
     gap: 0.05em;
@@ -2005,8 +2011,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     color: rgb(110, 110, 110);
   }
   .ah[data-layout='counter'] .ah__w {
-    font-size: clamp(32px, 4vw, 64px);
-    letter-spacing: -0.04em;
+    margin-top: clamp(8px, 1.2vw, 20px);
+    font-size: clamp(22px, 2.2vw, 36px);
+    letter-spacing: -0.02em;
     color: var(--bg);
   }
   .ah[data-layout='counter'] .ah__head,
