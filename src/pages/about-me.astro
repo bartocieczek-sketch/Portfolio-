@@ -372,7 +372,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       </p>
       <div class="a9__sec a9__lt-rows">
         <p class="a9__label" data-in>Get in touch</p>
-        <ul class="a9__ct">
+        <ul class="a9__ct" data-ct>
           <li data-in>
             <button type="button" class="a9__ct-row" data-copy={settings.email ?? 'bartocieczek@gmail.com'}>
               <span class="a9__ct-n">Email</span>
@@ -406,6 +406,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
               </li>
             );
           })}
+          <li class="a9__ct-hl" aria-hidden="true" data-ct-hl />
         </ul>
       </div>
       <!-- the monogram, cut off by the page's end, drawn as a field of dots:
@@ -1613,9 +1614,12 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     }
   }
   /* contact rows: bigger than the experience rows (they're the point of
-     the page's end); on hover a white fill sweeps in from the left and the
-     row inverts; the email row copies the address */
+     the page's end). One light block serves them all: it wipes in under
+     the first row the pointer meets, glides from row to row, and wipes out
+     when the pointer leaves. It sits on top in difference mode, so the
+     text under it inverts exactly where it's covered, mid-glide too */
   .a9__ct {
+    position: relative;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -1623,6 +1627,32 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   .a9__ct li {
     border-bottom: 1px solid var(--rule);
+  }
+  .a9__ct li.a9__ct-hl {
+    position: absolute;
+    top: 0;
+    left: calc(-1 * var(--pad) / 2);
+    right: calc(-1 * var(--pad) / 2);
+    height: var(--h, 0px);
+    border: 0;
+    background: var(--ink);
+    mix-blend-mode: difference;
+    pointer-events: none;
+    transform: translateY(var(--y, 0px));
+    clip-path: inset(0 100% 0 0);
+    transition:
+      transform 0.5s var(--e-out),
+      height 0.5s var(--e-out),
+      clip-path 0.45s var(--e-out);
+  }
+  .a9__ct li.a9__ct-hl.is-on {
+    clip-path: inset(0 0 0 0);
+  }
+  .a9__ct li.a9__ct-hl.is-out {
+    clip-path: inset(0 0 0 100%);
+  }
+  .a9__ct li.a9__ct-hl.is-snap {
+    transition: none;
   }
   .a9__ct-row {
     position: relative;
@@ -1639,27 +1669,18 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     color: var(--ink);
     text-decoration: none;
     cursor: pointer;
-    isolation: isolate;
-  }
-  .a9__ct-row::before {
-    content: '';
-    position: absolute;
-    inset: 0 calc(-1 * var(--pad) / 2);
-    z-index: -1;
-    background: var(--ink);
-    clip-path: inset(0 100% 0 0);
-    transition: clip-path 0.3s var(--e-out);
+    transition: transform 0.16s var(--e-out);
   }
   .a9__ct-n {
     font: 500 clamp(22px, 2.4vw, 38px) / 1.05 var(--font-head);
     letter-spacing: -0.03em;
-    transition: transform 0.3s var(--e-out);
+    transition: transform 0.5s var(--e-out);
   }
   .a9__ct-d {
     font-size: 15px;
     color: var(--grey);
     transition:
-      color 0.2s ease,
+      color 0.3s ease,
       filter 0.2s ease,
       opacity 0.2s ease;
   }
@@ -1668,32 +1689,36 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     font-size: 15px;
     color: var(--grey);
     transition:
-      color 0.2s ease,
-      transform 0.3s var(--e-out);
+      color 0.3s ease,
+      transform 0.5s var(--e-out);
   }
   .a9__ct-row:active {
-    transform: scale(0.995);
+    transform: scale(0.99);
   }
   .a9__ct-row:focus-visible {
     outline: 1px solid rgba(255, 255, 255, 0.5);
     outline-offset: 4px;
   }
   @media (hover: hover) and (pointer: fine) {
-    .a9__ct-row:hover::before {
-      clip-path: inset(0 0 0 0);
-    }
-    .a9__ct-row:hover {
-      color: var(--bg);
-    }
     .a9__ct-row:hover .a9__ct-n {
       transform: translateX(14px);
     }
+    /* under the block grey would turn mid-grey: lift it so it reads dark */
     .a9__ct-row:hover .a9__ct-d,
     .a9__ct-row:hover .a9__ct-a {
-      color: var(--bg);
+      color: var(--ink);
     }
     .a9__ct-row:hover .a9__ct-a {
       transform: translateX(-14px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__ct li.a9__ct-hl {
+      transition: clip-path 0.2s ease;
+    }
+    .a9__ct-n,
+    .a9__ct-a {
+      transition: color 0.2s ease;
     }
   }
   .a9__ct-d.is-swap {
@@ -1717,9 +1742,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     gap: 16px;
     position: relative;
     z-index: 1;
-    margin: 0 var(--pad);
+    margin: -40px var(--pad) 0;
     padding: 14px 0 6px;
-    border-top: 1px solid var(--rule);
     font-size: 13px;
     color: var(--grey);
   }
@@ -3139,85 +3163,169 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     if (mark && dotsCv && dctx && typeof Path2D !== 'undefined') {
       const [vx, vy, vw] = (mark.dataset.view || '0 0 1 1').split(' ').map(Number);
       const glyph = new Path2D(mark.dataset.path || '');
-      // dots: home position, current position, velocity, when it arrives
-      let hx = new Float32Array(0), hy = hx, px = hx, py = hx, qx = hx, qy = hx, t0 = hx, tw = hx;
-      let n = 0, W = 0, H = 0, dpr = 1, gap = 9, dot = 1.6;
-      let inView = false, entered = false, raf = 0, start = 0;
+      // what the dots turn into, one after another: the B, then coffee,
+      // a running shoe, a stopwatch, a heart with a pulse, a laptop, code,
+      // a spark, and back to the B. Line icons on a 24 grid (s = stroke,
+      // f = fill)
+      const shapes: { s?: string; f?: string }[] = [
+        {},
+        { s: 'M5 9h11v4.5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8.5 2.5c-1.2 1.2 1.2 2.2 0 3.8M12.5 2.5c-1.2 1.2 1.2 2.2 0 3.8M3.5 21.5h14' },
+        { s: 'M2.5 17V9.5C3 7 4 6 5 6l2.5 1.5L9.5 5l2 3.5 3.5 2 4.5 1.5a3 3 0 0 1 2 2.8V17zM2.5 20.5h19M10 9.5l1.5-.8M11.8 11l1.6-.8' },
+        { s: 'M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 14V10M9.5 2.5h5M12 2.5V6M18.5 6.5l1.5-1.5' },
+        { s: 'M12 20.5S3.5 15.6 2.6 10.2C2 6.6 4.3 4 7.3 4c2 0 3.6 1.2 4.7 2.8C13.1 5.2 14.7 4 16.7 4c3 0 5.3 2.6 4.7 6.2C20.5 15.6 12 20.5 12 20.5zM6.5 11.5h3l1.5-3 2.2 5.5 1.6-2.5h3' },
+        { s: 'M5 5h14v10H5zM2 19.5h20' },
+        { s: 'M8 6.5 2.5 12 8 17.5M16 6.5l5.5 5.5-5.5 5.5M14 3.5l-4 17' },
+        { f: 'M12 1.5c.8 6 3 8.6 10.5 10.5C15 13.9 12.8 16.5 12 22.5c-.8-6-3-8.6-10.5-10.5C9 10.1 11.2 7.5 12 1.5z' },
+      ];
+      // per particle: position, velocity, target, when it leaves for the
+      // next target, the shimmer phase and whether it's shown
+      let vis = new Float32Array(0), px = new Float32Array(0), py = px, qx = px, qy = px, hx = px, hy = px, nx = px, ny = px, sw = px, tw = px, on = px, non = px;
+      let targets: { x: Float32Array; y: Float32Array }[] = [];
+      let n = 0, W = 0, H = 0, dpr = 1, gap = 9, dot = 1.6, cur = 0;
+      let inView = false, entered = false, raf = 0, start = 0, nextAt = 0;
       let mx = -1e4, my = -1e4, pull = 0, pullT = 0;
+      const sample = (draw: (o: CanvasRenderingContext2D) => void) => {
+        const off = document.createElement('canvas');
+        off.width = Math.ceil(W);
+        off.height = Math.ceil(H);
+        const o = off.getContext('2d')!;
+        draw(o);
+        const img = o.getImageData(0, 0, off.width, off.height).data;
+        const pts: [number, number][] = [];
+        for (let y = gap / 2; y < H; y += gap) {
+          // every other row shifted by half a step: a halftone, not a grid
+          const shift = (Math.round(y / gap) % 2) * (gap / 2);
+          for (let x = gap / 2 + shift; x < W; x += gap) {
+            if (img[(Math.floor(y) * off.width + Math.floor(x)) * 4 + 3] > 128) pts.push([x, y]);
+          }
+        }
+        // ordered round the middle, so one shape sweeps into the next
+        let cx = 0, cy = 0;
+        for (const p of pts) {
+          cx += p[0];
+          cy += p[1];
+        }
+        cx /= pts.length || 1;
+        cy /= pts.length || 1;
+        pts.sort((a, b) => Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx));
+        return { x: Float32Array.from(pts, (p) => p[0]), y: Float32Array.from(pts, (p) => p[1]) };
+      };
       const build = () => {
         dpr = Math.min(devicePixelRatio || 1, 2);
         W = mark.clientWidth;
         H = mark.clientHeight;
         dotsCv.width = Math.round(W * dpr);
         dotsCv.height = Math.round(H * dpr);
+        gap = W < 700 ? 6 : 9;
+        dot = W < 700 ? 1.3 : 1.7;
         const bw = Math.min(innerWidth * 0.64, 900);
         const k = bw / vw;
         const ox = (W - bw) / 2;
-        gap = W < 700 ? 7 : 9;
-        dot = W < 700 ? 1.4 : 1.7;
-        // rasterise the B once and keep the grid points that land inside it
-        const off = document.createElement('canvas');
-        off.width = Math.ceil(W);
-        off.height = Math.ceil(H);
-        const o = off.getContext('2d')!;
-        o.setTransform(k, 0, 0, -k, ox - vx * k, -vy * k);
-        o.fill(glyph);
-        const img = o.getImageData(0, 0, off.width, off.height).data;
-        const xs: number[] = [];
-        const ys: number[] = [];
-        for (let y = gap / 2; y < H; y += gap) {
-          // every other row shifted by half a step: a halftone, not a grid
-          const shift = (Math.round(y / gap) % 2) * (gap / 2);
-          for (let x = gap / 2 + shift; x < W; x += gap) {
-            if (img[(Math.floor(y) * off.width + Math.floor(x)) * 4 + 3] > 128) {
-              xs.push(x);
-              ys.push(y);
+        const box = H * 0.84;
+        targets = shapes.map((sh) =>
+          sample((o) => {
+            if (!sh.s && !sh.f) {
+              o.setTransform(k, 0, 0, -k, ox - vx * k, -vy * k);
+              o.fill(glyph);
+              return;
+            }
+            const u = box / 24;
+            o.setTransform(u, 0, 0, u, W / 2 - 12 * u, H * 0.48 - 12 * u);
+            o.lineWidth = W < 700 ? 2.8 : 2.3;
+            o.lineCap = 'round';
+            o.lineJoin = 'round';
+            if (sh.s) o.stroke(new Path2D(sh.s));
+            if (sh.f) o.fill(new Path2D(sh.f));
+          }),
+        );
+        n = Math.max(...targets.map((t) => t.x.length));
+        const keep = px.length === n && entered;
+        if (!keep) {
+          px = new Float32Array(n);
+          py = new Float32Array(n);
+          qx = new Float32Array(n);
+          qy = new Float32Array(n);
+          tw = new Float32Array(n);
+          vis = new Float32Array(n);
+          for (let i = 0; i < n; i++) tw[i] = Math.random() * Math.PI * 2;
+        }
+        hx = new Float32Array(n);
+        hy = new Float32Array(n);
+        nx = new Float32Array(n);
+        ny = new Float32Array(n);
+        sw = new Float32Array(n);
+        on = new Float32Array(n);
+        non = new Float32Array(n);
+        place(cur, hx, hy, on);
+        if (!keep) {
+          for (let i = 0; i < n; i++) {
+            // the first gathering: from below, left to right, a little scattered
+            sw[i] = (hx[i] / W) * 650 + Math.random() * 350;
+            px[i] = hx[i] + (Math.random() - 0.5) * 30;
+            py[i] = hy[i] + 60 + Math.random() * 120;
+            if (entered || calm) {
+              px[i] = hx[i];
+              py[i] = hy[i];
+              sw[i] = 0;
             }
           }
         }
-        n = xs.length;
-        hx = Float32Array.from(xs);
-        hy = Float32Array.from(ys);
-        px = new Float32Array(n);
-        py = new Float32Array(n);
-        qx = new Float32Array(n);
-        qy = new Float32Array(n);
-        t0 = new Float32Array(n);
-        tw = new Float32Array(n);
+      };
+      // shape s spread over all n particles: particle i takes target
+      // floor(i * m / n); the doubles sit on the same spot, hidden
+      const place = (s: number, X: Float32Array, Y: Float32Array, O: Float32Array) => {
+        const t = targets[s];
+        const m = t.x.length;
+        let last = -1;
         for (let i = 0; i < n; i++) {
-          // gather from below, left to right, a little scattered
-          t0[i] = (hx[i] / W) * 650 + Math.random() * 350;
-          tw[i] = Math.random() * Math.PI * 2;
-          px[i] = hx[i] + (Math.random() - 0.5) * 30;
-          py[i] = hy[i] + 60 + Math.random() * 120;
-          if (entered || calm) {
-            px[i] = hx[i];
-            py[i] = hy[i];
-            t0[i] = 0;
-          }
+          const j = Math.floor((i * m) / n);
+          X[i] = t.x[j];
+          Y[i] = t.y[j];
+          O[i] = j === last ? 0 : 1;
+          last = j;
         }
       };
+      const HOLD = 3400;
+      const morph = (now: number) => {
+        cur = (cur + 1) % shapes.length;
+        place(cur, nx, ny, non);
+        // leave in a sweep from left to right
+        for (let i = 0; i < n; i++) sw[i] = now - start + (nx[i] / W) * 420 + Math.random() * 120;
+        pending = true;
+      };
+      let pending = false;
       const R = () => Math.min(Math.max(W * 0.1, 90), 150);
       const frame = (now: number) => {
         raf = 0;
-        if (!start) start = now;
+        if (!start) {
+          start = now;
+          nextAt = now + HOLD + 1200;
+        }
         const el = now - start;
+        if (!calm && now > nextAt) {
+          morph(now);
+          nextAt = now + HOLD + 700;
+        }
         pull += (pullT - pull) * 0.12;
         const r = R();
         const r2 = r * r;
-        let moving = pull > 0.01 || Math.abs(pullT - pull) > 0.01;
+        let busy = false;
         dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         dctx.clearRect(0, 0, W, H);
         dctx.fillStyle = 'rgb(240,240,238)';
+        let left = 0;
         for (let i = 0; i < n; i++) {
-          const a = el - t0[i];
-          if (a < 0) {
-            moving = true;
-            continue;
+          const a = el - sw[i];
+          if (pending && a >= 0 && (hx[i] !== nx[i] || hy[i] !== ny[i] || on[i] !== non[i])) {
+            hx[i] = nx[i];
+            hy[i] = ny[i];
+            on[i] = non[i];
           }
-          // spring home; the pointer pushes dots out of its way
-          let fx = (hx[i] - px[i]) * 0.07;
-          let fy = (hy[i] - py[i]) * 0.07;
+          if (pending && a < 0) left++;
+          if (!pending && a < 0) continue;
+          // spring to the target; the pointer pushes dots out of its way
+          let fx = (hx[i] - px[i]) * 0.06;
+          let fy = (hy[i] - py[i]) * 0.06;
           const dx = px[i] - mx;
           const dy = py[i] - my;
           const d2 = dx * dx + dy * dy;
@@ -3229,20 +3337,21 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
             fy += (dy / d) * f;
             lit = (1 - d / r) * pull;
           }
-          qx[i] = (qx[i] + fx) * 0.78;
-          qy[i] = (qy[i] + fy) * 0.78;
+          qx[i] = (qx[i] + fx) * 0.8;
+          qy[i] = (qy[i] + fy) * 0.8;
           px[i] += qx[i];
           py[i] += qy[i];
-          if (Math.abs(qx[i]) + Math.abs(qy[i]) > 0.02 || Math.abs(px[i] - hx[i]) + Math.abs(py[i] - hy[i]) > 0.2) moving = true;
-          const fade = Math.min(a / 500, 1);
-          // a faint shimmer so the field never looks printed
+          // fade towards shown / hidden
+          const v = (vis[i] += ((on[i] ? Math.min(a / 500, 1) : 0) - vis[i]) * 0.08);
+          if (v < 0.01) continue;
           const tw8 = calm ? 0 : Math.sin(now * 0.0012 + tw[i]) * 0.04;
-          dctx.globalAlpha = fade * (0.24 + tw8 + lit * 0.76);
+          dctx.globalAlpha = v * (0.24 + tw8 + lit * 0.76);
           const s = dot * (1 + lit * 0.9);
           dctx.fillRect(px[i] - s / 2, py[i] - s / 2, s, s);
+          if (Math.abs(qx[i]) + Math.abs(qy[i]) > 0.02) busy = true;
         }
-        // keep going while anything moves; the shimmer runs while in view
-        if (inView && (moving || !calm)) raf = requestAnimationFrame(frame);
+        if (pending && !left) pending = false;
+        if (inView && (!calm || busy || pull > 0.01)) raf = requestAnimationFrame(frame);
       };
       const kick = () => {
         if (!raf && inView) raf = requestAnimationFrame(frame);
@@ -3255,6 +3364,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           start = 0;
           entered = true;
         }
+        if (inView) nextAt = Math.max(nextAt, performance.now() + 1500);
         kick();
       }, { threshold: 0.15 }).observe(mark);
       let rw = innerWidth;
@@ -3309,6 +3419,47 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     }
 
     // ---- the email row copies the address (falls back to mailto)
+    // contact rows: one highlight block that follows the pointer
+    const ct = root.querySelector<HTMLElement>('[data-ct]');
+    const hl = ct?.querySelector<HTMLElement>('[data-ct-hl]');
+    if (ct && hl && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      let shown = false;
+      let outT = 0;
+      const to = (row: HTMLElement, snap: boolean) => {
+        const li = row.closest('li')!;
+        if (snap) hl.classList.add('is-snap');
+        hl.style.setProperty('--y', `${li.offsetTop}px`);
+        hl.style.setProperty('--h', `${li.offsetHeight - 1}px`);
+        if (snap) {
+          void hl.offsetWidth;
+          hl.classList.remove('is-snap');
+        }
+      };
+      ct.querySelectorAll<HTMLElement>('.a9__ct-row').forEach((row) => {
+        row.addEventListener('pointerenter', () => {
+          clearTimeout(outT);
+          if (!shown) {
+            // arriving from outside: jump to the row, reset the wipe to the
+            // left edge, then wipe in
+            hl.classList.add('is-snap');
+            hl.classList.remove('is-out', 'is-on');
+            to(row, true);
+            hl.classList.add('is-on');
+            shown = true;
+          } else {
+            to(row, false);
+          }
+        });
+      });
+      ct.addEventListener('pointerleave', () => {
+        // a short grace period, so brushing past a hairline doesn't flicker
+        outT = window.setTimeout(() => {
+          shown = false;
+          hl.classList.add('is-out');
+          hl.classList.remove('is-on');
+        }, 60);
+      });
+    }
     root.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) => {
       const t = b.querySelector<HTMLElement>('[data-copy-t]');
       const addr = b.dataset.copy ?? '';
