@@ -193,12 +193,34 @@ const ahTitle: string = about.hoursTitle || 'After hours';
 const ahPulse = true;
 // where photo i of a chapter sits: left edge (vw), width (vw), depth (how
 // fast it flies: deeper = slower, smaller, behind the headline)
-const ahSlots = [
-  { x: 5, w: 24, d: 1.25 },
-  { x: 66, w: 15, d: 0.6 },
-  { x: 30, w: 12, d: 0.45 },
-  { x: 72, w: 22, d: 1.05 },
-];
+// layouts to compare (one per draft page): 'center' (the headline over
+// the middle), 'counter' (the bpm is the headline), 'split' (text left,
+// photos stream on the right), 'mask' (the word is cut out of a photo),
+// 'caption' (one big photo per chapter, the text as a caption)
+const ahLayout: 'center' | 'counter' | 'split' | 'mask' | 'caption' = 'center';
+const ahSlotsBy = {
+  center: [
+    { x: 5, w: 24, d: 1.25 },
+    { x: 66, w: 15, d: 0.6 },
+    { x: 30, w: 12, d: 0.45 },
+    { x: 72, w: 22, d: 1.05 },
+  ],
+  split: [
+    { x: 54, w: 22, d: 1.2 },
+    { x: 79, w: 16, d: 0.8 },
+    { x: 60, w: 12, d: 0.55 },
+    { x: 74, w: 21, d: 1.0 },
+  ],
+  caption: [
+    { x: 27, w: 46, d: 0.62 },
+    { x: 4, w: 14, d: 1.3 },
+    { x: 83, w: 13, d: 1.1 },
+    { x: 70, w: 9, d: 0.5 },
+  ],
+};
+const ahSlots = ahSlotsBy[ahLayout as keyof typeof ahSlotsBy] ?? ahSlotsBy.center;
+// in 'mask' the chapter's first photo fills the word, the rest fly past
+const ahPicsFrom = ahLayout === 'mask' ? 1 : 0;
 const heroTitle: string = about.heroTitle || 'About me';
 const experienceLabel: string = about.experienceLabel || 'Experience & what I do';
 const pulseTitle: string = about.pulseTitle || 'Coffee in, sport out.';
@@ -388,7 +410,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     <!-- 5b: after hours. The pulse's centre dot grows into a white sheet;
          the headline lands, then each chapter's word rolls in while its
          photos fly past at different depths -->
-    <section class="ah" data-ah aria-label={ahTitle} style={`--n:${ahChapters.length}`}>
+    <section class="ah" data-ah data-layout={ahLayout} aria-label={ahTitle} style={`--n:${ahChapters.length}`}>
       <div class="ah__pin">
         <div class="ah__sheet" data-ah-sheet>
           <div class="ah__in">
@@ -396,13 +418,14 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
             {ahPulse && (
               <p class="ah__bpm" data-ah-bpm={JSON.stringify(ahChapters.map((c) => c.bpm ?? 120))}>
                 <i aria-hidden="true" />
-                <b>62</b> bpm
+                <b>62</b>
+                <span>bpm</span>
               </p>
             )}
             <h2 class="ah__t">{ahTitle}</h2>
             <p class="ah__w" aria-live="polite">
               <span class="ah__w-roll" data-ah-roll>
-                {ahChapters.map((c) => <span>{c.word}</span>)}
+                {ahChapters.map((c) => <span style={ahLayout === 'mask' && c.photos[0] ? `--img:url(${c.photos[0].src})` : undefined}>{c.word}</span>)}
               </span>
             </p>
             <p class="ah__note">
@@ -412,8 +435,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
             </p>
           </div>
           {ahChapters.map((c, ci) =>
-            c.photos.slice(0, 4).map((p, pi) => {
-              const sl = ahSlots[pi % ahSlots.length];
+            c.photos.slice(ahPicsFrom, 4).map((p, pi) => {
+              const sl = ahSlots[(pi + ahPicsFrom) % ahSlots.length];
               return (
                 <figure
                   class="ah__pic"
@@ -1945,6 +1968,112 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     .ah__pic {
       border-radius: 4px;
     }
+  }
+
+  /* ---- after-hours layouts (drafts) ---- */
+  /* counter: the pulse is the headline, a big live number */
+  .ah[data-layout='counter'] .ah__bpm {
+    gap: 0.05em;
+    margin: 0;
+    font: 500 clamp(120px, 27vw, 480px) / 0.82 var(--font-head);
+    letter-spacing: -0.06em;
+    color: rgba(10, 10, 10, 0.6);
+  }
+  .ah[data-layout='counter'] .ah__bpm b {
+    color: inherit;
+    font-weight: 500;
+  }
+  .ah[data-layout='counter'] .ah__bpm i {
+    width: 0.09em;
+    height: 0.09em;
+    align-self: flex-start;
+    margin-top: 0.1em;
+  }
+  .ah[data-layout='counter'] .ah__bpm span {
+    align-self: flex-end;
+    margin-bottom: 0.08em;
+    font-size: 0.14em;
+    letter-spacing: -0.02em;
+  }
+  .ah[data-layout='counter'] .ah__t,
+  .ah[data-layout='mask'] .ah__t {
+    order: -1;
+    margin-bottom: clamp(16px, 2vw, 28px);
+    font-size: clamp(15px, 1.2vw, 18px);
+    letter-spacing: -0.01em;
+    color: rgb(110, 110, 110);
+  }
+  .ah[data-layout='counter'] .ah__w {
+    font-size: clamp(32px, 4vw, 64px);
+    letter-spacing: -0.04em;
+    color: var(--bg);
+  }
+  .ah[data-layout='counter'] .ah__head,
+  .ah[data-layout='mask'] .ah__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  /* split: the text holds the left half, photos stream up the right */
+  .ah[data-layout='split'] .ah__head {
+    right: 50%;
+    justify-items: start;
+    text-align: left;
+    padding-left: var(--pad);
+  }
+  .ah[data-layout='split'] .ah__t,
+  .ah[data-layout='split'] .ah__w {
+    font-size: clamp(48px, 7.4vw, 132px);
+    color: var(--bg);
+  }
+  /* mask: the word is cut out of the chapter's first photo */
+  .ah[data-layout='mask'] .ah__w {
+    height: 0.98em;
+    font-size: clamp(96px, 23vw, 420px);
+    line-height: 0.98;
+    letter-spacing: -0.06em;
+  }
+  .ah[data-layout='mask'] .ah__w-roll span {
+    height: 0.98em;
+    padding: 0 0.04em;
+    background: var(--img, var(--bg)) center / cover;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .ah[data-layout='mask'] .ah__bpm {
+    margin: clamp(12px, 1.6vw, 24px) 0 0;
+    order: 3;
+  }
+  /* caption: one big photo per chapter in the middle, the text small in
+     the bottom-left corner like a caption */
+  .ah[data-layout='caption'] .ah__head {
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: var(--pad);
+    padding-bottom: clamp(24px, 5vh, 56px);
+    text-align: left;
+  }
+  .ah[data-layout='caption'] .ah__t {
+    order: -1;
+    font-size: clamp(15px, 1.2vw, 18px);
+    letter-spacing: -0.01em;
+    color: rgb(110, 110, 110);
+  }
+  .ah[data-layout='caption'] .ah__w {
+    font-size: clamp(44px, 6vw, 104px);
+    color: var(--bg);
+  }
+  .ah[data-layout='caption'] .ah__bpm {
+    order: 3;
+    margin: 12px 0 0;
+  }
+  .ah[data-layout='caption'] .ah__note {
+    margin-top: 4px;
   }
   /* contact rows: bigger than the experience rows (they're the point of
      the page's end). One light block serves them all: it wipes in under
