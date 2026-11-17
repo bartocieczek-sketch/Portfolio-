@@ -794,18 +794,18 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     vertical-align: -0.06em;
   }
   /* the little lives of the objects */
-  .ob--cup .ob-steam {
+  .ob--cup :global(.ob-steam) {
     animation: ob-steam 2.4s ease-in-out infinite;
   }
-  .ob--watch .ob-hand {
+  .ob--watch :global(.ob-hand) {
     transform-origin: 20px 23px;
     animation: ob-tick 6s steps(12) infinite;
   }
-  .ob--ecg path {
+  .ob--ecg :global(path) {
     stroke-dasharray: 160;
     animation: ob-trace 1.8s linear infinite;
   }
-  .ob--spark svg {
+  .ob--spark :global(svg) {
     animation: ob-twinkle 3s ease-in-out infinite;
   }
   @keyframes ob-steam {
