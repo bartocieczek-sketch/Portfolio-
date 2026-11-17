@@ -91,7 +91,7 @@ const stats = cmsStats.length ? cmsStats.map((x) => ({ v: x.value, suf: x.suffix
 // logos under the numbers: the CMS list, or the companies from Experience
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const cmsClients = ((about.clients ?? []) as any[]).filter((c) => c?.name);
-const clients: { name: string; logo: string | null; url?: string; svg?: boolean }[] = cmsClients.length
+const clients: { name: string; logo: string | null; url?: string; svg?: boolean; light?: boolean }[] = cmsClients.length
   ? cmsClients.map((c) => ({
       name: c.name,
       url: c.url,
@@ -100,12 +100,11 @@ const clients: { name: string; logo: string | null; url?: string; svg?: boolean 
     }))
   : [
       // default client list (until it's filled in the CMS); logos for
-      // dirt's logo is still to come: it shows an initial
       { name: 'KFC', logo: tile(kfcSvg, '#a3080c') },
       { name: 'Żabka', logo: tile(zabkaSvg, '#006420') },
       { name: 'GRAFIT', logo: logoOf('grafit') },
       { name: 'FlyingBisons', logo: logoOf('flyingbisons') },
-      { name: 'dirt', logo: null },
+      { name: 'dirt', logo: '/images/logos/dirt.svg', svg: true, light: true },
       { name: 'Viktor', logo: 'https://cdn.sanity.io/images/jf65lv25/production/65fac7e2bba4da7b9f87ff0bbb6bb50c65eeaafe-160x160.svg' },
       { name: 'Asiacell', logo: 'https://cdn.sanity.io/images/jf65lv25/production/ab35a84bb2ecfdde6abbca775fa587b8bae2c4d1-121x67.svg', svg: true },
     ];
@@ -354,7 +353,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
             const row = (
               <>
                 <span class="a9__clr-n">
-                  <span class={`a9__clr-logo${c.svg ? ' is-svg' : ''}`}>{c.logo ? <img src={c.logo} alt="" loading="lazy" /> : <b>{c.name.slice(0, 1)}</b>}</span>
+                  <span class={`a9__clr-logo${c.svg ? ' is-svg' : ''}${c.light ? ' is-light' : ''}`}>{c.logo ? <img src={c.logo} alt="" loading="lazy" /> : <b>{c.name.slice(0, 1)}</b>}</span>
                   {c.name}
                 </span>
                 <span class="a9__dim">{host}</span>
@@ -2567,6 +2566,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+  /* a dark wordmark (dirt) sits on a white tile */
+  .a9__clr-logo.is-light {
+    background: #fff;
   }
   .a9__clr-logo.is-svg {
     padding: 4px;
