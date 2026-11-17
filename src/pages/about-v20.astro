@@ -4666,9 +4666,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           `linear-gradient(${dir}, transparent ${a.toFixed(1)}px, #000 ${(a + F).toFixed(1)}px, #000 ${(z - F).toFixed(1)}px, transparent ${z.toFixed(1)}px)`;
         const m = `${g('to right', l, r)}, ${g('to bottom', t, b)}`;
         who.style.webkitMaskImage = who.style.maskImage = m;
-        // the paragraph starts writing itself as the B starts growing into
-        // the window, so it's alive by the time the window is open
-        if (!sent) {
+        if (!sent && raw > 0.25) {
           sent = true;
           dispatchEvent(new Event('a9:reveal'));
         }
