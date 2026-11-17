@@ -521,25 +521,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           <li class="a9__ct-hl" aria-hidden="true" data-ct-hl />
         </ul>
       </div>
-      <!-- the monogram, cut off by the page's end, drawn as a field of dots:
-           they gather into the B as the footer arrives and part around the
-           pointer (or a finger), then spring back -->
-      <div class="a9__lt-mark" data-lt-mark data-view={bView} data-path={bPath} aria-hidden="true">
-        <span class="a9__lt-b" set:html={bSvg} />
-        <canvas class="a9__lt-dots" data-lt-dots></canvas>
-        <!-- how a project goes, as a quiet row of steps: the dots draw the
-             current one, a hairline under it fills until the next -->
-        <ol class="a9__lt-steps" data-steps>
-          {['Hello', 'Brief', 'Plan', 'Design', 'Build', 'Polish', 'Launch', 'Recharge'].map((t, i) => (
-            <li>
-              <button type="button" data-step={i} tabindex="-1">
-                <span>{String(i + 1).padStart(2, '0')}</span>
-                {t}
-              </button>
-            </li>
-          ))}
-        </ol>
-      </div>
       <footer class="a9__lt-foot">
         <span>© Bart Ocieczek {new Date().getFullYear()}</span>
         <span class="a9__lt-now"><i aria-hidden="true" />{footerMiddle} <b data-ft-time>00:00</b></span>
@@ -2211,7 +2192,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     gap: 16px;
     position: relative;
     z-index: 1;
-    margin: -40px var(--pad) 0;
+    margin: clamp(80px, 10vw, 160px) var(--pad) 0;
     padding: 14px 0 6px;
     font-size: 13px;
     color: var(--grey);
