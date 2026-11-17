@@ -164,9 +164,9 @@ const icons: Record<string, { c: string; svg: string }> = {
 // after hours: chapters of a white, pinned gallery (CMS, or the defaults
 // with placeholder photos); each photo gets a slot, a depth and a size
 const ahDefault = [
-  { word: 'Running', note: '5 am, before the city wakes up', photos: ['5009c121e6f7216b837353fb1721965198551efe-1400x933', '1269da8e1d49b6afe6cdbc9811eb419422c21eba-1400x2100', '74d6c346bc830552fac92a8a8b5e46d24eebb6fe-1400x933', '036ae164d283377e9645937a542c204696a69f73-1400x2100'] },
-  { word: 'Gym', note: 'Four times a week, no skipped legs', photos: ['c7a150a82205c88425b164e643f6e91d1f518974-1400x2100', '2e32c04d8a22b3e54b55ef62bb39b519bfda729b-1400x933', '9d75abfb776324a9793ee7acc4963a9acb631491-1400x2102', '1d14fca35afb6ff353731307d90b0a07de962f0a-1400x937'] },
-  { word: 'Gaming', note: 'Late nights, just one more round', photos: ['b6ab206903e9e08aceb8153b096aaa9bf0529ff0-1400x788', '1a10904b8798698f3406b6ae96190484b3238d69-1400x2488', 'a292284f84020bd9504b1d5ff378e65d93bcffd5-1400x933', '3ca4169a65c58e5b4d9acbce7acbcb30540bc319-1400x935'] },
+  { word: 'Running', note: '5 am, before the city wakes up', bpm: 158, photos: ['5009c121e6f7216b837353fb1721965198551efe-1400x933', '1269da8e1d49b6afe6cdbc9811eb419422c21eba-1400x2100', '74d6c346bc830552fac92a8a8b5e46d24eebb6fe-1400x933', '036ae164d283377e9645937a542c204696a69f73-1400x2100'] },
+  { word: 'Gym', note: 'Four times a week, no skipped legs', bpm: 132, photos: ['c7a150a82205c88425b164e643f6e91d1f518974-1400x2100', '2e32c04d8a22b3e54b55ef62bb39b519bfda729b-1400x933', '9d75abfb776324a9793ee7acc4963a9acb631491-1400x2102', '1d14fca35afb6ff353731307d90b0a07de962f0a-1400x937'] },
+  { word: 'Gaming', note: 'Late nights, just one more round', bpm: 96, photos: ['b6ab206903e9e08aceb8153b096aaa9bf0529ff0-1400x788', '1a10904b8798698f3406b6ae96190484b3238d69-1400x2488', 'a292284f84020bd9504b1d5ff378e65d93bcffd5-1400x933', '3ca4169a65c58e5b4d9acbce7acbcb30540bc319-1400x935'] },
 ].map((c) => ({
   ...c,
   photos: c.photos.map((id) => {
@@ -176,10 +176,11 @@ const ahDefault = [
 }));
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const cmsHours = ((about.hours ?? []) as any[]).filter((c) => c?.word);
-const ahChapters: { word: string; note: string; photos: { src: string; ratio: number }[] }[] = cmsHours.length
-  ? cmsHours.map((c) => ({
+const ahChapters: { word: string; note: string; bpm?: number; photos: { src: string; ratio: number }[] }[] = cmsHours.length
+  ? cmsHours.map((c, i) => ({
       word: c.word,
       note: c.note ?? '',
+      bpm: c.bpm ?? [158, 132, 96][i] ?? 120,
       // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
       photos: ((c.photos ?? []) as any[])
         .filter((p) => p?.asset)
@@ -187,6 +188,9 @@ const ahChapters: { word: string; note: string; photos: { src: string; ratio: nu
     }))
   : ahDefault;
 const ahTitle: string = about.hoursTitle || 'After hours';
+// variant switch: the pulse without its text, and the white sheet carrying
+// the pulse on (a beating dot and a live bpm per chapter)
+const ahPulse = false;
 // where photo i of a chapter sits: left edge (vw), width (vw), depth (how
 // fast it flies: deeper = slower, smaller, behind the headline)
 const ahSlots = [
@@ -337,12 +341,15 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       </section>
     )}
 
+    <!-- 5 + 5b share a wrapper: the pulse holds still with its dot in the
+         middle while the dot grows into the white after-hours sheet -->
+    <div class="hz" data-hz>
     <!-- 5 -->
     <!-- 5: the pulse, as the graph's centre: one dot that beats, a thin
          ring going out from it on every beat (faster as the coffee goes in),
          eight small dots round it for today's coffees. Hold the dot to brew:
          a hairline fills round it, and the beat quickens. -->
-    <section class="a9__heart is-ring" data-heart>
+    <section class="a9__heart is-ring" data-heart data-quiet={ahPulse ? '' : undefined}>
       <div class="a9__ring" data-in>
         <svg class="a9__ring-svg" viewBox="-200 -200 400 400" aria-hidden="true">
           <g data-waves></g>
@@ -378,13 +385,20 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       </div>
     </section>
 
-    <!-- 5b: after hours. A small white square rises to the middle and grows
-         into a white sheet; the headline lands, then each chapter's word
-         rolls in while its photos fly past at different depths -->
+    <!-- 5b: after hours. The pulse's centre dot grows into a white sheet;
+         the headline lands, then each chapter's word rolls in while its
+         photos fly past at different depths -->
     <section class="ah" data-ah aria-label={ahTitle} style={`--n:${ahChapters.length}`}>
       <div class="ah__pin">
         <div class="ah__sheet" data-ah-sheet>
+          <div class="ah__in">
           <div class="ah__head" data-ah-head>
+            {ahPulse && (
+              <p class="ah__bpm" data-ah-bpm={JSON.stringify(ahChapters.map((c) => c.bpm ?? 120))}>
+                <i aria-hidden="true" />
+                <b>62</b> bpm
+              </p>
+            )}
             <h2 class="ah__t">{ahTitle}</h2>
             <p class="ah__w" aria-live="polite">
               <span class="ah__w-roll" data-ah-roll>
@@ -413,9 +427,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
               );
             }),
           )}
+          </div>
         </div>
       </div>
     </section>
+    </div>
 
     <!-- 6 -->
     <!-- 6: let's talk — a staggered sentence around a live clock with my
@@ -1761,24 +1777,87 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
 
   /* after hours: a tall section with a pinned stage; scroll drives it */
+  [data-quiet] .a9__ring-t {
+    display: none;
+  }
+  .a9__heart[data-quiet] {
+    padding-bottom: 0;
+  }
+  /* the pulse, carried onto the white: a dot that beats at the bpm */
+  .ah__bpm {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 clamp(16px, 2vw, 28px);
+    font-size: clamp(15px, 1.2vw, 18px);
+    color: rgb(110, 110, 110);
+  }
+  .ah__bpm b {
+    font-weight: 500;
+    color: var(--bg);
+    font-variant-numeric: tabular-nums;
+  }
+  .ah__bpm i {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bg);
+    animation: ah-beat var(--beat, 0.97s) cubic-bezier(0.23, 1, 0.32, 1) infinite;
+  }
+  @keyframes ah-beat {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    12% {
+      transform: scale(1.45);
+    }
+    30% {
+      transform: scale(0.95);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ah__bpm i {
+      animation: none;
+    }
+  }
+  .hz > .a9__heart {
+    position: sticky;
+    top: var(--stick, 0px);
+    z-index: 1;
+  }
   .ah {
     position: relative;
-    height: calc(100svh + var(--n, 3) * 120svh + 80svh);
+    z-index: 2;
+    height: calc(100svh + var(--n, 3) * 120svh + 60svh);
+    pointer-events: none;
   }
   .ah__pin {
     position: sticky;
     top: 0;
     height: 100svh;
-    overflow: hidden;
   }
+  /* the sheet reaches far above the pin, so the circle can open over the
+     pulse while the pin is still on its way up */
   .ah__sheet {
     position: absolute;
-    inset: 0;
+    top: -180svh;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background: var(--ink);
     color: var(--bg);
-    /* starts as a small square in the middle; JS opens it up */
-    clip-path: inset(calc(50% - 22px) calc(50% - 22px) round 4px);
+    clip-path: circle(0 at 50% 100%);
     will-change: clip-path;
+  }
+  .ah__in {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 100svh;
+    overflow: hidden;
+    pointer-events: auto;
   }
   .ah__head {
     position: absolute;
@@ -3392,6 +3471,23 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     const ah = root.querySelector<HTMLElement>('[data-ah]');
     if (ah) {
       const sheet = ah.querySelector<HTMLElement>('[data-ah-sheet]')!;
+      const heart = root.querySelector<HTMLElement>('.hz > [data-heart]');
+      const dot = heart?.querySelector<HTMLElement>('[data-beat]') ?? null;
+      // where the dot sits in its section, so the section can stick with
+      // the dot right in the middle of the screen
+      let dotOff = 0;
+      const measure = () => {
+        if (!heart || !dot) return;
+        // measured unstuck, so it doesn't matter where the page is
+        heart.style.position = 'relative';
+        const hb = heart.getBoundingClientRect();
+        const db = dot.getBoundingClientRect();
+        heart.style.position = '';
+        dotOff = db.top + db.height / 2 - hb.top;
+        heart.style.setProperty('--stick', `${innerHeight / 2 - dotOff}px`);
+      };
+      measure();
+      addEventListener('resize', measure);
       const head = ah.querySelector<HTMLElement>('[data-ah-head]')!;
       const roll = ah.querySelector<HTMLElement>('[data-ah-roll]')!;
       const notes = ah.querySelector<HTMLElement>('[data-ah-notes]')!;
@@ -3402,13 +3498,16 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         d: Number(el.dataset.d),
       }));
       const nC = Math.max(1, Number(getComputedStyle(ah).getPropertyValue('--n')) || 3);
+      const bpmEl = ah.querySelector<HTMLElement>('[data-ah-bpm]');
+      const bpmB = bpmEl?.querySelector('b');
+      const bpms: number[] = bpmEl ? JSON.parse(bpmEl.dataset.ahBpm || '[]') : [];
+      let bpmShown = 0;
       const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
       const io = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2); // ease-in-out cubic
       const smooth = (t: number) => t * t * (3 - 2 * t);
       // where things happen, as fractions of the pinned scroll
-      const OPEN = [0, 0.1];
-      const HEAD = [0.06, 0.13];
-      const CH = [0.14, 0.9];
+      const HEAD = [0.0, 0.07];
+      const CH = [0.08, 0.9];
       const CLOSE = [0.92, 1];
       let raf = 0;
       let shown = 0;
@@ -3420,17 +3519,31 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const vw = innerWidth;
         const total = r.height - vh;
         const p = clamp(-r.top / total);
-        // 1. the square: rises with the page, then opens to the full sheet;
-        //    at the end it closes back into a square and goes
-        const open = io(clamp((p - OPEN[0]) / (OPEN[1] - OPEN[0])));
+        // 1. the circle: the pulse sticks with its dot in the middle, then the
+        //    dot opens into the white sheet (exponential radius, so the zoom
+        //    reads even); at the end it closes back to a dot and goes
+        const sb = sheet.getBoundingClientRect();
+        const db = dot?.getBoundingClientRect();
+        const cx0 = db ? db.left + db.width / 2 : vw / 2;
+        const cy0 = db ? db.top + db.height / 2 : vh / 2;
+        const r0 = db ? db.width / 2 : 7;
+        const far = Math.hypot(Math.max(cx0, vw - cx0), Math.max(cy0, vh - cy0)) + 4;
+        const a0 = heart ? vh / 2 + heart.offsetHeight - dotOff : vh;
+        const a1 = -0.05 * total;
+        const g = smooth(clamp((a0 - r.top) / (a0 - a1)));
         const close = io(clamp((p - CLOSE[0]) / (CLOSE[1] - CLOSE[0])));
-        const k = open * (1 - close);
-        const side = 44;
-        const ix = (1 - k) * (vw / 2 - side / 2);
-        const iy = (1 - k) * (vh / 2 - side / 2);
-        const rad = 4 + (1 - k) * 0;
-        sheet.style.clipPath = `inset(${iy.toFixed(1)}px ${ix.toFixed(1)}px round ${rad}px)`;
-        sheet.style.opacity = String(1 - smooth(clamp((close - 0.85) / 0.15)));
+        let rad = g >= 1 ? far : r0 * Math.pow(far / r0, g);
+        let cx = cx0;
+        let cy = cy0;
+        if (close > 0) {
+          rad = Math.max(0, far * (1 - close));
+          cx = vw / 2;
+          cy = vh / 2;
+        }
+        sheet.style.clipPath = g <= 0 ? 'circle(0px at 50% 100%)' : `circle(${rad.toFixed(1)}px at ${(cx - sb.left).toFixed(1)}px ${(cy - sb.top).toFixed(1)}px)`;
+        // once the white has it all, the pulse below can go (it would show
+        // through when the circle closes at the end)
+        if (heart) heart.style.visibility = g >= 1 && p > 0.02 ? 'hidden' : '';
         // 2. the headline: in with a small rise and a blur that clears
         const h = smooth(clamp((p - HEAD[0]) / (HEAD[1] - HEAD[0]))) * (1 - smooth(clamp((p - CLOSE[0]) / 0.03)));
         head.style.opacity = h.toFixed(3);
@@ -3447,6 +3560,19 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         roll.style.transform = `translateY(${(-wi * 100) / nC}%)`;
         notes.style.transform = `translateY(${(-wi * 100) / nC}%)`;
         if (Math.round(wi) !== shown) shown = Math.round(wi);
+        // the pulse carried on: from the desk's 62 up to the first chapter's
+        // rate as the headline lands, then between chapters with the word
+        if (bpmEl && bpmB && bpms.length) {
+          const lo = Math.floor(wi);
+          const fr = wi - lo;
+          const target = bpms[lo] + ((bpms[Math.min(lo + 1, bpms.length - 1)] ?? bpms[lo]) - bpms[lo]) * fr;
+          const v = Math.round(62 + (target - 62) * smooth(clamp(c / 0.6)));
+          if (v !== bpmShown) {
+            bpmShown = v;
+            bpmB.textContent = String(v);
+            bpmEl.style.setProperty('--beat', `${(60 / v).toFixed(3)}s`);
+          }
+        }
         // 4. photos: each crosses the screen bottom to top around its
         //    chapter's middle, faster the nearer it is, with the picture
         //    inside drifting the other way (parallax within parallax)
@@ -3459,6 +3585,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           const off = Math.abs(t) > 0.6;
           ph.el.style.visibility = off ? 'hidden' : 'visible';
           if (off) continue;
+          ph.el.style.opacity = h < 1 ? h.toFixed(3) : '';
           const sc = 0.92 + ph.d * 0.08;
           ph.el.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0) scale(${sc.toFixed(3)}) rotate(${(t * (ph.d - 0.8) * 6).toFixed(2)}deg)`;
           ph.img.style.transform = `translate3d(0, ${(-8 + t * 16).toFixed(2)}%, 0)`;

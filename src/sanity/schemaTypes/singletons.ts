@@ -120,6 +120,7 @@ export const aboutPage = defineType({
           fields: [
             defineField({ name: 'word', title: 'Word', type: 'string', validation: (r) => r.required(), description: 'e.g. Running' }),
             defineField({ name: 'note', title: 'Small line', type: 'string', description: 'e.g. 5 am, before the city wakes up' }),
+            defineField({ name: 'bpm', title: 'Pulse (bpm)', type: 'number', description: 'Shown in the pulse variant, e.g. 158 for running' }),
             defineField({ name: 'photos', title: 'Photos', type: 'array', of: [{ type: 'image', options: { hotspot: true } }], description: '3 or 4 work best; portrait and landscape mixed.' }),
           ],
           preview: { select: { title: 'word', subtitle: 'note', media: 'photos.0' } },
