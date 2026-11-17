@@ -1850,7 +1850,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     z-index: 2;
     /* the last screen overlaps the next section: once the white has closed
        the page carries straight on, no empty screen to scroll past */
-    height: calc(100svh + var(--n, 3) * 120svh + 100svh);
+    height: calc(100svh + var(--n, 3) * 160svh + 100svh);
     margin-bottom: -100svh;
     pointer-events: none;
   }
@@ -3802,10 +3802,12 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         // up to the first chapter's rate as the white settles, then rolling
         // to each next chapter's rate in step with the word
         if (bpmEl && bpmB && bpms.length) {
-          const lo = Math.floor(wi);
-          const fr = wi - lo;
+          // a slower roll than the word's: the number starts turning at 40%
+          // of a chapter and arrives with the next word
+          const lo = Math.min(nC - 1, Math.floor(c));
+          const fr = lo < nC - 1 ? smooth(clamp((c - lo - 0.4) / 0.6)) : 0;
           const target = bpms[lo] + ((bpms[Math.min(lo + 1, bpms.length - 1)] ?? bpms[lo]) - bpms[lo]) * fr;
-          const v = 62 + (target - 62) * smooth(clamp(c / 0.6));
+          const v = 62 + (target - 62) * smooth(clamp(c / 0.85));
           if (Math.abs(v - bpmShown) > 0.001) {
             bpmShown = v;
             setBpm(v);
