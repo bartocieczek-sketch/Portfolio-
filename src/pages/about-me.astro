@@ -109,13 +109,16 @@ const clients: { name: string; logo: string | null; url?: string; svg?: boolean 
     ];
 // services (DRAFT copy, to be edited): one line on what I do, then the
 // three groups the graph below is built from, in the same order
-const svcLead = 'I design and build websites and digital products end to end, from the first idea and the look of it to the shipped, fast, animated page.';
-const services = [
+const svcLead: string = about.servicesIntro || 'I design and build websites and digital products end to end, from the first idea and the look of it to the shipped, fast, animated page.';
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const cmsServices = ((about.services ?? []) as any[]).filter((x) => x?.title);
+const servicesDefault = [
   { t: 'Design', d: 'UX/UI, art direction and design systems: interfaces that look sharp and still hold up long after launch.' },
   { t: 'Technology', d: 'Builds in no-code and in code (Astro, Sanity, WebGL, motion), fast, accessible and easy to edit.' },
   { t: 'AI', d: 'AI in the workflow and in the product: research, generative UI and automation that make the work faster.' },
   { t: 'Strategy', d: 'Discovery, information architecture and content structure, so every page has a job and the numbers show it.' },
 ];
+const services = cmsServices.length ? cmsServices.map((x) => ({ t: x.title as string, d: '' })) : servicesDefault;
 // about me, in four beats (the last two are DRAFT copy, to be edited)
 const abItems: { t: string; a: string; b?: string; pic?: boolean }[] = [
   { t: 'Who I am.', a: about.introLead, b: about.introBody, pic: true },
@@ -135,14 +138,49 @@ const abItems: { t: string; a: string; b?: string; pic?: boolean }[] = [
     b: 'Coffee keeps the rest going. There’s a monitor for that further down.',
   },
 ];
+// paragraphs with small pictures in the line: plain text with {tokens}
+// (About page → About paragraph / Let's talk paragraph)
+type Part = { k: string; v: string };
+const toParts = (t: string): Part[] =>
+  t
+    .split(/(\{[a-z]+(?::[^}]*)?\})/i)
+    .filter(Boolean)
+    .map((p) => {
+      const m = /^\{([a-z]+)(?::([^}]*))?\}$/i.exec(p);
+      return m ? { k: m[1].toLowerCase(), v: (m[2] ?? '').trim() } : { k: 'text', v: p };
+    });
+const storyText: string =
+  about.story ||
+  'Hi, I’m Bart, {photo} a designer & developer from Kraków. Senior Web Designer at GRAFIT {logo:GRAFIT}, Young Jury at Awwwards {logo:Awwwards}. Building with AI {ai}, fuelled by sport {sport} and coffee {coffee}. My pulse {pulse} proves it.';
+const talkText: string = about.talkText || 'Every good thing I’ve made started with a short conversation. {photo} It’s {time} in Kraków and I’m {live} free to talk.';
+const storyParts = toParts(storyText);
+const talkParts = toParts(talkText);
+const icons: Record<string, { c: string; svg: string }> = {
+  ai: { c: 'spark', svg: '<svg viewBox="0 0 40 40"><path d="M20 2c1.4 9.6 4.4 14.6 18 18-13.6 3.4-16.6 8.4-18 18-1.4-9.6-4.4-14.6-18-18C15.6 16.6 18.6 11.6 20 2z" fill="currentColor"/><path d="M33 3c.5 3.4 1.6 5.2 6 6-4.4.8-5.5 2.6-6 6-.5-3.4-1.6-5.2-6-6 4.4-.8 5.5-2.6 6-6z" fill="currentColor" opacity=".55"/></svg>' },
+  sport: { c: 'watch', svg: '<svg viewBox="0 0 40 40"><rect x="16" y="1" width="8" height="4" rx="1.5" fill="currentColor"/><circle cx="20" cy="23" r="15" fill="none" stroke="currentColor" stroke-width="2.5"/><path class="ob-hand" d="M20 23V13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="20" cy="23" r="2" fill="currentColor"/></svg>' },
+  coffee: { c: 'cup', svg: '<svg viewBox="0 0 40 48"><path class="ob-steam" d="M14 12c-3-3 3-5 0-9M21 12c-3-3 3-5 0-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6 16h28l-3.5 29a3 3 0 0 1-3 2.6h-15a3 3 0 0 1-3-2.6z" fill="currentColor"/><rect x="4" y="14" width="32" height="5" rx="2" fill="currentColor"/><path d="M10 28h20" stroke="#0a0a0a" stroke-width="5"/></svg>' },
+  pulse: { c: 'ecg', svg: '<svg viewBox="0 0 80 32"><path d="M0 18h20l4-5 4 5h6l3 10 5-26 5 22 3-6h30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg>' },
+};
+const heroTitle: string = about.heroTitle || 'About me';
+const experienceLabel: string = about.experienceLabel || 'Experience & what I do';
+const pulseTitle: string = about.pulseTitle || 'Coffee in, sport out.';
+const pulseText: string = about.pulseText || 'Hold the dot to brew a coffee, it fills a ring. Then hold Run: the laps burn the coffees off again.';
+const talkCta: string = about.talkCta || 'Let’s talk ↗';
+const callNote: string = about.callNote || '30 min, pick a time that suits you';
+const footerMiddle: string = about.footerMiddle || 'Designer & developer, Kraków';
+const footerCoffee: string = about.footerCoffee || 'Made with a lot of coffee';
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const pix = (p: any) => (p?.cover?.asset ? urlFor(p.cover).width(24).height(30).fit('crop').url() : null);
-const caps = [
+const capsDefault = [
   { name: 'Design', img: null, items: ['UX/UI', 'Art direction', 'Design systems', 'Prototyping', 'Typography', 'Motion', 'Branding'] },
   { name: 'Technology', img: null, items: ['No-code', 'Astro', 'Sanity CMS', 'WebGL', 'Three.js', 'Animation', 'Performance', 'Accessibility'] },
   { name: 'AI', img: null, items: ['AI workflows', 'Generative UI', 'Prompting', 'AI prototyping', 'Automation'] },
   { name: 'Strategy', img: null, items: ['Discovery', 'Research', 'Information architecture', 'Content strategy', 'Conversion', 'Analytics'] },
 ];
+// services + the graph come from the CMS (About page → Services); each
+// service is a branch, its items the skills on it
+const caps = cmsServices.length ? cmsServices.map((x) => ({ name: x.title as string, img: null, items: ((x.items ?? []) as string[]).filter(Boolean) })) : capsDefault;
+
 const [bPath, bBox] = glyphs.g.B as [string, number[], number];
 const bView = `${bBox[0]} ${-bBox[3]} ${bBox[2] - bBox[0]} ${bBox[3] - bBox[1]}`;
 const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}" fill="currentColor"/></svg>`;
@@ -159,7 +197,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       <div class="a9__stage">
         <div class="a9__say">
           <h1 class="t-display" data-say>
-            About me
+            {heroTitle}
           </h1>
         </div>
         <canvas class="a9__mono" data-monogram aria-label="B monogram" role="img"></canvas>
@@ -172,21 +210,21 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
          set into the line like words (DRAFT copy) -->
     <section class="a9__who a9__prose-sec" data-who>
       <p class="a9__prose" data-prose>
-        Hi, I’m Bart,
-        {portrait ? <img class="ob ob--pic" src={portrait} alt="" width="700" height="930" /> : null}
-        a designer &amp; developer
-        from Kraków. Senior Web Designer at GRAFIT
-        {logoOf('grafit') && <img class="ob ob--logo" src={logoOf('grafit')} alt="" width="96" height="96" />}, Young Jury at Awwwards
-        {logoOf('awwwards') && <img class="ob ob--logo" src={logoOf('awwwards')} alt="" width="96" height="96" />}.
-        Building with AI
-        <span class="ob ob--spark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 2c1.4 9.6 4.4 14.6 18 18-13.6 3.4-16.6 8.4-18 18-1.4-9.6-4.4-14.6-18-18C15.6 16.6 18.6 11.6 20 2z" fill="currentColor" /><path d="M33 3c.5 3.4 1.6 5.2 6 6-4.4.8-5.5 2.6-6 6-.5-3.4-1.6-5.2-6-6 4.4-.8 5.5-2.6 6-6z" fill="currentColor" opacity=".55" /></svg></span>,
-        fuelled by sport
-        <span class="ob ob--watch" aria-hidden="true"><svg viewBox="0 0 40 40"><rect x="16" y="1" width="8" height="4" rx="1.5" fill="currentColor" /><circle cx="20" cy="23" r="15" fill="none" stroke="currentColor" stroke-width="2.5" /><path class="ob-hand" d="M20 23V13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" /><circle cx="20" cy="23" r="2" fill="currentColor" /></svg></span>
-        and coffee
-        <span class="ob ob--cup" aria-hidden="true"><svg viewBox="0 0 40 48"><path class="ob-steam" d="M14 12c-3-3 3-5 0-9M21 12c-3-3 3-5 0-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /><path d="M6 16h28l-3.5 29a3 3 0 0 1-3 2.6h-15a3 3 0 0 1-3-2.6z" fill="currentColor" /><rect x="4" y="14" width="32" height="5" rx="2" fill="currentColor" /><path d="M10 28h20" stroke="#0a0a0a" stroke-width="5" /></svg></span>.
-        My pulse
-        <span class="ob ob--ecg" aria-hidden="true"><svg viewBox="0 0 80 32"><path d="M0 18h20l4-5 4 5h6l3 10 5-26 5 22 3-6h30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" /></svg></span>
-        proves it.
+        {storyParts.map((p) =>
+          p.k === 'text' ? (
+            p.v
+          ) : p.k === 'photo' ? (
+            portrait && <img class="ob ob--pic" src={portrait} alt="" width="512" height="512" />
+          ) : p.k === 'logo' ? (
+            logoOf(p.v.toLowerCase()) ? <img class="ob ob--logo" src={logoOf(p.v.toLowerCase())} alt="" width="96" height="96" /> : <span class="ob ob--tag" aria-hidden="true">{p.v.slice(0, 1)}</span>
+          ) : p.k === 'time' ? (
+            <span class="ob ob--time" aria-label="the time in Kraków"><span data-lt-h>00</span><span class="a9__lt-c">:</span><span data-lt-m>00</span></span>
+          ) : p.k === 'live' ? (
+            <span class="ob ob--live" aria-hidden="true"><i /></span>
+          ) : icons[p.k] ? (
+            <span class={`ob ob--${icons[p.k].c}`} aria-hidden="true" set:html={icons[p.k].svg} />
+          ) : null,
+        )}
       </p>
     </section>
 
@@ -212,7 +250,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
 
     <!-- 3 -->
     <section class="a9__sec">
-      <p class="a9__label" data-in>Experience & what I do</p>
+      <p class="a9__label" data-in>{experienceLabel}</p>
       <div class="a9__two">
         <ul class="a9__jobs" data-jobs>
           {jobs.map((j, i) => (
@@ -296,8 +334,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         </p>
       </div>
       <div class="a9__ring-t" data-in>
-        <p class="a9__ring-h">Coffee in, sport out.</p>
-        <p class="a9__ring-s">Hold the dot to brew a coffee, it fills a ring. Then hold Run: the laps burn the coffees off again.</p>
+        <p class="a9__ring-h">{pulseTitle}</p>
+        <p class="a9__ring-s">{pulseText}</p>
         <button class="a9__brew a9__run" type="button" data-run>
           <span class="a9__brew-fill" aria-hidden="true"></span>
           <span class="a9__brew-t" data-run-t>Hold to run</span>
@@ -315,14 +353,22 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
          Kraków), then the ways to reach me as rows like the experience list -->
     <section class="a9__lt" data-end>
       <p class="a9__prose a9__lt-prose" data-prose>
-        Every good thing I’ve made started with a short conversation.
-        {portrait ? <img class="ob ob--pic" src={portrait} alt="" width="512" height="512" /> : null}
-        It’s
-        <span class="ob ob--time" aria-label="the time in Kraków"><span data-lt-h>00</span><span class="a9__lt-c">:</span><span data-lt-m>00</span></span>
-        in Kraków and I’m
-        <span class="ob ob--live" aria-hidden="true"><i /></span>
-        free to talk.{' '}
-        <a class="a9__lt-go" href={settings.callUrl ?? `mailto:${settings.email ?? ''}`} target="_blank" rel="noopener">Let’s talk ↗</a>
+        {talkParts.map((p) =>
+          p.k === 'text' ? (
+            p.v
+          ) : p.k === 'photo' ? (
+            portrait && <img class="ob ob--pic" src={portrait} alt="" width="512" height="512" />
+          ) : p.k === 'logo' ? (
+            logoOf(p.v.toLowerCase()) ? <img class="ob ob--logo" src={logoOf(p.v.toLowerCase())} alt="" width="96" height="96" /> : <span class="ob ob--tag" aria-hidden="true">{p.v.slice(0, 1)}</span>
+          ) : p.k === 'time' ? (
+            <span class="ob ob--time" aria-label="the time in Kraków"><span data-lt-h>00</span><span class="a9__lt-c">:</span><span data-lt-m>00</span></span>
+          ) : p.k === 'live' ? (
+            <span class="ob ob--live" aria-hidden="true"><i /></span>
+          ) : icons[p.k] ? (
+            <span class={`ob ob--${icons[p.k].c}`} aria-hidden="true" set:html={icons[p.k].svg} />
+          ) : null,
+        )}{' '}
+        <a class="a9__lt-go" href={settings.callUrl ?? `mailto:${settings.email ?? ''}`} target="_blank" rel="noopener">{talkCta}</a>
       </p>
       <div class="a9__sec a9__lt-rows">
         <p class="a9__label" data-in>Get in touch</p>
@@ -338,7 +384,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
             <li data-in>
               <a class="a9__ct-row" href={settings.callUrl} target="_blank" rel="noopener">
                 <span class="a9__ct-n">Book a call</span>
-                <span class="a9__ct-d">30 min, pick a time that suits you</span>
+                <span class="a9__ct-d">{callNote}</span>
                 <span class="a9__ct-a">↗</span>
               </a>
             </li>
@@ -371,8 +417,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       </button>
       <footer class="a9__lt-foot">
         <span>© Bart Ocieczek {new Date().getFullYear()}</span>
-        <span class="a9__lt-now"><i aria-hidden="true" />Kraków <b data-ft-time>00:00</b></span>
-        <span data-ft-coffee>Made with a lot of coffee</span>
+        <span class="a9__lt-now"><i aria-hidden="true" />{footerMiddle} <b data-ft-time>00:00</b></span>
+        <span data-ft-coffee data-rest={footerCoffee}>{footerCoffee}</span>
       </footer>
     </section>
   </main>
@@ -3159,7 +3205,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     if (ftCoffee && cupsEl) {
       const say = () => {
         const n = Number(cupsEl.textContent) || 0;
-        const t = n === 0 ? 'Made with a lot of coffee' : n === 1 ? 'Made with 1 coffee so far' : `Made with ${n} coffees today`;
+        const t = n === 0 ? ftCoffee.dataset.rest || 'Made with a lot of coffee' : n === 1 ? 'Made with 1 coffee so far' : `Made with ${n} coffees today`;
         if (t === ftCoffee.textContent) return;
         ftCoffee.classList.add('is-swap');
         setTimeout(() => {
