@@ -370,8 +370,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
          eight small dots round it for today's coffees. Hold the dot to brew:
          a hairline fills round it, and the beat quickens. -->
     <section class="a9__heart is-ring" data-heart data-quiet={ahPulse ? '' : undefined}>
-      {ahPulse && <h2 class="a9__hz-t" data-words>{ahTitle}</h2>}
       <div class="a9__ring" data-in>
+        {ahPulse && <h2 class="a9__hz-t">{ahTitle}</h2>}
         <svg class="a9__ring-svg" viewBox="-200 -200 400 400" aria-hidden="true">
           <g data-waves></g>
           <circle class="a9__track" r="190" />
@@ -1795,14 +1795,19 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
 
   /* after hours: a tall section with a pinned stage; scroll drives it */
-  /* the section's title, over the pulse that turns into it */
+  /* the section's title, inside the ring just above the dot, mirroring
+     the bpm under it */
   .a9__hz-t {
-    margin: 0 0 clamp(16px, 2.6vw, 40px);
-    padding: 0 var(--pad);
-    text-align: center;
-    font: 500 clamp(40px, 6vw, 104px) / 0.95 var(--font-head);
-    letter-spacing: -0.04em;
+    position: absolute;
+    left: 50%;
+    bottom: calc(50% + 8.5% + 10px);
+    margin: 0;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font: 500 clamp(22px, 2vw, 30px) / 1 var(--font-head);
+    letter-spacing: -0.03em;
     color: var(--ink);
+    pointer-events: none;
   }
   [data-quiet] .a9__ring-t {
     display: none;
