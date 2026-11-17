@@ -555,6 +555,16 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     z-index: 10;
     padding: var(--gutter);
   }
+  /* the nav turns black wherever the white after-hours sheet is under it */
+  .a9__nav :global(.nav__home),
+  .a9__nav :global(.nav__links a),
+  .a9__nav :global(.nav__toggle) {
+    transition: color 0.3s ease;
+  }
+  .a9__nav :global(.is-on-white) {
+    color: var(--bg) !important;
+    --text-primary: var(--bg);
+  }
   .a9__label {
     margin: 0;
     font-size: 13px;
@@ -1879,10 +1889,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .ah__w {
     color: rgba(10, 10, 10, 0.6);
   }
+  /* the headline in the hero's blackletter */
   .ah__t {
-    margin: 0;
-    font: 500 clamp(56px, 11vw, 200px) / 0.9 var(--font-head);
-    letter-spacing: -0.05em;
+    margin: 0 0 -0.04em;
+    font: 400 clamp(80px, 15vw, 260px) / 0.95 'Pirata One', var(--font-display);
+    letter-spacing: -0.01em;
   }
   /* the word: a stack in a one-line window, rolled by scroll */
   .ah__w {
@@ -3475,11 +3486,31 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       }).observe(end);
     }
 
+    // ---- the nav monogram turns on scroll, like on the home page: it spins
+    // with the scroll's speed and settles back face-on when it stops
+    const navB = calm ? null : root.querySelector<HTMLElement>('.a9__nav .nav__home');
+    if (navB) {
+      let ang = 0;
+      let lastY = scrollY;
+      let spin = 0;
+      const turn = () => {
+        const v = scrollY - lastY;
+        lastY = scrollY;
+        if (Math.abs(v) > 0.3) ang += Math.max(-24, Math.min(24, v * 0.45));
+        else ang += (Math.round(ang / 360) * 360 - ang) * 0.07;
+        navB.style.transform = `perspective(260px) rotateY(${ang.toFixed(2)}deg)`;
+        spin = Math.abs(v) > 0.3 || Math.abs(Math.round(ang / 360) * 360 - ang) > 0.2 ? requestAnimationFrame(turn) : 0;
+      };
+      addEventListener('scroll', () => {
+        if (!spin) spin = requestAnimationFrame(turn);
+      }, { passive: true });
+    }
     // ---- after hours: the square, the sheet, the words, the photos
     const ah = root.querySelector<HTMLElement>('[data-ah]');
     if (ah) {
       const sheet = ah.querySelector<HTMLElement>('[data-ah-sheet]')!;
       const heart = root.querySelector<HTMLElement>('.hz > [data-heart]');
+      const navParts = [...root.querySelectorAll<HTMLElement>('.a9__nav .nav__home, .a9__nav .nav__links a, .a9__nav .nav__toggle')];
       const dot = heart?.querySelector<HTMLElement>('[data-beat]') ?? null;
       // where the dot sits in its section, so the section can stick with
       // the dot right in the middle of the screen
@@ -3557,6 +3588,15 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           cy = vh / 2;
         }
         sheet.style.clipPath = g <= 0 ? 'circle(0px at 50% 100%)' : `circle(${rad.toFixed(1)}px at ${(cx - sb.left).toFixed(1)}px ${(cy - sb.top).toFixed(1)}px)`;
+        // the nav over the white: each part turns black once the circle
+        // covers it
+        const sheetOn = g > 0 && rad > 0.5;
+        for (const el of navParts) {
+          const b = el.getBoundingClientRect();
+          const dx = b.left + b.width / 2 - cx;
+          const dy = b.top + b.height / 2 - cy;
+          el.classList.toggle('is-on-white', sheetOn && dx * dx + dy * dy < rad * rad);
+        }
         // once the white has it all, the pulse below can go (it would show
         // through when the circle closes at the end)
         if (heart) heart.style.visibility = g >= 1 && p > 0.02 ? 'hidden' : '';
@@ -3612,6 +3652,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       };
       new IntersectionObserver(([e]) => {
         vis = e.isIntersecting;
+        if (!vis) navParts.forEach((el) => el.classList.remove('is-on-white'));
         tick();
       }).observe(ah);
       addEventListener('scroll', tick, { passive: true });
