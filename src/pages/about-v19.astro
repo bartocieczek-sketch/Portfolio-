@@ -3753,7 +3753,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const fitClose = (H: number, vh: number) => {
         const end = (H - 1.6 * vh) / (H - vh);
         CLOSE[1] = end;
-        CLOSE[0] = end - 0.05;
+        CLOSE[0] = end - 0.14;
         CH[1] = CLOSE[0] - 0.02;
       };
       let raf = 0;
@@ -3779,15 +3779,18 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const a0 = heart ? vh / 2 + heart.offsetHeight - dotOff : vh;
         const a1 = -0.05 * total;
         const g = smooth(clamp((a0 - r.top) / (a0 - a1)));
-        const close = io(clamp((p - CLOSE[0]) / (CLOSE[1] - CLOSE[0])));
+        const close = smooth(clamp((p - CLOSE[0]) / (CLOSE[1] - CLOSE[0])));
         let rad = g >= 1 ? far : r0 * Math.pow(far / r0, g);
         let cx = cx0;
         let cy = cy0;
         if (close > 0) {
-          rad = Math.max(0, far * (1 - close));
+          // closing mirrors the opening: an exponential shrink back to a
+          // dot in the middle, which then fades out
+          rad = far * Math.pow(6 / far, close);
           cx = vw / 2;
           cy = vh / 2;
         }
+        sheet.style.opacity = close > 0.85 ? (1 - smooth((close - 0.85) / 0.15)).toFixed(3) : '';
         sheet.style.clipPath = g <= 0 ? 'circle(0px at 50% 100%)' : `circle(${rad.toFixed(1)}px at ${(cx - sb.left).toFixed(1)}px ${(cy - sb.top).toFixed(1)}px)`;
         // the nav over the white: each part turns black once the circle
         // covers it
@@ -3802,7 +3805,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         // through when the circle closes at the end)
         if (heart) heart.style.visibility = g >= 1 && p > 0.02 ? 'hidden' : '';
         // 2. the headline: in with a small rise and a blur that clears
-        const h = smooth(clamp((p - HEAD[0]) / (HEAD[1] - HEAD[0]))) * (1 - smooth(clamp((p - CLOSE[0]) / 0.03)));
+        const h = smooth(clamp((p - HEAD[0]) / (HEAD[1] - HEAD[0]))) * (1 - smooth(clamp((p - CLOSE[0]) / ((CLOSE[1] - CLOSE[0]) * 0.6))));
         head.style.opacity = h.toFixed(3);
         head.style.transform = `translateY(${((1 - h) * 24).toFixed(1)}px) scale(${(0.97 + h * 0.03).toFixed(4)})`;
         head.style.filter = calm || h > 0.99 ? 'none' : `blur(${((1 - h) * 8).toFixed(1)}px)`;
