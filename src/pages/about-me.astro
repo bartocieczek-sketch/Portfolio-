@@ -362,11 +362,17 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           })}
         </ul>
       </div>
-      <div class="a9__lt-mark" aria-hidden="true" data-lt-mark set:html={bSvg} />
+      <!-- the monogram, faint and cut off by the page's end; a light follows
+           the pointer across it, and it takes you back to the top -->
+      <button type="button" class="a9__lt-mark" data-lt-mark aria-label="Back to top">
+        <span class="a9__lt-b" set:html={bSvg} />
+        <span class="a9__lt-b a9__lt-b--lit" aria-hidden="true" set:html={bSvg} />
+        <span class="a9__lt-up" aria-hidden="true">↑ Back to top</span>
+      </button>
       <footer class="a9__lt-foot">
         <span>© Bart Ocieczek {new Date().getFullYear()}</span>
-        <span>Designer &amp; developer, Kraków</span>
-        <span>Made with a lot of coffee</span>
+        <span class="a9__lt-now"><i aria-hidden="true" />Kraków <b data-ft-time>00:00</b></span>
+        <span data-ft-coffee>Made with a lot of coffee</span>
       </footer>
     </section>
   </main>
@@ -1488,20 +1494,29 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   /* the monogram, very faint and cut off by the page's end: it rises into
      place as the footer arrives, the last thing on the page */
+  /* the monogram: faint, cut off by the page's end, rising in as the
+     footer arrives. A soft light follows the pointer across it (a brighter
+     copy masked to a circle round the pointer); click to go back up */
   .a9__lt-mark {
     position: relative;
     z-index: 0;
+    display: block;
+    width: 100%;
     height: clamp(180px, 26vw, 420px);
     margin-top: clamp(48px, 7vw, 104px);
+    padding: 0;
+    border: 0;
+    background: none;
     overflow: hidden;
-    pointer-events: none;
+    cursor: pointer;
+    --mx: 50%;
+    --my: 120%;
   }
-  .a9__lt-mark :global(svg) {
+  .a9__lt-b {
     position: absolute;
     left: 50%;
     top: 0;
     width: min(64vw, 900px);
-    height: auto;
     color: var(--ink);
     opacity: 0;
     transform: translate(-50%, 18%);
@@ -1509,9 +1524,83 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       opacity 1.4s var(--e-out),
       transform 1.6s var(--e-expo);
   }
-  .a9__lt-mark.is-in :global(svg) {
+  .a9__lt-b :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .a9__lt-mark.is-in .a9__lt-b {
     opacity: 0.06;
     transform: translate(-50%, 0);
+  }
+  .a9__lt-mark.is-in .a9__lt-b--lit {
+    opacity: 0.55;
+    -webkit-mask-image: radial-gradient(circle var(--r, 0px) at var(--mx) var(--my), #000 0%, transparent 100%);
+    mask-image: radial-gradient(circle var(--r, 0px) at var(--mx) var(--my), #000 0%, transparent 100%);
+  }
+  .a9__lt-up {
+    position: absolute;
+    left: 50%;
+    bottom: 22px;
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    background: var(--bg);
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, 6px);
+    transition:
+      opacity 0.2s var(--e-out),
+      transform 0.25s var(--e-out);
+  }
+  .a9__lt-mark:focus-visible .a9__lt-up {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .a9__lt-mark:hover .a9__lt-up {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+  .a9__lt-mark:active .a9__lt-up {
+    transform: translate(-50%, 0) scale(0.97);
+  }
+  .a9__lt-now {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .a9__lt-now i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink);
+    animation: a9-live 2.4s var(--e-out) infinite;
+  }
+  .a9__lt-now b {
+    font-weight: inherit;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  [data-ft-coffee] {
+    transition:
+      opacity 0.2s ease,
+      filter 0.2s ease;
+  }
+  [data-ft-coffee].is-swap {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a9__lt-b {
+      transform: translate(-50%, 0);
+    }
+    .a9__lt-now i {
+      animation: none;
+    }
   }
   /* contact rows: bigger than the experience rows (they're the point of
      the page's end); on hover a white fill sweeps in from the left and the
@@ -3030,6 +3119,56 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           raf = 0;
         }
       }).observe(end);
+    }
+
+    // ---- footer: the light on the monogram, back to top, the time, and
+    // the coffee line counting whatever was brewed in the pulse section
+    const mark = root.querySelector<HTMLElement>('[data-lt-mark]');
+    if (mark) {
+      let r = 0;
+      let tr = 0;
+      let raf = 0;
+      const ease = () => {
+        r += (tr - r) * 0.14;
+        mark.style.setProperty('--r', `${r.toFixed(1)}px`);
+        raf = Math.abs(tr - r) > 0.5 ? requestAnimationFrame(ease) : 0;
+      };
+      const grow = (to: number) => {
+        tr = to;
+        if (!raf) raf = requestAnimationFrame(ease);
+      };
+      if (matchMedia('(hover: hover) and (pointer: fine)').matches && !calm) {
+        mark.addEventListener('pointermove', (e) => {
+          const b = mark.getBoundingClientRect();
+          mark.style.setProperty('--mx', `${e.clientX - b.left - (b.width - mark.querySelector('.a9__lt-b')!.clientWidth) / 2}px`);
+          mark.style.setProperty('--my', `${e.clientY - b.top}px`);
+        });
+        mark.addEventListener('pointerenter', () => grow(Math.min(innerWidth * 0.14, 220)));
+        mark.addEventListener('pointerleave', () => grow(0));
+      }
+      mark.addEventListener('click', () => scrollTo({ top: 0, behavior: calm ? 'auto' : 'smooth' }));
+    }
+    const ftTime = root.querySelector<HTMLElement>('[data-ft-time]');
+    const ftTick = () => {
+      if (ftTime) ftTime.textContent = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+    };
+    ftTick();
+    setInterval(ftTick, 15000);
+    const ftCoffee = root.querySelector<HTMLElement>('[data-ft-coffee]');
+    const cupsEl = root.querySelector<HTMLElement>('[data-cups]');
+    if (ftCoffee && cupsEl) {
+      const say = () => {
+        const n = Number(cupsEl.textContent) || 0;
+        const t = n === 0 ? 'Made with a lot of coffee' : n === 1 ? 'Made with 1 coffee so far' : `Made with ${n} coffees today`;
+        if (t === ftCoffee.textContent) return;
+        ftCoffee.classList.add('is-swap');
+        setTimeout(() => {
+          ftCoffee.textContent = t;
+          ftCoffee.classList.remove('is-swap');
+        }, 180);
+      };
+      say();
+      new MutationObserver(say).observe(cupsEl, { childList: true, characterData: true, subtree: true });
     }
 
     // ---- the email row copies the address (falls back to mailto)
