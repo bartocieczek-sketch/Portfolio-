@@ -342,6 +342,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
             );
             return <li data-in>{c.url ? <a href={c.url} target="_blank" rel="noopener">{row}</a> : row}</li>;
           })}
+          <li class="a9__clr-more" data-in>and many more…</li>
         </ul>
       </section>
     )}
@@ -2301,6 +2302,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+  /* the list's last line, quieter, without a logo */
+  .a9__clr-more {
+    color: var(--grey);
   }
   .a9__clr-logo {
     flex: none;
