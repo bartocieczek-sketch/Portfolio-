@@ -707,9 +707,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .a9__prose-sec {
     padding: clamp(110px, 20vh, 220px) var(--pad) clamp(36px, 6vh, 64px);
   }
-  /* services sit close under the paragraph */
+  /* services come a little after the paragraph: some air between them,
+     and they only start arriving once they're well into the screen */
   .a9__prose-sec + .a9__svc .a9__svc-top {
-    padding-top: clamp(28px, 4vh, 48px);
+    padding-top: clamp(96px, 18vh, 220px);
   }
   .a9__prose {
     margin: 0;
@@ -3124,6 +3125,17 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         }),
       { rootMargin: '0px 0px -10% 0px' },
     );
+    // the services arrive later: once they're a third of the way up the
+    // screen, so they follow the paragraph instead of crowding it
+    const ioLate = new IntersectionObserver(
+      (es) =>
+        es.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('is-in');
+          ioLate.unobserve(e.target);
+        }),
+      { rootMargin: '0px 0px -30% 0px' },
+    );
     // figures count up with their column (ease-out, a touch after it starts)
     // figures count up while they rise into place (ease-out, same stagger)
     function countUp(box: HTMLElement) {
@@ -3147,6 +3159,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       el.style.setProperty('--d', `${Math.max(0, sib.indexOf(el)) * 60}ms`);
       // the section behind the B only starts once it's being uncovered
       if (el.closest('[data-who]')) later.push(el);
+      else if (el.closest('[data-svc-root]')) ioLate.observe(el);
       else io.observe(el);
     });
     let revealed = false;
@@ -4575,10 +4588,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           `linear-gradient(${dir}, transparent ${a.toFixed(1)}px, #000 ${(a + F).toFixed(1)}px, #000 ${(z - F).toFixed(1)}px, transparent ${z.toFixed(1)}px)`;
         const m = `${g('to right', l, r)}, ${g('to bottom', t, b)}`;
         who.style.webkitMaskImage = who.style.maskImage = m;
-        if (!sent && raw > 0.25) {
-          sent = true;
-          dispatchEvent(new Event('a9:reveal'));
-        }
+        // (the paragraph only starts writing itself once the window has
+        // fully opened and the section sits in the viewport, see above)
       };
       const tick = () => {
         const t = (performance.now() - t0) / 1000;
