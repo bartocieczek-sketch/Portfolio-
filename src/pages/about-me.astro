@@ -20,6 +20,7 @@ import zabkaSvg from 'simple-icons/icons/zabka.svg?raw';
 import stravaSvg from 'simple-icons/icons/strava.svg?raw';
 // a blackletter for the hero title, kin to the B monogram
 import '@fontsource/pirata-one/latin-400.css';
+import pirataWoff2 from '@fontsource/pirata-one/files/pirata-one-latin-400-normal.woff2?url';
 import Nav from '../components/Nav.astro';
 import CapGraph from '../components/CapGraph.astro';
 import { ABOUT_QUERY, HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
@@ -249,6 +250,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
 ---
 
 <Base title={`About me – ${settings.name}`} description={settings.seoDescription ?? ''}>
+  <link slot="head" rel="preload" as="font" type="font/woff2" href={pirataWoff2} crossorigin />
   <main class="a9 about" data-a9>
     <header class="a9__nav">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
@@ -621,6 +623,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     align-items: center;
     justify-content: center;
     pointer-events: none;
+  }
+  /* the title waits for its blackletter: no flash of the fallback font */
+  .a9__say:not(.is-font) h1 {
+    visibility: hidden;
   }
   .a9__say h1 {
     margin: 0;
@@ -3174,7 +3180,18 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     };
     lines();
     addEventListener('resize', lines);
-    setTimeout(() => sayWrap.classList.add('is-in'), 650);
+    // only show (and line up) the title once Pirata One is in; the rise
+    // starts from there. A slow network gets the fallback after 2.5s
+    let sayShown = false;
+    const showSay = () => {
+      if (sayShown) return;
+      sayShown = true;
+      lines();
+      sayWrap.classList.add('is-font');
+      setTimeout(() => sayWrap.classList.add('is-in'), 350);
+    };
+    (document.fonts?.load("400 100px 'Pirata One'") ?? Promise.resolve()).then(showSay, showSay);
+    setTimeout(showSay, 2500);
 
     // ---- masked word rise for [data-words]
     root.querySelectorAll<HTMLElement>('[data-words]').forEach((el) => {

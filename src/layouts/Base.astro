@@ -27,6 +27,7 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
 <html lang="en" data-preview={preview ? '' : undefined}>
   <head>
     <meta charset="utf-8" />
+    <slot name="head" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
