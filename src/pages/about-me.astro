@@ -369,6 +369,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
          eight small dots round it for today's coffees. Hold the dot to brew:
          a hairline fills round it, and the beat quickens. -->
     <section class="a9__heart is-ring" data-heart data-quiet={ahPulse ? '' : undefined}>
+      {ahPulse && <h2 class="a9__hz-t" data-words>{ahTitle}</h2>}
       <div class="a9__ring" data-in>
         <svg class="a9__ring-svg" viewBox="-200 -200 400 400" aria-hidden="true">
           <g data-waves></g>
@@ -1793,6 +1794,15 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
 
   /* after hours: a tall section with a pinned stage; scroll drives it */
+  /* the section's title, over the pulse that turns into it */
+  .a9__hz-t {
+    margin: 0 0 clamp(16px, 2.6vw, 40px);
+    padding: 0 var(--pad);
+    text-align: center;
+    font: 500 clamp(40px, 6vw, 104px) / 0.95 var(--font-head);
+    letter-spacing: -0.04em;
+    color: var(--ink);
+  }
   [data-quiet] .a9__ring-t {
     display: none;
   }
