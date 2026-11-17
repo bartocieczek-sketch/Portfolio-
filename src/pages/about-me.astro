@@ -1951,6 +1951,15 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     }
   }
 
+  /* the digits: each in its own cell, the outgoing and incoming digit
+     stacked in the same spot while they cross */
+  .ah__bpm :global(.ah__dg) {
+    display: inline-grid;
+    transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .ah__bpm :global(.ah__dg > span) {
+    grid-area: 1 / 1;
+  }
   /* ---- after-hours layouts (drafts) ---- */
   /* counter, pared down: just the number, a small bpm and the word */
   .ah[data-layout='counter'] .ah__t,
@@ -3659,7 +3668,55 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const bpmEl = ah.querySelector<HTMLElement>('[data-ah-bpm]');
       const bpmB = bpmEl?.querySelector('b');
       const bpms: number[] = bpmEl ? JSON.parse(bpmEl.dataset.ahBpm || '[]') : [];
-      let bpmShown = 0;
+      let bpmShown = 62;
+      // the number as three digit cells: a digit that changes drops out
+      // downwards while the new one drops in from above, left to right
+      const cells: HTMLElement[] = [];
+      if (bpmB) {
+        bpmB.textContent = '';
+        for (let i = 0; i < 3; i++) {
+          const cell = document.createElement('span');
+          cell.className = 'ah__dg';
+          const d = document.createElement('span');
+          d.textContent = ' 62'[i].trim();
+          cell.append(d);
+          bpmB.append(cell);
+          cells.push(cell);
+        }
+      }
+      const setBpm = (v: number) => {
+        const str = String(v).padStart(3, ' ');
+        let k = 0;
+        cells.forEach((cell, i) => {
+          const ch = str[i].trim();
+          const cur = cell.lastElementChild as HTMLElement | null;
+          if ((cur?.textContent ?? '') === ch) return;
+          const nx = document.createElement('span');
+          nx.textContent = ch;
+          cell.append(nx);
+          cell.classList.toggle('is-empty', !ch);
+          if (calm) {
+            cur?.remove();
+            return;
+          }
+          const delay = k++ * 60;
+          const ease = 'cubic-bezier(0.23, 1, 0.32, 1)';
+          cur?.animate(
+            [
+              { transform: 'translateY(0)', opacity: 1, filter: 'blur(0px)' },
+              { transform: 'translateY(45%)', opacity: 0, filter: 'blur(8px)' },
+            ],
+            { duration: 420, delay, easing: ease, fill: 'forwards' },
+          ).finished.then(() => cur?.remove()).catch(() => cur?.remove());
+          nx.animate(
+            [
+              { transform: 'translateY(-45%)', opacity: 0, filter: 'blur(8px)' },
+              { transform: 'translateY(0)', opacity: 1, filter: 'blur(0px)' },
+            ],
+            { duration: 620, delay: delay + 40, easing: ease, fill: 'backwards' },
+          );
+        });
+      };
       const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
       const io = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2); // ease-in-out cubic
       const smooth = (t: number) => t * t * (3 - 2 * t);
@@ -3735,16 +3792,13 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         roll.style.transform = `translateY(${(-wi * 100) / nC}%)`;
         notes.style.transform = `translateY(${(-wi * 100) / nC}%)`;
         if (Math.round(wi) !== shown) shown = Math.round(wi);
-        // the pulse carried on: from the desk's 62 up to the first chapter's
-        // rate as the headline lands, then between chapters with the word
+        // the pulse carried on: the desk's 62 while the white opens, then
+        // each chapter's rate, switching with the word
         if (bpmEl && bpmB && bpms.length) {
-          const lo = Math.floor(wi);
-          const fr = wi - lo;
-          const target = bpms[lo] + ((bpms[Math.min(lo + 1, bpms.length - 1)] ?? bpms[lo]) - bpms[lo]) * fr;
-          const v = Math.round(62 + (target - 62) * smooth(clamp(c / 0.6)));
+          const v = c < 0.3 ? 62 : bpms[Math.min(bpms.length - 1, Math.round(wi))];
           if (v !== bpmShown) {
             bpmShown = v;
-            bpmB.textContent = String(v);
+            setBpm(v);
             bpmEl.style.setProperty('--beat', `${(60 / v).toFixed(3)}s`);
           }
         }
