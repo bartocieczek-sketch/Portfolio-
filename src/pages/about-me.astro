@@ -3784,7 +3784,15 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         strips.forEach((strip, j) => {
           const pa = A.d[j] ?? 0;
           const pb = B.d[j] ?? 0;
-          const p = pa + (pb - pa) * t;
+          // tick, don't smear: each step from one digit to the next happens
+          // in the middle 40% of its stretch of scroll and eases in and out,
+          // so a column always rests on a whole digit and clicks over to
+          // the next, like a mechanical counter
+          const raw = pa + (pb - pa) * t;
+          const base = Math.floor(raw);
+          const fr = raw - base;
+          const q = Math.min(1, Math.max(0, (fr - 0.3) / 0.4));
+          const p = base + q * q * q * (q * (q * 6 - 15) + 10);
           strip.style.transform = `translate3d(0, ${(-((10 - p) / 11) * 100).toFixed(3)}%, 0)`;
           // an empty column (no leading digit) folds away
           const w = (A.d[j] == null ? 0 : 1) + ((B.d[j] == null ? 0 : 1) - (A.d[j] == null ? 0 : 1)) * t;
