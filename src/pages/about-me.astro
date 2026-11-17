@@ -715,6 +715,17 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .a9__prose-sec {
     padding: clamp(110px, 20vh, 220px) var(--pad) clamp(36px, 6vh, 64px);
   }
+  /* the about paragraph holds still for a while (sticky) before the
+     services scroll up to it */
+  .a9__who.a9__prose-sec::after {
+    content: '';
+    display: block;
+    height: 70svh;
+  }
+  .a9__who > .a9__prose {
+    position: sticky;
+    top: clamp(110px, 20vh, 220px);
+  }
   /* services sit close under the paragraph */
   .a9__prose-sec + .a9__svc .a9__svc-top {
     padding-top: clamp(28px, 4vh, 48px);
