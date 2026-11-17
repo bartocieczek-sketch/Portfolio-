@@ -3845,13 +3845,42 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           if (off) continue;
           ph.el.style.opacity = h < 1 ? h.toFixed(3) : '';
           const sc = 0.92 + ph.d * 0.08;
-          ph.el.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0) scale(${sc.toFixed(3)}) rotate(${(t * (ph.d - 0.8) * 6).toFixed(2)}deg)`;
+          // the pointer nudges each photo a little, nearer ones more
+          const ox = pmx * 18 * ph.d;
+          const oy = pmy * 12 * ph.d;
+          ph.el.style.transform = `translate3d(${ox.toFixed(2)}px, ${(y + oy).toFixed(1)}px, 0) scale(${sc.toFixed(3)}) rotate(${(t * (ph.d - 0.8) * 6 + pmx * ph.d * 1.2).toFixed(2)}deg)`;
           ph.img.style.transform = `translate3d(0, ${(-8 + t * 16).toFixed(2)}%, 0)`;
         }
       };
       const tick = () => {
         if (!raf && vis) raf = requestAnimationFrame(render);
       };
+      // pointer: eased after the cursor (time-based), only with a mouse
+      let pmx = 0;
+      let pmy = 0;
+      let pmxT = 0;
+      let pmyT = 0;
+      let pRaf = 0;
+      let pT = 0;
+      const pGlide = (now: number) => {
+        const dt = pT ? Math.min(64, now - pT) : 16;
+        pT = now;
+        const k = 1 - Math.exp(-dt / 220);
+        pmx += (pmxT - pmx) * k;
+        pmy += (pmyT - pmy) * k;
+        const done = Math.abs(pmxT - pmx) < 0.001 && Math.abs(pmyT - pmy) < 0.001;
+        render();
+        pRaf = done || !vis ? 0 : requestAnimationFrame(pGlide);
+        if (!pRaf) pT = 0;
+      };
+      if (!calm && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        addEventListener('pointermove', (e) => {
+          if (!vis) return;
+          pmxT = e.clientX / innerWidth - 0.5;
+          pmyT = e.clientY / innerHeight - 0.5;
+          if (!pRaf) pRaf = requestAnimationFrame(pGlide);
+        }, { passive: true });
+      }
       new IntersectionObserver(([e]) => {
         vis = e.isIntersecting;
         if (!vis) navParts.forEach((el) => el.classList.remove('is-on-white'));
