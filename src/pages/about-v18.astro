@@ -576,7 +576,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   /* the nav turns black wherever the white after-hours sheet is under it */
   .a9__nav :global(.nav__home),
-  .a9__nav :global(.nav__links a),
+  .a9__nav :global(.nav__links > a),
+  .a9__nav :global(.nav__coop-btn),
   .a9__nav :global(.nav__toggle) {
     transition: color 0.3s ease;
   }
@@ -3853,7 +3854,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     if (ah) {
       const sheet = ah.querySelector<HTMLElement>('[data-ah-sheet]')!;
       const heart = root.querySelector<HTMLElement>('.hz > [data-heart]');
-      const navParts = [...root.querySelectorAll<HTMLElement>('.a9__nav .nav__home, .a9__nav .nav__links a, .a9__nav .nav__toggle')];
+      const navParts = [...root.querySelectorAll<HTMLElement>('.a9__nav .nav__home, .a9__nav .nav__links > a, .a9__nav .nav__coop-btn, .a9__nav .nav__toggle')];
       const dot = heart?.querySelector<HTMLElement>('[data-beat]') ?? null;
       // where the dot sits in its section, so the section can stick with
       // the dot right in the middle of the screen
