@@ -18,6 +18,7 @@ import Base from '../layouts/Base.astro';
 import awwwardsSvg from 'simple-icons/icons/awwwards.svg?raw';
 import kfcSvg from 'simple-icons/icons/kfc.svg?raw';
 import zabkaSvg from 'simple-icons/icons/zabka.svg?raw';
+import stravaSvg from 'simple-icons/icons/strava.svg?raw';
 // a blackletter for the hero title, kin to the B monogram
 import '@fontsource/pirata-one/latin-400.css';
 import Nav from '../components/Nav.astro';
@@ -166,8 +167,8 @@ const icons: Record<string, { c: string; svg: string }> = {
 // with placeholder photos); each photo gets a slot, a depth and a size
 // Bart's own photos (in /public, EXIF stripped), two chapters
 const ahDefault = [
-  { word: 'Running', note: 'Half marathon time', bpm: 158, stat: '1:59', unit: 'h', photos: ['run-1', 'run-2', 'run-3', 'run-4'] },
-  { word: 'Cycling', note: 'Longest ride in one go', bpm: 145, stat: '144', unit: 'km', photos: ['bike-1', 'bike-2', 'bike-3', 'bike-4'] },
+  { word: 'Half marathon time', note: 'Running', bpm: 158, stat: '1:59', unit: 'h', photos: ['run-1', 'run-2', 'run-3', 'run-4'] },
+  { word: 'Longest ride in one go', note: 'Cycling', bpm: 145, stat: '144', unit: 'km', photos: ['bike-1', 'bike-2', 'bike-3', 'bike-4'] },
 ].map((c) => ({
   ...c,
   photos: c.photos.map((id) => ({ src: `/images/after-hours/${id}.jpg`, ratio: 0.75 })),
@@ -191,6 +192,8 @@ const ahTitle: string = about.hoursTitle || 'After hours';
 // variant switch: the pulse without its text, and the white sheet carrying
 // the pulse on (a beating dot and a live bpm per chapter)
 const ahPulse = true;
+// the Strava profile, as a small badge over the big figure
+const stravaUrl = 'https://strava.app.link/ZG1AEITG87b';
 // where photo i of a chapter sits: left edge (vw), width (vw), depth (how
 // fast it flies: deeper = slower, smaller, behind the headline)
 // layouts to compare (one per draft page): 'center' (the headline over
@@ -416,6 +419,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         <div class="ah__sheet" data-ah-sheet>
           <div class="ah__in">
           <div class="ah__head" data-ah-head>
+            <a class="ah__strava" href={stravaUrl} target="_blank" rel="noopener">
+              <span class="ah__strava-i" aria-hidden="true" set:html={stravaSvg.replace(/<title>.*?<\/title>/, '')} />
+              Follow me on Strava
+              <span aria-hidden="true">↗</span>
+            </a>
             {ahPulse && (
               <p
                 class="ah__bpm"
@@ -2013,9 +2021,66 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     line-height: 1.04em;
     text-align: center;
   }
+  /* the Strava badge over the figure: a small pill with the logo; it takes
+     the pointer even though the stage around it doesn't */
+  .ah__strava {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: clamp(16px, 2.4vw, 32px);
+    padding: 8px 14px 8px 10px;
+    border: 1px solid rgba(10, 10, 10, 0.14);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    font: 500 14px / 1 var(--font-head);
+    letter-spacing: -0.01em;
+    color: var(--bg);
+    text-decoration: none;
+    pointer-events: auto;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.16s var(--e-out);
+  }
+  .ah__strava-i {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fc4c02;
+    color: #fff;
+  }
+  .ah__strava-i :global(svg) {
+    width: 13px;
+    height: 13px;
+    fill: currentColor;
+  }
+  .ah__strava > span:last-child {
+    transition: transform 0.25s var(--e-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .ah__strava:hover {
+      background: #fff;
+      border-color: rgba(10, 10, 10, 0.28);
+    }
+    .ah__strava:hover > span:last-child {
+      transform: translate(2px, -2px);
+    }
+  }
+  .ah__strava:active {
+    transform: scale(0.97);
+  }
+  .ah__strava:focus-visible {
+    outline: 2px solid #fc4c02;
+    outline-offset: 3px;
+  }
   /* ---- after-hours layouts (drafts) ---- */
   /* counter, pared down: just the number, a small bpm and the word */
   .ah[data-layout='counter'] .ah__t,
+  .ah[data-layout='counter'] .ah__note,
   .ah[data-layout='counter'] .ah__bpm i {
     display: none;
   }
