@@ -165,8 +165,8 @@ const icons: Record<string, { c: string; svg: string }> = {
 // with placeholder photos); each photo gets a slot, a depth and a size
 // Bart's own photos (in /public, EXIF stripped), two chapters
 const ahDefault = [
-  { word: 'Running', note: 'Early starts, finish-line foil', bpm: 158, stat: '1:59', unit: 'h', photos: ['run-1', 'run-2', 'run-3', 'run-4'] },
-  { word: 'Cycling', note: 'Road, trails and the odd flat tyre', bpm: 145, stat: '144', unit: 'km', photos: ['bike-1', 'bike-2', 'bike-3', 'bike-4'] },
+  { word: 'Running', note: 'Half marathon time', bpm: 158, stat: '1:59', unit: 'h', photos: ['run-1', 'run-2', 'run-3', 'run-4'] },
+  { word: 'Cycling', note: 'Longest ride in one go', bpm: 145, stat: '144', unit: 'km', photos: ['bike-1', 'bike-2', 'bike-3', 'bike-4'] },
 ].map((c) => ({
   ...c,
   photos: c.photos.map((id) => ({ src: `/images/after-hours/${id}.jpg`, ratio: 0.75 })),
@@ -2009,7 +2009,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   /* ---- after-hours layouts (drafts) ---- */
   /* counter, pared down: just the number, a small bpm and the word */
   .ah[data-layout='counter'] .ah__t,
-  .ah[data-layout='counter'] .ah__note,
   .ah[data-layout='counter'] .ah__bpm i {
     display: none;
   }
@@ -2044,6 +2043,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     font-size: clamp(15px, 1.2vw, 18px);
     letter-spacing: -0.01em;
     color: rgb(110, 110, 110);
+  }
+  .ah[data-layout='counter'] .ah__note {
+    margin-top: 6px;
   }
   .ah[data-layout='counter'] .ah__w {
     margin-top: clamp(8px, 1.2vw, 20px);
@@ -3724,13 +3726,13 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         return { d: pad, colon: str.includes(':') ? 1 : 0, unit };
       };
       const stats: { s: string; u: string }[] = bpmEl ? JSON.parse(bpmEl.dataset.ahStats || '[]') : [];
-      const states: St[] = [parse('62', 'bpm'), ...stats.map((x) => parse(x.s, x.u))];
+      const states: St[] = stats.map((x) => parse(x.s, x.u));
       const unitEl = bpmEl?.querySelector<HTMLElement>('.ah__unit') ?? null;
       let aShown = 0;
       let aTarget = 0;
       let aRaf = 0;
       let aT = 0;
-      let unitShown = 'bpm';
+      let unitShown = states[0]?.unit ?? 'bpm';
       // the columns: each strip runs 0, 9, 8 ... 1, 0 from the top, so a
       // digit going up rolls in from above; every column rolls on its own,
       // slot-machine style, between one figure and the next
@@ -3805,10 +3807,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         else {
           aRaf = 0;
           aT = 0;
-          const bpm = Math.round(aShown) >= 1 ? bpms[Math.min(bpms.length - 1, Math.round(aShown) - 1)] : 62;
+          const bpm = bpms[Math.min(bpms.length - 1, Math.round(aShown))] ?? 62;
           bpmEl?.style.setProperty('--beat', `${(60 / bpm).toFixed(3)}s`);
         }
       };
+      if (unitEl) unitEl.textContent = unitShown;
       if (strips.length) draw(0);
       const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
       const io = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2); // ease-in-out cubic
@@ -3888,17 +3891,14 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         roll.style.transform = `translateY(${(-wi * 100) / nC}%)`;
         notes.style.transform = `translateY(${(-wi * 100) / nC}%)`;
         if (Math.round(wi) !== shown) shown = Math.round(wi);
-        // the counter, scrubbed by the scroll: it climbs from the desk's
-        // 62 bpm into chapter one's figure over half of that chapter, then
-        // rolls to each next figure over the last 70% of a chapter,
-        // arriving with the word
-        if (bpmEl && bpmB && states.length > 1) {
+        // the counter, scrubbed by the scroll: it holds each chapter's
+        // figure for the first half, then rolls to the next one over the
+        // second half, arriving with the word
+        if (bpmEl && bpmB && states.length) {
           const lo = Math.min(nC - 1, Math.floor(c));
-          // (chapter one climbs over its first half, holds, then hands over)
-          const from = lo === 0 ? 0.7 : 0.3;
+          const from = 0.5;
           const fr = lo < nC - 1 ? smooth(clamp((c - lo - from) / (1 - from))) : 0;
-          const t0 = smooth(clamp(c / 0.4));
-          aTarget = t0 < 1 ? t0 : 1 + lo + fr;
+          aTarget = lo + fr;
           if (!aRaf) aRaf = requestAnimationFrame(aGlide);
         }
         // 4. photos: each crosses the screen bottom to top around its
