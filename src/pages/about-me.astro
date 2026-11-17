@@ -488,7 +488,18 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       <div class="a9__lt-mark" data-lt-mark data-view={bView} data-path={bPath} aria-hidden="true">
         <span class="a9__lt-b" set:html={bSvg} />
         <canvas class="a9__lt-dots" data-lt-dots></canvas>
-        <p class="a9__lt-cap"><span data-cap-i>01 / 08</span><span data-cap-t>Bart Ocieczek</span></p>
+        <!-- how a project goes, as a quiet row of steps: the dots draw the
+             current one, a hairline under it fills until the next -->
+        <ol class="a9__lt-steps" data-steps>
+          {['Hello', 'Brief', 'Plan', 'Design', 'Build', 'Polish', 'Launch', 'Recharge'].map((t, i) => (
+            <li>
+              <button type="button" data-step={i} tabindex="-1">
+                <span>{String(i + 1).padStart(2, '0')}</span>
+                {t}
+              </button>
+            </li>
+          ))}
+        </ol>
       </div>
       <footer class="a9__lt-foot">
         <span>© Bart Ocieczek {new Date().getFullYear()}</span>
@@ -1628,37 +1639,65 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     touch-action: pan-y;
     cursor: crosshair;
   }
-  /* what the dots are drawing right now, swapped with a blur */
-  .a9__lt-cap {
+  /* the process: a quiet row of steps near the bottom; the current one
+     is lit and a hairline under it fills until the dots move on */
+  .a9__lt-steps {
     position: absolute;
-    top: clamp(8px, 2vw, 24px);
-    left: var(--pad);
+    left: 50%;
+    bottom: clamp(56px, 6vw, 84px);
     z-index: 1;
-    display: grid;
-    gap: 4px;
+    display: flex;
+    gap: clamp(14px, 2vw, 32px);
     margin: 0;
-    font-size: 13px;
-    pointer-events: none;
+    padding: 0;
+    list-style: none;
+    transform: translateX(-50%);
+    white-space: nowrap;
   }
-  .a9__lt-cap span:first-child {
-    color: var(--grey);
+  .a9__lt-steps button {
+    position: relative;
+    display: inline-flex;
+    gap: 6px;
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 12px;
+    color: rgba(240, 240, 238, 0.32);
+    cursor: pointer;
+    transition: color 0.4s ease;
+  }
+  .a9__lt-steps button span {
     font-variant-numeric: tabular-nums;
+    opacity: 0.6;
   }
-  .a9__lt-cap span:last-child {
-    font: 500 clamp(20px, 2vw, 30px) / 1.05 var(--font-head);
-    letter-spacing: -0.02em;
+  .a9__lt-steps button::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  .a9__lt-steps button.is-on {
     color: var(--ink);
   }
-  .a9__lt-cap span {
-    transition:
-      opacity 0.22s ease,
-      filter 0.22s ease,
-      transform 0.22s var(--e-out);
+  .a9__lt-steps button.is-on::after {
+    transform: scaleX(1);
+    transition: transform var(--hold, 4500ms) linear;
   }
-  .a9__lt-mark.is-cap-swap .a9__lt-cap span {
-    opacity: 0;
-    filter: blur(4px);
-    transform: translateY(4px);
+  @media (hover: hover) and (pointer: fine) {
+    .a9__lt-steps button:hover {
+      color: rgba(240, 240, 238, 0.7);
+    }
+  }
+  @media (max-width: 809px) {
+    .a9__lt-steps li:not(:has(.is-on)) {
+      display: none;
+    }
   }
   /* the plain glyph: a fallback while the dots load (or without JS) */
   .a9__lt-b {
@@ -3441,23 +3480,25 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     const mark = root.querySelector<HTMLElement>('[data-lt-mark]');
     const dotsCv = mark?.querySelector<HTMLCanvasElement>('[data-lt-dots]');
     const dctx = dotsCv?.getContext('2d');
-    const capI = mark?.querySelector<HTMLElement>('[data-cap-i]');
-    const capT = mark?.querySelector<HTMLElement>('[data-cap-t]');
     if (mark && dotsCv && dctx && typeof Path2D !== 'undefined') {
       const [vx, vy, vw] = (mark.dataset.view || '0 0 1 1').split(' ').map(Number);
       const glyph = new Path2D(mark.dataset.path || '');
       // a small 3D sculpture of dots: the B, then the things the page is
       // about, each with its caption. Line icons on a 24 grid (s = stroke,
       // f = fill); between shapes the dots burst out and fly into the next
+      // the process, step by step: hello (the B), a brief over coffee, a
+      // plan against the clock, design, build, polish with a little AI,
+      // launch with heart, then a run to recharge. Line icons on a 24 grid
+      // (s = stroke, f = fill)
       const shapes: { t: string; s?: string; f?: string }[] = [
-        { t: 'Bart Ocieczek' },
-        { t: 'Coffee first', s: 'M5 9h11v4.5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8.5 2.5c-1.2 1.2 1.2 2.2 0 3.8M12.5 2.5c-1.2 1.2 1.2 2.2 0 3.8M3.5 21.5h14' },
-        { t: 'Then a run', s: 'M2.5 17V9.5C3 7 4 6 5 6l2.5 1.5L9.5 5l2 3.5 3.5 2 4.5 1.5a3 3 0 0 1 2 2.8V17zM2.5 20.5h19M10 9.5l1.5-.8M11.8 11l1.6-.8' },
-        { t: 'Against the clock', s: 'M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 14V10M9.5 2.5h5M12 2.5V6M18.5 6.5l1.5-1.5' },
-        { t: 'Heart in it', s: 'M12 20.5S3.5 15.6 2.6 10.2C2 6.6 4.3 4 7.3 4c2 0 3.6 1.2 4.7 2.8C13.1 5.2 14.7 4 16.7 4c3 0 5.3 2.6 4.7 6.2C20.5 15.6 12 20.5 12 20.5zM6.5 11.5h3l1.5-3 2.2 5.5 1.6-2.5h3' },
-        { t: 'Designed', s: 'M5 5h14v10H5zM2 19.5h20' },
-        { t: 'And built', s: 'M8 6.5 2.5 12 8 17.5M16 6.5l5.5 5.5-5.5 5.5M14 3.5l-4 17' },
-        { t: 'With a little AI', f: 'M12 1.5c.8 6 3 8.6 10.5 10.5C15 13.9 12.8 16.5 12 22.5c-.8-6-3-8.6-10.5-10.5C9 10.1 11.2 7.5 12 1.5z' },
+        { t: 'Hello' },
+        { t: 'Brief', s: 'M5 9h11v4.5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8.5 2.5c-1.2 1.2 1.2 2.2 0 3.8M12.5 2.5c-1.2 1.2 1.2 2.2 0 3.8M3.5 21.5h14' },
+        { t: 'Plan', s: 'M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 14V10M9.5 2.5h5M12 2.5V6M18.5 6.5l1.5-1.5' },
+        { t: 'Design', s: 'M5 5h14v10H5zM2 19.5h20' },
+        { t: 'Build', s: 'M8 6.5 2.5 12 8 17.5M16 6.5l5.5 5.5-5.5 5.5M14 3.5l-4 17' },
+        { t: 'Polish', f: 'M12 1.5c.8 6 3 8.6 10.5 10.5C15 13.9 12.8 16.5 12 22.5c-.8-6-3-8.6-10.5-10.5C9 10.1 11.2 7.5 12 1.5z' },
+        { t: 'Launch', s: 'M12 20.5S3.5 15.6 2.6 10.2C2 6.6 4.3 4 7.3 4c2 0 3.6 1.2 4.7 2.8C13.1 5.2 14.7 4 16.7 4c3 0 5.3 2.6 4.7 6.2C20.5 15.6 12 20.5 12 20.5zM6.5 11.5h3l1.5-3 2.2 5.5 1.6-2.5h3' },
+        { t: 'Recharge', s: 'M2.5 17V9.5C3 7 4 6 5 6l2.5 1.5L9.5 5l2 3.5 3.5 2 4.5 1.5a3 3 0 0 1 2 2.8V17zM2.5 20.5h19M10 9.5l1.5-.8M11.8 11l1.6-.8' },
       ];
       let px = new Float32Array(0), py = px, pz = px, qx = px, qy = px, qz = px, hx = px, hy = px, hz = px, nx = px, ny = px, sw = px, tw = px, on = px, non = px, vis = px, dz = px, s0 = px;
       let targets: { x: Float32Array; y: Float32Array }[] = [];
@@ -3515,7 +3556,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const k = bw / vw;
         const ox = (W - bw) / 2;
         const oy = H * 0.1;
-        const box = H * 0.78;
+        const box = H * (small ? 0.62 : 0.72);
         targets = shapes.map((sh) =>
           sample((o) => {
             if (!sh.s && !sh.f) {
@@ -3524,7 +3565,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
               return;
             }
             const u = box / 24;
-            o.setTransform(u, 0, 0, u, W / 2 - 12 * u, H * 0.47 - 12 * u);
+            o.setTransform(u, 0, 0, u, W / 2 - 12 * u, H * (small ? 0.38 : 0.42) - 12 * u);
             o.lineWidth = small ? 2.8 : 2.4;
             o.lineCap = 'round';
             o.lineJoin = 'round';
@@ -3576,22 +3617,14 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           s0 = Float32Array.from(sw);
         }
       };
+      const stepBtns = [...mark.querySelectorAll<HTMLButtonElement>('[data-step]')];
       const caption = (i: number) => {
-        if (!capI || !capT) return;
-        const set = () => {
-          capI.textContent = `${String(i + 1).padStart(2, '0')} / ${String(shapes.length).padStart(2, '0')}`;
-          capT.textContent = shapes[i].t;
-        };
-        if (calm) return set();
-        mark.classList.add('is-cap-swap');
-        setTimeout(() => {
-          set();
-          mark.classList.remove('is-cap-swap');
-        }, 220);
+        stepBtns.forEach((b, j) => b.classList.toggle('is-on', j === i));
       };
       const HOLD = 3600;
-      const morph = (now: number) => {
-        cur = (cur + 1) % shapes.length;
+      mark.style.setProperty('--hold', `${HOLD + 900}ms`);
+      const morph = (now: number, to?: number) => {
+        cur = to ?? (cur + 1) % shapes.length;
         place(cur, nx, ny, non);
         const cx = W / 2;
         const cy = H / 2;
@@ -3739,9 +3772,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         });
         mark.addEventListener('pointercancel', off);
         // a click sends the dots flying into the next shape straight away
-        mark.addEventListener('click', () => {
+        mark.addEventListener('click', (e) => {
           const now = performance.now();
-          morph(now);
+          const st = (e.target as HTMLElement).closest<HTMLElement>('[data-step]');
+          if (st && Number(st.dataset.step) === cur) return;
+          morph(now, st ? Number(st.dataset.step) : undefined);
           nextAt = now + HOLD + 900;
           kick();
         });
