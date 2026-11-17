@@ -1988,7 +1988,12 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     height: 1.04em;
     margin: -0.07em 0;
   }
+  /* one fixed box for every unit (h, km, bpm), so swapping it never
+     shifts the number */
   .ah__unit {
+    display: inline-block;
+    width: 1.9em;
+    text-align: left;
     transition:
       opacity 0.16s ease,
       filter 0.16s ease;
