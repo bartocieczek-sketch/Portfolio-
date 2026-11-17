@@ -1831,7 +1831,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .ah {
     position: relative;
     z-index: 2;
-    height: calc(100svh + var(--n, 3) * 120svh + 60svh);
+    /* the last screen overlaps the next section: once the white has closed
+       the page carries straight on, no empty screen to scroll past */
+    height: calc(100svh + var(--n, 3) * 120svh + 100svh);
+    margin-bottom: -100svh;
     pointer-events: none;
   }
   .ah__pin {
@@ -1859,7 +1862,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     left: 0;
     height: 100svh;
     overflow: hidden;
-    pointer-events: auto;
   }
   .ah__head {
     position: absolute;
@@ -3515,6 +3517,13 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       const HEAD = [0.0, 0.07];
       const CH = [0.08, 0.9];
       const CLOSE = [0.92, 1];
+      // the close ends as the next section comes up, so no empty screen
+      const fitClose = (H: number, vh: number) => {
+        const end = (H - 1.6 * vh) / (H - vh);
+        CLOSE[1] = end;
+        CLOSE[0] = end - 0.05;
+        CH[1] = CLOSE[0] - 0.02;
+      };
       let raf = 0;
       let shown = 0;
       let vis = false;
@@ -3524,6 +3533,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const vh = innerHeight;
         const vw = innerWidth;
         const total = r.height - vh;
+        fitClose(r.height, vh);
         const p = clamp(-r.top / total);
         // 1. the circle: the pulse sticks with its dot in the middle, then the
         //    dot opens into the white sheet (exponential radius, so the zoom
