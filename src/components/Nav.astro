@@ -43,7 +43,7 @@ const to = (p: string) => href(Astro.locals, p);
     <a href={to("/about-me")} class="t-display" style="--n:2"><span>About me</span></a>
   </div>
   <div class="mobile-menu__bottom">
-    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display mobile-menu__cta"><span>Let's cooperate</span></a>}
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="mobile-menu__cta">Let's cooperate</a>}
   </div>
 </div>
 
@@ -161,8 +161,7 @@ const to = (p: string) => href(Astro.locals, p);
     flex-direction: column;
     gap: 8px;
   }
-  .mobile-menu__links a,
-  .mobile-menu__cta {
+  .mobile-menu__links a {
     display: block;
     overflow: hidden;
     padding-bottom: 0.06em;
@@ -180,6 +179,24 @@ const to = (p: string) => href(Astro.locals, p);
   .mobile-menu.is-open .mobile-menu__links a span {
     transform: none;
     transition: transform 0.85s var(--ease-expo) calc(0.18s + var(--n) * 0.07s);
+  }
+  /* the call to action: a black pill in the middle of the bottom */
+  .mobile-menu__cta {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0 30px;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    font: 500 16px / 1 var(--font-head);
+    letter-spacing: -0.01em;
+    transition: scale 0.16s var(--ease-out);
+  }
+  .mobile-menu__cta:active {
+    scale: 0.97;
   }
   .mobile-menu__bottom {
     display: flex;
