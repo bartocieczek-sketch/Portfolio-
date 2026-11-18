@@ -518,7 +518,8 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
     width: min(var(--w), var(--h) * var(--a));
     height: min(var(--h), var(--w) / var(--a));
     object-fit: cover;
-    border-radius: calc(min(var(--w), var(--h) * var(--a)) * var(--rad-k));
+    /* of the shorter side, so a wide shot isn't rounded into a pill */
+    border-radius: calc(min(var(--w), var(--h) * var(--a), var(--h), var(--w) / var(--a)) * var(--rad-k));
     background: #f1f1f1;
     pointer-events: auto;
     cursor: inherit;

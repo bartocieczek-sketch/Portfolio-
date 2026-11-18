@@ -1036,7 +1036,3 @@ html:active-view-transition-type(work-back)::view-transition-new(root) {
   }
 }
 
-/* drawn by the edge lens (src/scripts/edge-lens.ts) in WebGL right now */
-.lens-on {
-  visibility: hidden !important;
-}
