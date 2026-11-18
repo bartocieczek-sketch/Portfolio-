@@ -1,53 +1,34 @@
 ---
-// Draft: simpler, sharper monogram ideas joining B and O (not linked anywhere)
+// Draft: B + O monogram, set from real blackletter type (not linked anywhere)
 import Base from '../layouts/Base.astro';
 export const prerender = true;
-const blackletter = [
-  { n: "Stem + blackletter O", d: "The B stem with its flag and wedge foot, beside a blackletter O (hairline left, heavy crescent right); two hairlines tie B and O, like your reference.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M6 17 C11 9 19 7 27 11 L37 4 L37 85 L45 92 L31 100 L25 94 L14 99 L21 88 L22 23 C16 19 11 19 6 17 Z\" fill=\"currentColor\"/><path d=\"M49 7 L51 6 L51 93 L49 94 Z\" fill=\"currentColor\"/><path d=\"M52 7 C80 21 97 42 91 63 C87 77 77 87 61 95 C73 81 79 67 77 52 C75 36 66 21 52 7 Z\" fill=\"currentColor\"/><path d=\"M45 88 L61 95 L51 99 Z\" fill=\"currentColor\"/><path d=\"M37 49 L78 31 L78.6 34 L37 52.5 Z\" fill=\"currentColor\"/><path d=\"M37 62 L79 45 L79.4 48 L37 65.5 Z\" fill=\"currentColor\"/></svg>" },
-  { n: "Blackletter B", d: "One glyph: a blackletter B whose bowls swell like an O, a hairline at the waist.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M6 17 C11 9 19 7 27 11 L37 4 L37 85 L45 92 L31 100 L25 94 L14 99 L21 88 L22 23 C16 19 11 19 6 17 Z\" fill=\"currentColor\"/><path d=\"M38 6 C62 12 80 22 82 36 C83 44 76 49 66 51 C80 54 90 64 88 76 C86 87 72 95 50 99 C64 90 72 82 72 74 C72 63 62 56 46 54 L46 49 C60 46 68 40 68 33 C68 23 56 14 38 6 Z\" fill=\"currentColor\"/><path d=\"M37 50 L58 50 L58 53 L37 53 Z\" fill=\"currentColor\"/></svg>" },
-  { n: "Ligature BO", d: "B stem + a pointed blackletter O as a ligature, one hairline cutting through both.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M6 17 C11 9 19 7 27 11 L37 4 L37 85 L45 92 L31 100 L25 94 L14 99 L21 88 L22 23 C16 19 11 19 6 17 Z\" fill=\"currentColor\"/><path d=\"M37 6 L55 18 L55 21 L37 12 Z\" fill=\"currentColor\"/><path d=\"M62 10 C84 18 96 36 94 56 C92 76 80 90 64 96 C72 84 78 70 78 54 C78 38 72 22 62 10 Z\" fill=\"currentColor\"/><path d=\"M62 10 C54 20 48 34 48 54 C48 72 54 86 64 96 C50 88 40 74 40 56 C40 36 48 20 62 10 Z\" fill=\"currentColor\"/><path d=\"M30 58 L92 30 L92.6 33 L30 61 Z\" fill=\"currentColor\"/></svg>" },
-];
 const marks = [
-  { n: "Stem + O", d: "A slanted stem fused to a perfect ring: the shortest way to say B and O.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M10.00 12.00 L26.00 4.00 L26.00 96.00 L10.00 88.00Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/><path d=\"M24 50a36 36 0 1 0 72 0a36 36 0 1 0 -72 0Z M39 50a21 21 0 1 1 42 0a21 21 0 1 1 -42 0Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/></svg>" },
-  { n: "Lower bowl O", d: "A classic B whose lower bowl is a full O.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M10.00 4.00 L24.00 4.00 L24.00 96.00 L10.00 96.00Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/><path d=\"M24 4 H40 A20 20 0 0 1 40 44 H24 V32 H40 A8 8 0 0 0 40 16 H24 Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/><path d=\"M22 68a28 28 0 1 0 56 0a28 28 0 1 0 -56 0Z M36 68a14 14 0 1 1 28 0a14 14 0 1 1 -28 0Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/></svg>" },
-  { n: "Octagon", d: "The same idea cut sharp: chamfered bowl, octagonal O.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M10.00 4.00 L24.00 4.00 L24.00 96.00 L10.00 96.00Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/><path d=\"M24.00 4.00 L54.00 4.00 L66.00 16.00 L66.00 30.00 L56.00 40.00 L24.00 40.00 L24.00 28.00 L50.00 28.00 L54.00 24.00 L54.00 18.00 L50.00 16.00 L24.00 16.00Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/><path d=\"M78.79 79.10 L63.10 94.79 L40.90 94.79 L25.21 79.10 L25.21 56.90 L40.90 41.21 L63.10 41.21 L78.79 56.90Z M65.86 73.74 L57.74 81.86 L46.26 81.86 L38.14 73.74 L38.14 62.26 L46.26 54.14 L57.74 54.14 L65.86 62.26Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/></svg>" },
-  { n: "Cut ring", d: "An O with a stem through its side and a waist bar, so the ring reads as B too.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M16 50a40 40 0 1 0 80 0a40 40 0 1 0 -80 0Z M30 50a26 26 0 1 1 52 0a26 26 0 1 1 -52 0Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/><path d=\"M18.00 10.00 L32.00 0.00 L32.00 100.00 L18.00 90.00Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/><path d=\"M32 46 H82 V54 H32 Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/></svg>" },
-  { n: "Badge", d: "A solid O with the B cut out of it, works as a stamp or avatar.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M4 50a46 46 0 1 0 92 0a46 46 0 1 0 -92 0Z M30 20 V80 H54 A16 16 0 0 0 58 50 A14 14 0 0 0 54 20 Z M40 30 H52 A6 6 0 0 1 52 42 H40 Z M40 56 H54 A7 7 0 0 1 54 70 H40 Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/></svg>" },
-  { n: "Square", d: "A sharp square O with B counters and a notch at the waist.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 8 H92 V44 L84 50 L92 56 V92 H8 Z M34 22 H74 V43 H34 Z M34 57 H74 V78 H34 Z\" fill=\"currentColor\" fill-rule=\"evenodd\"/></svg>" },
-  { n: "Monoline", d: "One even stroke: B on top, a full O at the bottom.", svg: "<svg viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M20 6 V94 M20 6 H42 A16 16 0 0 1 42 38 H20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"10\" stroke-linejoin=\"miter\" stroke-linecap=\"square\"/><circle cx=\"49\" cy=\"66\" r=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"10\"/></svg>" }
+  { k: "01", n: "bo, Bogenverbindung", f: "Textura, Grenze Gotisch Bold", d: "The honest blackletter answer. In textura, when a round letter follows a bowl, the two curves are not set side by side, they are fused: b\u2019s bowl and o\u2019s left stroke become one shared stroke. That \u201cbow ligature\u201d is centuries old, so the mark reads as type, not as an invented logo. Sharp broken curves, one vertical rhythm, works down to 16px.", svg: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"14 -676 709 709\"><path transform=\"scale(1 -1)\" d=\"M273.0 467.0Q270.0 467.0 254.0 455.0L182.0 401.0L176.0 403.0L183.0 617.0Q183.0 621.0 175.0 630.0Q167.0 639.0 158.0 646.5Q149.0 654.0 146.0 654.0Q141.0 654.0 124.0 652.0Q107.0 650.0 85.5 647.0Q64.0 644.0 44.0 640.5Q24.0 637.0 14.0 635.0V583.0L53.0 569.0V20.0Q69.0 16.0 98.5 11.0Q128.0 6.0 160.0 1.0Q192.0 -4.0 216.5 -7.5Q241.0 -11.0 246.0 -11.0Q257.0 -11.0 280.5 1.0Q304.0 13.0 331.5 30.5Q343.87908935546875 38.377593994140625 355.4472351074219 46.25491714477539Q357.91668701171875 43.81835174560547 360.5 41.5Q419.0 -11.0 529.0 -11.0Q540.0 -11.0 563.5 1.0Q587.0 13.0 615.0 30.5Q643.0 48.0 666.0 65.5Q689.0 83.0 699.0 94.0Q708.0 118.0 715.5 160.0Q723.0 202.0 723.0 251.0Q723.0 355.0 666.5 411.0Q610.0 467.0 500.0 467.0Q489.0 467.0 464.5 454.5Q440.0 442.0 412.0 424.0Q401.68212890625 417.3670654296875 391.9070129394531 410.73388671875Q369.5990295410156 438.1906433105469 339.5 452.5Q309.0 467.0 273.0 467.0ZM531.0 58.0Q510.0 58.0 489.0 71.5Q468.0 85.0 454.0 120.0Q440.0 155.0 440.0 222.0Q440.0 296.0 448.0 341.5Q456.0 387.0 467.0 392.0Q474.0 396.0 481.0 396.5Q488.0 397.0 495.0 397.0Q528.0 397.0 547.5 375.0Q567.0 353.0 576.0 317.0Q585.0 281.0 585.0 237.0Q585.0 176.0 580.5 138.0Q576.0 100.0 572.0 77.0L563.0 72.5Q554.0 68.0 544.5 63.5Q535.0 59.0 531.0 58.0ZM252.0 372.0Q262.0 372.0 274.0 355.5Q286.0 339.0 294.0 308.0Q302.0 277.0 302.0 233.0Q302.0 173.0 298.5 135.0Q295.0 97.0 288.5 79.0Q282.0 61.0 273.0 57.0Q266.0 55.0 249.5 58.5Q233.0 62.0 215.0 69.0Q197.0 76.0 183.0 83.0V341.0Q191.0 346.0 206.0 353.0Q221.0 360.0 235.0 366.0Q249.0 372.0 252.0 372.0Z\" fill=\"currentColor\" fill-rule=\"nonzero\"/></svg>" },
+  { k: "02", n: "BO, Fraktur capitals", f: "Fraktur, UnifrakturMaguntia", d: "Closest to the B you have now: the swash capital B keeps its flag and hairline, the O tucks under its bowl and shares the stroke where they meet. More calligraphic and personal; needs a little size to breathe (from about 28px).", svg: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"28 -1999 2540 2540\"><path transform=\"scale(1 -1)\" d=\"M387.0 286.0Q494.0 319.0 603.5 191.5Q713.0 64.0 867.0 10.0Q1002.0 -37.0 1155.0 -20.0Q1308.0 -3.0 1473.0 93.0Q1484.5482177734375 99.81343841552734 1495.65673828125 106.70622253417969Q1505.7364501953125 100.42769622802734 1516.0 94.0Q1738.0 -47.0 1962.0 -13.0Q2186.0 21.0 2390.0 242.0Q2512.0 373.0 2553.5 565.0Q2595.0 757.0 2516.0 964.0Q2437.0 1168.0 2240.5 1302.0Q2044.0 1436.0 1804.0 1467.0Q1792.0 1468.0 1787.0 1459.0Q1738.0 1369.0 1644.0 1311.0Q1612.9713134765625 1291.8546142578125 1576.38623046875 1271.6199951171875Q1540.469482421875 1357.0928955078125 1485.0 1404.5Q1399.0 1478.0 1284.0 1478.0Q1164.0 1478.0 1086.5 1416.0Q1009.0 1354.0 981.0 1253.0Q979.0 1241.0 967.0 1241.0Q956.0 1239.0 951.0 1250.0Q899.0 1347.0 800.0 1411.0Q701.0 1475.0 536.0 1482.0Q343.0 1490.0 195.5 1364.0Q48.0 1238.0 31.0 1058.0Q14.0 878.0 101.0 763.5Q188.0 649.0 415.0 652.0Q500.0 652.0 566.0 694.0Q608.0 720.0 631.0 745.0Q640.0 754.0 636.0 767.0Q632.0 780.0 617.0 780.0Q605.0 780.0 592.5 765.5Q580.0 751.0 571.0 744.0Q502.0 694.0 389.0 697.0Q248.0 718.0 184.0 801.0Q120.0 884.0 120.0 995.0Q120.0 1102.0 225.0 1188.5Q330.0 1275.0 453.0 1275.0Q634.0 1275.0 723.0 1133.0Q812.0 991.0 813.0 857.0Q814.0 643.0 651.5 519.0Q489.0 395.0 331.0 308.0Q320.0 301.0 320.0 289.0Q320.0 266.0 342.0 266.0Q346.0 266.0 352.0 269.0Q359.0 272.0 368.5 276.5Q378.0 281.0 387.0 286.0ZM1598.7894287109375 1208.288818359375Q1682.473388671875 1224.6412353515625 1774.0 1208.0Q1950.0 1176.0 2119.0 1056.0Q2359.0 884.0 2402.5 646.5Q2446.0 409.0 2354.0 278.0Q2255.0 139.0 2107.0 119.0Q1959.0 99.0 1755.0 249.0Q1727.237548828125 269.38592529296875 1701.68896484375 287.144775390625Q1772.979736328125 384.74639892578125 1776.833740234375 494.65093994140625Q1823.1441650390625 562.7750854492188 1816.0 623.5Q1806.5487060546875 703.8357543945312 1659.67236328125 778.62158203125Q1578.7554931640625 856.9126586914062 1477.0 880.0Q1465.0 883.0 1464.0 894.0Q1462.0 905.0 1473.0 911.0L1699.0 1016.0Q1719.0 1026.0 1715.5 1042.5Q1712.0 1059.0 1691.0 1059.0Q1639.0 1057.0 1610.0 1166.0Q1604.8109130859375 1187.95361328125 1598.7894287109375 1208.288818359375ZM1049.0 758.0Q1029.0 749.0 1032.5 731.5Q1036.0 714.0 1058.0 715.0Q1154.0792236328125 721.042724609375 1230.9884033203125 710.6539306640625Q1292.765869140625 643.3812866210938 1415.0 597.0Q1461.50634765625 579.0501708984375 1499.0618896484375 563.2088012695312Q1500.28369140625 561.6161499023438 1501.5 560.0Q1573.0 465.0 1571.5 371.5Q1571.475341796875 369.9595031738281 1571.4361572265625 368.4199523925781Q1503.8658447265625 404.1524353027344 1464.0 407.0Q1380.0 413.0 1161.0 239.0Q1144.0 224.0 1154.5 211.5Q1165.0 199.0 1180.0 208.0Q1252.0 253.0 1334.5 204.5Q1385.897705078125 174.28436279296875 1443.701904296875 138.82752990722656Q1395.753173828125 106.83651733398438 1339.0 100.5Q1236.0 89.0 1133.0 138.0Q1051.0 176.0 977.5 233.0Q904.0 290.0 836.0 357.0Q739.0 450.0 649.0 449.0Q790.0 553.0 916.0 702.5Q1042.0 852.0 1020.0 1037.0Q1007.0 1152.0 1025.5 1242.0Q1044.0 1332.0 1150.0 1356.0Q1229.0 1364.0 1270.0 1303.0Q1310.7510986328125 1242.3702392578125 1337.6717529296875 1145.18798828125Q1173.052734375 1034.7152099609375 1168.0 878.5Q1166.959228515625 846.322509765625 1173.7115478515625 816.8383178710938ZM1397.8753662109375 922.59765625Q1375.709716796875 953.365966796875 1371.0 990.5Q1367.077880859375 1021.4241943359375 1372.8040771484375 1048.20654296875Q1400.7333984375 994.0980224609375 1440.0 971.0Q1448.0 966.0 1448.0 956.0Q1448.0 949.0 1439.0 942.0L1397.8753662109375 922.59765625Z\" fill=\"currentColor\" fill-rule=\"nonzero\"/></svg>" },
+  { k: "03", n: "BO, broken textura", f: "Textura, UnifrakturCook Bold", d: "Heavier and more graphic: two broken capitals locked together through the O\u2019s left stroke. Strong as a stamp or favicon, the most \u201csharp\u201d of the three.", svg: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"22 -1960 2372 2372\"><path transform=\"scale(1 -1)\" d=\"M184.0 1170.0Q284.0 1087.0 282.0 965.0L276.0 474.0L22.0 289.0Q393.0 267.0 681.0 12.0Q926.7572631835938 122.09925079345703 1090.6165771484375 241.62026977539062Q1264.9744873046875 30.0 1640.0 30.0Q1731.0 30.0 1860.0 92.5Q1989.0 155.0 2107.0 278.5Q2225.0 402.0 2308.5 585.5Q2392.0 769.0 2394.0 1009.0Q2061.0 1209.0 1917.0 1502.0Q1870.0 1461.0 1822.0 1411.5Q1774.0 1362.0 1726.0 1315.0Q1727.0 1406.0 1736.0 1535.0Q1427.0 1489.0 1211.0 1327.0Q1208.9122314453125 1325.4342041015625 1206.820068359375 1323.8544921875Q997.0186157226562 1462.72802734375 807.0 1535.0ZM1725.0 1187.0Q1950.0 1015.0 2033.0 858.0Q2116.0 701.0 2116.0 582.0Q2116.0 423.0 1996.0 323.0Q1894.0 237.0 1736.0 232.0Q1726.0 231.0 1715.0 231.0Q1605.0 231.0 1507.0 290.0Q1584.0 435.0 1835.0 495.0Q1729.0 730.0 1725.0 1187.0ZM909.0 232.0Q788.0 353.0 496.0 499.0L597.0 561.0L599.0 829.0Q672.0 870.0 730.5 870.0Q789.0 870.0 832.0 857.0Q839.1224365234375 854.7476196289062 846.0341796875 852.3023071289062Q893.7034301757812 575.80322265625 1016.2045288085938 355.50579833984375Q977.0908813476562 291.57952880859375 909.0 232.0ZM1417.0 359.0Q1363.3388671875 409.3073425292969 1323.191162109375 470.08148193359375Q1219.6898193359375 626.7581787109375 1206.0 853.0Q1204.0 877.0 1204.0 900.0Q1204.0 939.4069213867188 1208.4525146484375 975.798095703125Q1235.2978515625 1195.2095947265625 1424.0 1305.0Q1446.0 1147.0 1448.0 986.0Q1450.0 825.0 1452.5 737.5Q1455.0 650.0 1455.0 634.0Q1455.0 465.0 1417.0 359.0ZM911.0 1137.0 600.0 926.0 602.0 1290.0Q771.0 1241.0 911.0 1137.0Z\" fill=\"currentColor\" fill-rule=\"nonzero\"/></svg>" }
 ];
 ---
 
-<Base title="Monogram ideas" description="Draft monogram ideas">
+<Base title="Monogram" description="Monogram drafts">
   <main class="mg">
-    <h1>B + O, simpler and sharper</h1>
-    <h2>In the style of your reference</h2>
+    <h1>Bart Ocieczek, monogram</h1>
+    <p class="mg__lede">Built from real blackletter type and joined the way scribes and punchcutters joined letters, rather than drawn from scratch. Each mark is a single clean outline.</p>
     <ol>
-      {blackletter.map((m, i) => (
+      {marks.map((m) => (
         <li>
           <div class="mg__big mg__light" set:html={m.svg} />
           <div class="mg__big mg__dark" set:html={m.svg} />
           <div class="mg__sizes">
-            <span class="s48" set:html={m.svg} />
-            <span class="s28" set:html={m.svg} />
-            <span class="s18" set:html={m.svg} />
+            <span class="s64" set:html={m.svg} />
+            <span class="s32" set:html={m.svg} />
+            <span class="s20" set:html={m.svg} />
+            <span class="s16" set:html={m.svg} />
           </div>
-          <p><b>{String.fromCharCode(65 + i)} {m.n}</b> {m.d}</p>
-        </li>
-      ))}
-    </ol>
-    <h2>Geometric</h2>
-    <ol>
-      {marks.map((m, i) => (
-        <li>
-          <div class="mg__big mg__light" set:html={m.svg} />
-          <div class="mg__big mg__dark" set:html={m.svg} />
-          <div class="mg__sizes">
-            <span class="s48" set:html={m.svg} />
-            <span class="s28" set:html={m.svg} />
-            <span class="s18" set:html={m.svg} />
+          <div class="mg__txt">
+            <p class="mg__n">{m.k} {m.n}</p>
+            <p class="mg__f">{m.f}</p>
+            <p>{m.d}</p>
           </div>
-          <p><b>{String(i + 1).padStart(2, '0')} {m.n}</b> {m.d}</p>
         </li>
       ))}
     </ol>
@@ -55,21 +36,22 @@ const marks = [
 </Base>
 
 <style>
-  .mg { padding: 120px 24px 80px; background: #f0f0ee; color: #0a0a0a; min-height: 100vh; font: 500 15px/1.4 var(--font-head); }
-  h2 { margin: 56px 0 20px; font-size: 20px; letter-spacing: -0.02em; }
-  h1 { margin: 0 0 16px; font-size: clamp(32px, 4vw, 56px); letter-spacing: -0.04em; }
-  ol { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; margin: 0; padding: 0; list-style: none; }
-  li { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .mg__big { aspect-ratio: 1; display: grid; place-items: center; border-radius: 20px; }
-  .mg__big :global(svg) { width: 56%; height: 56%; }
-  .mg__light { background: #f1f1f1; color: #2a2a2a; }
+  .mg { padding: 120px 24px 80px; background: #f0f0ee; color: #0a0a0a; min-height: 100vh; font: 500 15px/1.45 var(--font-head); }
+  h1 { margin: 0 0 12px; font-size: clamp(32px, 4vw, 56px); letter-spacing: -0.04em; }
+  .mg__lede { max-width: 640px; margin: 0 0 48px; color: #6e6e6e; }
+  ol { display: grid; gap: 56px; margin: 0; padding: 0; list-style: none; }
+  li { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(240px, 0.9fr); gap: 10px; align-items: start; }
+  .mg__big { aspect-ratio: 1; display: grid; place-items: center; border-radius: 24px; }
+  .mg__big :global(svg) { width: 62%; height: 62%; }
+  .mg__light { background: #fff; color: #141414; }
   .mg__dark { background: #0a0a0a; color: #f0f0ee; }
-  .mg__sizes { grid-column: 1 / -1; display: flex; align-items: center; gap: 20px; padding: 12px 16px; border-radius: 14px; background: #fff; }
+  .mg__sizes { grid-column: 1 / 3; display: flex; align-items: center; gap: 28px; padding: 16px 20px; border-radius: 16px; background: #fff; color: #141414; }
   .mg__sizes span { display: block; }
   .mg__sizes :global(svg) { display: block; width: 100%; height: 100%; }
-  .s48 { width: 48px; height: 48px; }
-  .s28 { width: 28px; height: 28px; }
-  .s18 { width: 18px; height: 18px; }
-  p { grid-column: 1 / -1; margin: 4px 0 0; color: #6e6e6e; }
-  p b { color: #0a0a0a; font-weight: 500; }
+  .s64 { width: 64px; height: 64px; } .s32 { width: 32px; height: 32px; } .s20 { width: 20px; height: 20px; } .s16 { width: 16px; height: 16px; }
+  .mg__txt { grid-column: 3; grid-row: 1 / 3; padding: 4px 8px; }
+  .mg__txt p { margin: 0 0 10px; color: #5a5a5a; }
+  .mg__txt .mg__n { color: #0a0a0a; font-size: 22px; letter-spacing: -0.03em; margin-bottom: 2px; }
+  .mg__txt .mg__f { font-size: 13px; color: #8a8a8a; margin-bottom: 14px; }
+  @media (max-width: 809px) { li { grid-template-columns: 1fr 1fr; } .mg__txt { grid-column: 1 / -1; grid-row: auto; } }
 </style>
