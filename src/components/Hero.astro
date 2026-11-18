@@ -172,9 +172,17 @@ const LAPS = 3;
       a.finished.then(finish, finish);
       setTimeout(finish, T + 4000); // only if the timeline never ends
     };
-    // wait for the 3D to be drawn (it signals) but never hold the page long
-    window.addEventListener('preload:mark-ready', start, { once: true });
-    setTimeout(start, 900);
+    // wait for the 3D to be drawn (it signals) and for Neue Montreal (so the
+    // words never show in a stand-in face), but never hold the page long
+    var markOk = false;
+    var fontOk = !(document.fonts && document.fonts.load);
+    var go = function () {
+      if (markOk && fontOk) start();
+    };
+    window.addEventListener('preload:mark-ready', function () { markOk = true; go(); }, { once: true });
+    if (!fontOk)
+      document.fonts.load('500 18px "PP Neue Montreal"').then(function () { fontOk = true; go(); }, function () { fontOk = true; go(); });
+    setTimeout(start, 1400);
   })();
 </script>
 
