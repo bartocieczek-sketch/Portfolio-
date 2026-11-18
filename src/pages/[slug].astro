@@ -875,29 +875,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 </style>
 
 <script>
-  // the home column's edge lens, carried on: pictures and videos reaching
-  // the top or bottom band of the screen bend as the covers do on home
-  import { edgeLens } from '../scripts/edge-lens';
-  {
-    const page = document.querySelector<HTMLElement>('.case');
-    if (page)
-      edgeLens({
-        items: () => [...page.querySelectorAll<HTMLElement>('.case__cover, figure.media')],
-        media: (el) => {
-          if (el.classList.contains('case__cover')) {
-            const hi = el.querySelector<HTMLImageElement>('.case__cover-hi');
-            return hi?.complete && hi.naturalWidth ? hi : el.querySelector<HTMLImageElement>('.case__cover-lo');
-          }
-          return el.querySelector<HTMLImageElement | HTMLVideoElement>('img, video');
-        },
-        parent: page,
-        z: 4,
-        delay: 1400,
-      });
-  }
-</script>
-
-<script>
   // Heading back home, something on screen always flies into the pill the
   // project was opened from (Hero.astro restores the column):
   // - the big cover, when it's still in view (corners round off into the pill)

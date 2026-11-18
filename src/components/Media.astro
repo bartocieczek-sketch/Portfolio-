@@ -55,7 +55,6 @@ const still = isSvg || (edge !== null && edge >= EDGE_BUSY);
   )}
   {item.kind === 'video' && item.videoUrl && (
     <video
-      crossorigin="anonymous"
       data-src={item.videoUrl}
       data-autoplay
       muted
