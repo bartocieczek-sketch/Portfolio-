@@ -322,6 +322,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         <ul class="a9__jobs" data-jobs>
           {jobs.map((j, i) => (
             <li data-in data-logo={j.logo ?? ''}>
+              {j.logo && <img class="a9__job-pic" src={j.logo} alt="" width="88" height="88" loading="lazy" decoding="async" />}
               <span>{j.company}</span>
               <span class="a9__dim">{j.role}</span>
               <span class="a9__when">{j.when}</span>
@@ -1263,6 +1264,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+  .a9__job-pic {
+    display: none;
   }
   .a9__when {
     justify-self: end;
@@ -3160,6 +3164,37 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     .a9__when {
       grid-row: 1;
       grid-column: 2;
+    }
+    /* phones: no trail to follow, so each job shows its picture on the
+       left; title and company sit close; the years a size down */
+    .a9__jobs[data-jobs] li {
+      grid-template-columns: 44px 1fr auto;
+      column-gap: 14px;
+      row-gap: 2px;
+      align-items: center;
+    }
+    .a9__jobs[data-jobs] li > span:not(.a9__dim):not(.a9__when) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .a9__jobs[data-jobs] .a9__dim {
+      grid-column: 2;
+      grid-row: 2;
+    }
+    .a9__jobs[data-jobs] .a9__when {
+      grid-column: 3;
+      grid-row: 1 / span 2;
+      font-size: 14px;
+    }
+    .a9__job-pic {
+      display: block;
+      grid-column: 1;
+      grid-row: 1 / span 2;
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: #1c1c1c;
     }
   }
   @media (prefers-reduced-motion: reduce) {
