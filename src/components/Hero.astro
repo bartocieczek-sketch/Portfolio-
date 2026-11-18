@@ -455,6 +455,28 @@ const LAPS = 3;
   .vh.is-to-work .vh__gl {
     opacity: 0;
   }
+  /* and everything written around the column fades away softly the moment
+     the link is pressed, while the next page loads (the nav stays) */
+  .vh.is-to-work .vh__details,
+  .vh.is-to-work .vh__intro,
+  .vh.is-to-work .vh__line,
+  .vh.is-to-work .vh__backdrop {
+    animation: vh-away 0.75s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  @keyframes vh-away {
+    to {
+      opacity: 0;
+      filter: blur(6px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vh.is-to-work .vh__details,
+    .vh.is-to-work .vh__intro,
+    .vh.is-to-work .vh__line,
+    .vh.is-to-work .vh__backdrop {
+      animation-duration: 0.2s;
+    }
+  }
   /* WebGL draws the covers; the DOM images keep the layout and the links */
   .vh.has-gl .vh__pill {
     background: none;
@@ -747,6 +769,15 @@ const LAPS = 3;
         } catch {}
       }),
     );
+    // back onto home from the bfcache: undo the send-off
+    window.addEventListener('pageshow', (e) => {
+      if (!e.persisted || !hero.classList.contains('is-to-work')) return;
+      hero.classList.remove('is-to-work');
+      hero.querySelectorAll<HTMLElement>('[data-media], .nav').forEach((el) => {
+        el.style.removeProperty('view-transition-name');
+        el.style.removeProperty('view-transition-class');
+      });
+    });
     const N = pills.length / 3;
 
     // ---------- Geometry ----------

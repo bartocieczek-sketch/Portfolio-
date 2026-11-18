@@ -965,7 +965,7 @@ html:active-view-transition-type(cover-back)::view-transition-group(project-cove
    the column's radius to the tile's; the shots around fly in on the page
    itself (see work.astro). */
 html:active-view-transition-type(work)::view-transition-old(root) {
-  animation: vt-work-out 0.5s var(--ease-out) both;
+  animation: vt-work-out 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
   z-index: 1;
 }
 html:active-view-transition-type(work)::view-transition-new(root) {
@@ -1004,7 +1004,7 @@ html:active-view-transition-type(work)::view-transition-new(.xcov) {
 @keyframes vt-work-out {
   to {
     opacity: 0;
-    filter: blur(10px);
+    filter: blur(8px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
