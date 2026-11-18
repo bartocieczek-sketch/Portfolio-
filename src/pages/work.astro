@@ -146,10 +146,7 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
 
       // camera: where the centre of the screen sits in the field
       var x = 0, y = 0, tx = 0, ty = 0, speed = 0, mdx = 0, mdy = 1;
-      // for the edge lens (see the module script below): how fast, which way
-      window.__wkMotion = function () {
-        return { speed: Math.min(speed / 2600, 1), dx: mdx, dy: mdy };
-      };
+
 
       // from home: centre the field on the cover that was in the middle of
       // the column (its neighbours then sit above and below it, as there)
@@ -455,21 +452,6 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
     })();
   </script>
   <div id="wk-ready" hidden></div>
-  <script>
-    // the home column's edge lens, on the field: tiles reaching the top or
-    // bottom band bend as the covers do on home (after they've flown in)
-    import { edgeLens } from '../scripts/edge-lens';
-    const main = document.querySelector<HTMLElement>('.wk');
-    if (main)
-      edgeLens({
-        items: () => [...main.querySelectorAll<HTMLElement>('.wk__img')],
-        media: (el) => el as HTMLImageElement,
-        parent: main,
-        z: 2,
-        motion: () => (window as unknown as { __wkMotion?: () => { speed: number; dx: number; dy: number } }).__wkMotion?.() ?? null,
-        delay: document.documentElement.classList.contains('wk-flown') ? 2100 : 1700,
-      });
-  </script>
 </Base>
 
 <style>
