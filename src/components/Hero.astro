@@ -737,6 +737,7 @@ const LAPS = 3;
           }
         });
         hero.classList.add('is-to-work');
+        hero.querySelector<HTMLElement>('.nav')?.style.setProperty('view-transition-name', 'site-nav');
         best.forEach(({ el }, slug) => {
           el.style.setProperty('view-transition-name', `x-${slug}`);
           el.style.setProperty('view-transition-class', 'xcov');

@@ -3,12 +3,13 @@
 // from home sit in it among loose shots (explorations, side work, details).
 // Drag or scroll in any direction; the field bends like it sits under a
 // lens (tiles toward the edges shrink, turn and blur). Click one to bring it
-// up close. No nav here, just the way back.
+// up close. The nav stays (it holds still through the flight from home).
 // Coming from home through "Explorations", the covers on screen fly out of
 // the column into their tiles (a cross-document view transition, names set
 // in Hero.astro and in the inline script below) while the shots around them
 // fly in and settle. Any other way in, the whole field flies in.
 import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
 import { EXPLORE_QUERY, HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
 import { load } from '../lib/load';
 import { href } from '../lib/preview';
@@ -90,6 +91,9 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
   <link slot="head" rel="expect" href="#wk-ready" blocking="render" />
   <main class="wk" data-work>
     <h1 class="wk__sr">Explorations</h1>
+    <header class="wk__nav">
+      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
+    </header>
     <div class="wk__field" data-wk-field data-lenis-prevent>
       {n > 0 && pool.map((s) => (
         <div class="wk__cell" style={`--c:${s.c};--r:${s.r};--a:${items[s.p].a.toFixed(4)}`}>
@@ -399,6 +403,41 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
         wake();
       });
 
+      // ---------- back home ----------
+      // A cover on screen flies back into its spot in the column (home's
+      // own "back from a case study" flight, see Hero.astro); with none on
+      // screen the column still opens on the cover nearest in the field,
+      // and the field zooms away past the viewer (type 'work-back', Base).
+      addEventListener('pageswap', function (e) {
+        var to = e.activation && e.activation.entry && e.activation.entry.url;
+        try {
+          sessionStorage.removeItem('vt-back');
+          var u = new URL(to, location.href);
+          if (u.origin !== location.origin || !/^\/(preview\/?)?$/.test(u.pathname)) return;
+          clearNames();
+          var best = null, bd = Infinity, near = null, nd = Infinity;
+          cells.forEach(function (k) {
+            var slug = data[k.p].slug;
+            if (!slug) return;
+            var d = Math.hypot(k.sx, k.sy);
+            if (d < nd) { nd = d; near = k; }
+            var r = k.img.getBoundingClientRect();
+            var vis = r.right > 0 && r.left < vw && r.bottom > 0 && r.top < vh &&
+              (Math.min(r.right, vw) - Math.max(r.left, 0)) * (Math.min(r.bottom, vh) - Math.max(r.top, 0)) > r.width * r.height * 0.4;
+            if (vis && d < bd) { bd = d; best = k; }
+          });
+          if (best && !zoom && !reduce) {
+            var f = best.img.getBoundingClientRect();
+            var s = f.width / best.img.offsetWidth;
+            var fr = (parseFloat(getComputedStyle(best.img).borderTopLeftRadius) || 20) * s;
+            best.img.style.viewTransitionName = 'project-cover';
+            sessionStorage.setItem('vt-back', JSON.stringify({ slug: data[best.p].slug, frame: { w: f.width, h: f.height, x: f.left, y: f.top, r: fr }, focus: { x: 0.5, y: 0.5 } }));
+          } else if (near) {
+            sessionStorage.setItem('vt-back', JSON.stringify({ slug: data[near.p].slug, still: true }));
+          }
+        } catch (err) {}
+      });
+
       addEventListener('resize', function () {
         measure();
         render();
@@ -415,6 +454,17 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
     overflow: hidden;
     background: #fff;
     color: var(--text-primary);
+  }
+  /* the nav stays put through the flight from home (same name there) */
+  .wk__nav {
+    position: relative;
+    z-index: 5;
+    padding: var(--gutter) var(--gutter) 0;
+    pointer-events: none;
+  }
+  .wk__nav > :global(.nav) {
+    pointer-events: auto;
+    view-transition-name: site-nav;
   }
   .wk__sr {
     position: absolute;

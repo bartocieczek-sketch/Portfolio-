@@ -254,6 +254,14 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
       window.addEventListener('pagereveal', function (e) {
         if (!e.viewTransition) return;
         try {
+          // back from Explorations: the nav holds still there too
+          if (document.querySelector('[data-vh]') && /^\/work/.test(new URL((window.navigation && navigation.activation && navigation.activation.from && navigation.activation.from.url) || document.referrer || location.href).pathname)) {
+            var hn = document.querySelector('[data-vh] .nav');
+            if (hn) {
+              hn.style.viewTransitionName = 'site-nav';
+              e.viewTransition.finished.finally(function () { hn.style.viewTransitionName = ''; });
+            }
+          }
           // back home from a case study: a picture from the project flies into
           // its cover in the column (set up by the home hero, see Hero.astro)
           if (document.documentElement.classList.contains('is-cover-back')) {
@@ -285,6 +293,10 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
           // opening About or All work: it opens out of a line across the middle
           if (here && here !== fromPanel) {
             e.viewTransition.types.add('about-in');
+            return;
+          }
+          if (fromPanel === 'work' && !here) {
+            e.viewTransition.types.add('work-back');
             return;
           }
           if (fromPanel && !here) {

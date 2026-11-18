@@ -1013,3 +1013,40 @@ html:active-view-transition-type(work)::view-transition-new(.xcov) {
     animation-duration: 0.01s;
   }
 }
+
+/* ---------- Explorations -> home, no cover to fly back ----------
+   The field rushes past the viewer and dissolves while home settles in
+   from just behind it. */
+html:active-view-transition-type(work-back)::view-transition-group(root) {
+  animation: none;
+}
+html:active-view-transition-type(work-back)::view-transition-old(root) {
+  animation: vt-wb-out 0.75s cubic-bezier(0.77, 0, 0.175, 1) both;
+  z-index: 2;
+}
+html:active-view-transition-type(work-back)::view-transition-new(root) {
+  animation: vt-wb-in 0.9s var(--ease-out) 0.2s both;
+  z-index: 1;
+}
+@keyframes vt-wb-out {
+  to {
+    opacity: 0;
+    transform: scale(1.14);
+    filter: blur(14px);
+  }
+}
+@keyframes vt-wb-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+    filter: blur(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:active-view-transition-type(work-back)::view-transition-old(root) {
+    animation: vt-fade-out 0.25s ease both;
+  }
+  html:active-view-transition-type(work-back)::view-transition-new(root) {
+    animation: vt-fade-in 0.25s ease both;
+  }
+}
