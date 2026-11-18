@@ -28,7 +28,7 @@ const to = (p: string) => href(Astro.locals, p);
   </div>
   <div class="nav__links">
     <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
-    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's cooperate</a>}
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's<br />cooperate</a>}
   </div>
   <button class="nav__toggle t-label" type="button" aria-expanded="false" aria-controls="mobile-menu">
     <span class="nav__toggle-open">Menu</span>
@@ -180,18 +180,20 @@ const to = (p: string) => href(Astro.locals, p);
     transform: none;
     transition: transform 0.85s var(--ease-expo) calc(0.18s + var(--n) * 0.07s);
   }
-  /* the call to action: a black pill in the middle of the bottom */
+  /* the call to action: a black circle in the middle of the bottom */
   .mobile-menu__cta {
     align-self: center;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 52px;
-    padding: 0 30px;
-    border-radius: 999px;
+    width: 136px;
+    height: 136px;
+    padding: 16px;
+    border-radius: 50%;
+    text-align: center;
     background: #111;
     color: #fff;
-    font: 500 16px / 1 var(--font-head);
+    font: 500 16px / 1.15 var(--font-head);
     letter-spacing: -0.01em;
     transition: scale 0.16s var(--ease-out);
   }
