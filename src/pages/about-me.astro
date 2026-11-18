@@ -223,6 +223,13 @@ const ahSlotsBy = {
   ],
 };
 const ahSlots = ahSlotsBy[ahLayout as keyof typeof ahSlotsBy] ?? ahSlotsBy.center;
+// phones: fewer, bigger pictures toward the sides, clear of the number
+const ahSlotsM = [
+  { x: 3, w: 40 },
+  { x: 58, w: 36 },
+  { x: 10, w: 30 },
+  { x: 52, w: 44 },
+];
 // in 'mask' the chapter's first photo fills the word, the rest fly past
 const ahPicsFrom = ahLayout === 'mask' ? 1 : 0;
 const heroTitle: string = about.heroTitle || 'About me';
@@ -462,7 +469,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
                   data-ah-pic
                   data-c={ci}
                   data-d={sl.d}
-                  style={`left:${sl.x}vw;width:${sl.w}vw;--r:${(sl.w * 0.2186).toFixed(2)}vw;aspect-ratio:${p.ratio.toFixed(3)};z-index:${sl.d > 0.9 ? 3 : 1}`}
+                  style={`--x:${sl.x};--w:${sl.w};--mx:${ahSlotsM[(pi + ahPicsFrom) % ahSlotsM.length].x};--mw:${ahSlotsM[(pi + ahPicsFrom) % ahSlotsM.length].w};aspect-ratio:${p.ratio.toFixed(3)};z-index:${sl.d > 0.9 ? 3 : 1}`}
                 >
                   <img src={p.src} alt="" loading="lazy" decoding="async" />
                 </figure>
@@ -1998,16 +2005,25 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     height: 1.4em;
   }
   .ah__pic {
+    --cw: var(--w);
     position: absolute;
     top: 0;
+    left: calc(var(--x) * 1vw);
+    width: calc(var(--cw) * 1vw);
     margin: 0;
     overflow: hidden;
     /* corners as on home (yuriroga.com): 80px on a 366px-wide picture, so
        about 22% of each photo's width */
-    border-radius: var(--r, 16px);
+    border-radius: calc(var(--cw) * 0.2186vw);
     background: rgb(225, 225, 222);
     transform: translate3d(0, 120svh, 0);
     will-change: transform;
+  }
+  @media (max-width: 809px) {
+    .ah__pic {
+      --cw: var(--mw);
+      left: calc(var(--mx) * 1vw);
+    }
   }
   .ah__pic img {
     display: block;
@@ -4141,7 +4157,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           const ox = pmx * 18 * ph.d;
           const oy = pmy * 12 * ph.d;
           ph.el.style.transform = `translate3d(${ox.toFixed(2)}px, ${(y + oy).toFixed(1)}px, 0) scale(${sc.toFixed(3)}) rotate(${(t * (ph.d - 0.8) * 6 + pmx * ph.d * 1.2).toFixed(2)}deg)`;
-          ph.img.style.transform = `translate3d(0, ${(-8 + t * 16).toFixed(2)}%, 0)`;
+          // (kept within the picture's spare 18%, so its edge never shows)
+          const tt = Math.max(-0.5, Math.min(0.5, t));
+          ph.img.style.transform = `translate3d(0, ${(-7.6 + tt * 15.2).toFixed(2)}%, 0)`;
         }
       };
       const tick = () => {
