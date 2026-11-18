@@ -263,6 +263,13 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
             });
             return;
           }
+          // Explorations, opened from the home column: the covers fly into
+          // the field (names set by the home hero just before leaving, and on
+          // /work by its inline script, which also clears 'vt-work')
+          if (document.documentElement.classList.contains('wk-flown')) {
+            e.viewTransition.types.add('work');
+            return;
+          }
           // leaving About: the dark page folds shut into a line across the
           // middle, over the page coming back
           var act = window.navigation && navigation.activation;

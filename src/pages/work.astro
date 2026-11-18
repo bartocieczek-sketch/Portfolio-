@@ -1,49 +1,78 @@
 ---
-// All work: an endless field of shots to wander through (explorations, side
-// work, details), not the case studies from home. Drag or scroll in any
-// direction; the field bends like it sits under a lens (shots toward the
-// edges shrink, turn and blur). Click a shot to bring it up close.
-// The page opens out of a line across the middle, like About (Base.astro).
+// Explorations: an endless field to wander through. The case study covers
+// from home sit in it among loose shots (explorations, side work, details).
+// Drag or scroll in any direction; the field bends like it sits under a
+// lens (tiles toward the edges shrink, turn and blur). Click one to bring it
+// up close. No nav here, just the way back.
+// Coming from home through "Explorations", the covers on screen fly out of
+// the column into their tiles (a cross-document view transition, names set
+// in Hero.astro and in the inline script below) while the shots around them
+// fly in and settle. Any other way in, the whole field flies in.
 import Base from '../layouts/Base.astro';
-import Nav from '../components/Nav.astro';
-import { EXPLORE_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+import { EXPLORE_QUERY, HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
 import { load } from '../lib/load';
 import { href } from '../lib/preview';
 
-const [explore, settings] = await Promise.all([load(Astro.locals, EXPLORE_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
+const [explore, home, settings] = await Promise.all([
+  load(Astro.locals, EXPLORE_QUERY),
+  load(Astro.locals, HOME_QUERY),
+  load(Astro.locals, SETTINGS_QUERY),
+]);
 if (!settings) return new Response('Content not found', { status: 500 });
 
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 type Img = any;
-const shots: Img[] = (explore?.shots ?? []).filter((i: Img) => i?.asset);
+type Item = { src: string; big: string; a: number; slug: string };
+
+// the covers, cut like the column's (4:5)
+const covers: Item[] = ((home?.projects ?? []) as Img[])
+  .filter((p) => p?.cover?.asset && p.slug)
+  .map((p) => ({
+    slug: p.slug as string,
+    src: urlFor(p.cover).width(800).height(1000).fit('crop').quality(80).url(),
+    big: urlFor(p.cover).width(1600).height(2000).fit('crop').quality(85).url(),
+    a: 0.8,
+  }));
+
+const chosen: Img[] = (explore?.shots ?? []).filter((i: Img) => i?.asset);
 // nothing chosen yet: pictures from every case study gallery
-const pool0: Img[] = shots.length
-  ? shots
+const pool0: Img[] = chosen.length
+  ? chosen
   : ((explore?.gallery ?? []) as { gallery?: { kind?: string; image?: Img; poster?: Img }[] }[])
       .flatMap((p) => p.gallery ?? [])
       .map((g) => (g.kind === 'video' ? g.poster : g.image))
       .filter((i) => i?.asset && !String(i.asset.mimeType ?? '').includes('gif'));
 // a steady shuffle, so neighbours rarely come from the same project
-const seeded = pool0
+const shots: Item[] = pool0
   .map((img, i) => ({ img, k: Math.sin(i * 12.9898 + 78.233) * 43758.5453 }))
   .map((x) => ({ ...x, k: x.k - Math.floor(x.k) }))
   .sort((a, b) => a.k - b.k)
-  .map((x) => x.img);
-const items = seeded.map((img) => {
-  const d = img.asset?.metadata?.dimensions;
-  return {
-    src: urlFor(img).width(1000).fit('max').quality(80).url(),
-    big: urlFor(img).width(2000).fit('max').quality(85).url(),
-    a: d?.aspectRatio ?? (d?.width && d?.height ? d.width / d.height : 4 / 3),
-  };
-});
-const n = items.length;
+  .map(({ img }) => {
+    const d = img.asset?.metadata?.dimensions;
+    return {
+      slug: '',
+      src: urlFor(img).width(1000).fit('max').quality(80).url(),
+      big: urlFor(img).width(2000).fit('max').quality(85).url(),
+      a: d?.aspectRatio ?? (d?.width && d?.height ? d.width / d.height : 4 / 3),
+    };
+  });
 
-// the pool of tiles recycled as the field moves; cell (c, r) shows item (c + r*K) mod n
+// Cell (c, r) shows item (c + r*K) mod n. The covers go where column 0 meets
+// rows 0, 1, 2…, so they stand in the field in the same order, one above
+// the other, as in the home column; the shots fill every other slot.
+const n = covers.length + shots.length;
+const m = covers.length;
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+const K = n > 6 ? ([3, 4, 5, 7, 8, 9, 11].find((k) => gcd(k, n) === 1) ?? 1) : 1;
+const mod = (a: number, b: number) => ((a % b) + b) % b;
+const items: Item[] = new Array(n);
+covers.forEach((c, r) => (items[mod(r * K, n)] = c));
+let si = 0;
+for (let i = 0; i < n; i++) if (!items[i]) items[i] = shots[si++];
+
+// the pool of tiles recycled as the field moves
 const PC = 7;
 const PR = 7;
-const K = n > 6 ? (n % 3 === 0 ? 4 : 3) : 1;
-const mod = (a: number, m: number) => ((a % m) + m) % m;
 const c0 = Math.floor(-PC / 2);
 const r0 = Math.floor(-PR / 2);
 const pool: { c: number; r: number; p: number }[] = [];
@@ -53,17 +82,17 @@ for (let b = 0; b < PR; b++)
     const r = r0 + mod(b - r0, PR);
     pool.push({ c, r, p: n ? mod(c + r * K, n) : 0 });
   }
+const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug, r])) };
 ---
 
 <Base title={`Explorations · ${settings.seoTitle ?? 'Bart Ocieczek'}`} description={settings.seoDescription}>
+  {/* the first frame waits for the inline script, so the covers land on the right tiles */}
+  <link slot="head" rel="expect" href="#wk-ready" blocking="render" />
   <main class="wk" data-work>
-    <header class="wk__nav">
-      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
-    </header>
-
-    <div class="wk__field" data-wk-field data-lenis-prevent data-k={K} data-pc={PC} data-pr={PR}>
+    <h1 class="wk__sr">Explorations</h1>
+    <div class="wk__field" data-wk-field data-lenis-prevent>
       {n > 0 && pool.map((s) => (
-        <div class="wk__cell" style={`--c:${s.c};--r:${s.r};--a:${items[s.p].a.toFixed(4)};--d:${Math.hypot(s.c, s.r * 1.3).toFixed(2)}`}>
+        <div class="wk__cell" style={`--c:${s.c};--r:${s.r};--a:${items[s.p].a.toFixed(4)}`}>
           <img class="wk__img" src={items[s.p].src} alt="" decoding="async" loading="eager" draggable="false" data-p={s.p} />
         </div>
       ))}
@@ -78,7 +107,305 @@ for (let b = 0; b < PR; b++)
       </a>
     </footer>
   </main>
-  <script type="application/json" id="wk-data" set:html={JSON.stringify(items)} />
+  <script type="application/json" id="wk-data" set:html={JSON.stringify({ items, ...cfg })} />
+  <script is:inline>
+    (function () {
+      var main = document.querySelector('.wk');
+      var field = document.querySelector('[data-wk-field]');
+      var dim = document.querySelector('[data-wk-dim]');
+      var cfg = JSON.parse(document.getElementById('wk-data').textContent || '{}');
+      var data = cfg.items || [];
+      if (!main || !field || !dim || !data.length) return;
+      var n = data.length, K = cfg.K, PC = cfg.PC, PR = cfg.PR;
+      var mod = function (a, b) { return ((a % b) + b) % b; };
+      var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var cells = Array.prototype.map.call(field.querySelectorAll('.wk__cell'), function (el, i) {
+        var img = el.querySelector('img');
+        return { el: el, img: img, a: i % PC, b: Math.floor(i / PC), p: Number(img.dataset.p), sx: 0, sy: 0 };
+      });
+
+      var cw = 0, ch = 0, vw = 0, vh = 0;
+      var measure = function () {
+        var probe = document.createElement('div');
+        probe.style.cssText = 'position:absolute;visibility:hidden;width:var(--cw);height:var(--ch)';
+        field.appendChild(probe);
+        cw = probe.offsetWidth;
+        ch = probe.offsetHeight;
+        probe.remove();
+        vw = field.clientWidth;
+        vh = field.clientHeight;
+      };
+      measure();
+
+      // camera: where the centre of the screen sits in the field
+      var x = 0, y = 0, tx = 0, ty = 0, speed = 0;
+
+      // from home: centre the field on the cover that was in the middle of
+      // the column (its neighbours then sit above and below it, as there)
+      var from = null;
+      try {
+        from = JSON.parse(sessionStorage.getItem('vt-work') || 'null');
+        sessionStorage.removeItem('vt-work');
+      } catch (e) {}
+      if (from && from.mid in cfg.rowOf && 'startViewTransition' in document) {
+        document.documentElement.classList.add('wk-flown');
+        y = ty = cfg.rowOf[from.mid] * ch;
+      } else from = null;
+
+      var named = [];
+      var clearNames = function () {
+        named.forEach(function (k) {
+          k.img.style.removeProperty('view-transition-name');
+          k.img.style.removeProperty('view-transition-class');
+        });
+        named = [];
+      };
+
+      var render = function () {
+        var c0 = Math.floor(x / cw - PC / 2);
+        var r0 = Math.floor(y / ch - PR / 2);
+        var z = 1 - Math.min(speed / 4000, 1) * 0.05; // the field eases back a touch while it flies
+        for (var i = 0; i < cells.length; i++) {
+          var k = cells[i];
+          var c = c0 + mod(k.a - c0, PC);
+          var r = r0 + mod(k.b - r0, PR);
+          var p = mod(c + r * K, n);
+          if (p !== k.p) {
+            if (named.length) clearNames();
+            k.p = p;
+            k.img.src = data[p].src;
+            k.img.dataset.p = String(p);
+            k.el.style.setProperty('--a', String(data[p].a));
+          }
+          var sx = (c * cw - x) * z;
+          var sy = (r * ch - y) * z;
+          var nx = sx / (vw * 0.5);
+          var ny = sy / (vh * 0.5);
+          var d2 = Math.min(nx * nx + ny * ny, 3);
+          // the lens: pulled in, shrunk and turned toward the middle
+          var pull = 1 - 0.07 * d2;
+          var s = z * (1 - 0.09 * d2);
+          var ry = reduce ? 0 : nx * -9;
+          var rx = reduce ? 0 : ny * 7;
+          k.sx = sx * pull;
+          k.sy = sy * pull;
+          k.el.style.transform = 'translate3d(' + k.sx.toFixed(1) + 'px,' + k.sy.toFixed(1) + 'px,0) perspective(1400px) rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) scale(' + s.toFixed(4) + ')';
+        }
+      };
+      render();
+
+      // the covers that were on screen at home: each one's tile nearest the
+      // middle takes its name; every other tile flies in from further out,
+      // the nearest first
+      if (from) {
+        (from.slugs || []).forEach(function (slug) {
+          var best = null, bd = Infinity;
+          cells.forEach(function (k) {
+            if (data[k.p].slug !== slug) return;
+            var d = Math.abs(k.sx) + Math.abs(k.sy);
+            if (d < bd) { bd = d; best = k; }
+          });
+          if (!best || bd > vw + vh) return;
+          best.img.style.setProperty('view-transition-name', 'x-' + slug);
+          best.img.style.setProperty('view-transition-class', 'xcov');
+          best.el.classList.add('is-named');
+          named.push(best);
+        });
+      }
+      cells.forEach(function (k) {
+        var d = Math.hypot(k.sx / (vw * 0.5), k.sy / (vh * 0.5));
+        k.el.style.setProperty('--fx', (k.sx * 0.7).toFixed(0) + 'px');
+        k.el.style.setProperty('--fy', (k.sy * 0.7).toFixed(0) + 'px');
+        k.el.style.setProperty('--dl', ((from ? 0.38 : 0.08) + Math.min(d, 2.4) * 0.11).toFixed(3) + 's');
+      });
+      // the names only matter for the flight in; recycled tiles must never share one
+      setTimeout(clearNames, 2000);
+
+      // warm every picture once, so recycled tiles never show an empty frame
+      var warm = function () {
+        data.forEach(function (d) {
+          var i = new Image();
+          i.decoding = 'async';
+          i.src = d.src;
+        });
+      };
+      if (document.readyState === 'complete') warm();
+      else addEventListener('load', warm);
+
+      var last = performance.now();
+      var raf = 0;
+      var dragging = false;
+      var tick = function (now) {
+        var dt = Math.min(now - last, 64);
+        last = now;
+        var f = 1 - Math.exp(-dt / (dragging ? 40 : 130));
+        var px = x, py = y;
+        x += (tx - x) * f;
+        y += (ty - y) * f;
+        var v = (Math.hypot(x - px, y - py) / Math.max(dt, 1)) * 1000;
+        speed += (v - speed) * (1 - Math.exp(-dt / 120));
+        render();
+        if (dragging || Math.abs(tx - x) > 0.3 || Math.abs(ty - y) > 0.3 || speed > 2) raf = requestAnimationFrame(tick);
+        else {
+          speed = 0;
+          render();
+          raf = 0;
+        }
+      };
+      var wake = function () {
+        if (!raf) {
+          last = performance.now();
+          raf = requestAnimationFrame(tick);
+        }
+      };
+
+      // ---------- close-up ----------
+      var zoom = null;
+      var EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
+      var open = function (src) {
+        if (zoom) return;
+        var d = data[Number(src.dataset.p)];
+        var r0 = src.getBoundingClientRect();
+        var rad = parseFloat(getComputedStyle(src).borderTopLeftRadius) || 0;
+        var maxW = vw * (vw < 810 ? 0.92 : 0.78);
+        var maxH = vh * 0.78;
+        var w = Math.min(maxW, maxH * d.a);
+        var h = w / d.a;
+        var L = (vw - w) / 2, T = (vh - h) / 2;
+        var R = Math.max(rad * 1.6, 18);
+        var img = document.createElement('img');
+        img.className = 'wk__zoom';
+        img.alt = '';
+        img.src = src.currentSrc || src.src;
+        img.style.width = w + 'px';
+        img.style.height = h + 'px';
+        main.appendChild(img);
+        // swap in the sharp one once it has loaded
+        var hi = new Image();
+        hi.onload = function () {
+          if (zoom && zoom.img === img) img.src = d.big;
+        };
+        hi.src = d.big;
+        src.style.visibility = 'hidden';
+        main.classList.add('is-zoom');
+        var sx = r0.width / w, sy = r0.height / h;
+        img.animate(
+          [
+            { transform: 'translate(' + r0.left + 'px,' + r0.top + 'px) scale(' + sx + ',' + sy + ')', borderRadius: rad / sx + 'px / ' + rad / sy + 'px' },
+            { transform: 'translate(' + L + 'px,' + T + 'px) scale(1,1)', borderRadius: R + 'px' },
+          ],
+          { duration: reduce ? 1 : 750, easing: EASE, fill: 'both' },
+        );
+        zoom = { img: img, src: src };
+      };
+      var close = function () {
+        if (!zoom) return;
+        var img = zoom.img, src = zoom.src;
+        zoom = null;
+        main.classList.remove('is-zoom');
+        var now = img.getBoundingClientRect();
+        var back = src.getBoundingClientRect();
+        var w = img.offsetWidth, h = img.offsetHeight;
+        var rad = parseFloat(getComputedStyle(src).borderTopLeftRadius) || 0;
+        var cur = getComputedStyle(img).borderRadius;
+        img.getAnimations().forEach(function (a) { a.cancel(); });
+        var sx = back.width / w, sy = back.height / h;
+        var a = img.animate(
+          [
+            { transform: 'translate(' + now.left + 'px,' + now.top + 'px) scale(' + now.width / w + ',' + now.height / h + ')', borderRadius: cur },
+            { transform: 'translate(' + back.left + 'px,' + back.top + 'px) scale(' + sx + ',' + sy + ')', borderRadius: rad / sx + 'px / ' + rad / sy + 'px' },
+          ],
+          { duration: reduce ? 1 : 650, easing: EASE, fill: 'both' },
+        );
+        a.finished.then(function () {
+          src.style.visibility = '';
+          img.remove();
+        });
+      };
+      dim.addEventListener('click', close);
+      main.addEventListener('click', function (e) {
+        if (e.target.classList.contains('wk__zoom')) close();
+      });
+
+      // ---------- drag, with a flick that keeps going ----------
+      var moved = 0, lx = 0, ly = 0, lt = 0, vx = 0, vy = 0, pid = -1;
+      field.addEventListener('pointerdown', function (e) {
+        if (e.button !== 0 || pid !== -1 || zoom) return;
+        pid = e.pointerId;
+        dragging = true;
+        moved = 0;
+        lx = e.clientX;
+        ly = e.clientY;
+        lt = performance.now();
+        vx = vy = 0;
+        wake();
+      });
+      addEventListener('pointermove', function (e) {
+        if (e.pointerId !== pid) return;
+        var dx = e.clientX - lx, dy = e.clientY - ly;
+        var now = performance.now();
+        var dt = Math.max(now - lt, 1);
+        lx = e.clientX;
+        ly = e.clientY;
+        lt = now;
+        moved += Math.abs(dx) + Math.abs(dy);
+        if (moved > 6 && !field.classList.contains('is-drag')) {
+          field.classList.add('is-drag');
+          try { field.setPointerCapture(pid); } catch (err) {}
+        }
+        tx -= dx;
+        ty -= dy;
+        vx = vx * 0.6 + (dx / dt) * 0.4;
+        vy = vy * 0.6 + (dy / dt) * 0.4;
+      });
+      var up = function (e) {
+        if (e.pointerId !== pid) return;
+        pid = -1;
+        dragging = false;
+        if (performance.now() - lt < 80) {
+          tx -= vx * 320;
+          ty -= vy * 320;
+        }
+        field.classList.remove('is-drag');
+        wake();
+      };
+      addEventListener('pointerup', up);
+      addEventListener('pointercancel', up);
+      field.addEventListener('click', function (e) {
+        if (moved > 6) return;
+        if (e.target.classList.contains('wk__img')) open(e.target);
+      });
+
+      field.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        if (zoom) return;
+        var k = e.deltaMode === 1 ? 32 : 1;
+        tx += e.deltaX * k;
+        ty += e.deltaY * k;
+        wake();
+      }, { passive: false });
+      dim.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        close();
+      }, { passive: false });
+
+      addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') return close();
+        var step = { ArrowLeft: [-cw, 0], ArrowRight: [cw, 0], ArrowUp: [0, -ch], ArrowDown: [0, ch] }[e.key];
+        if (!step || zoom) return;
+        e.preventDefault();
+        tx = Math.round((tx + step[0]) / cw) * cw;
+        ty = Math.round((ty + step[1]) / ch) * ch;
+        wake();
+      });
+
+      addEventListener('resize', function () {
+        measure();
+        render();
+      });
+    })();
+  </script>
+  <div id="wk-ready" hidden></div>
 </Base>
 
 <style>
@@ -89,16 +416,14 @@ for (let b = 0; b < PR; b++)
     background: #fff;
     color: var(--text-primary);
   }
-  .wk__nav {
-    position: relative;
-    z-index: 5;
-    padding: var(--gutter) var(--gutter) 0;
-    pointer-events: none;
+  .wk__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
-  .wk__nav > :global(*) {
-    pointer-events: auto;
-  }
-  /* the field: cells laid out from the centre; JS takes the positions over */
+  /* the field: cells laid out from the centre; the script takes the positions over */
   .wk__field {
     --w: clamp(240px, 25vw, 440px);
     --h: calc(var(--w) * 0.78);
@@ -127,7 +452,7 @@ for (let b = 0; b < PR; b++)
     will-change: transform;
     pointer-events: none;
   }
-  /* a shot keeps its own shape, fitted to the cell, always rounded */
+  /* a tile keeps its own shape, fitted to the cell, always rounded */
   .wk__img {
     display: block;
     width: min(var(--w), var(--h) * var(--a));
@@ -144,6 +469,21 @@ for (let b = 0; b < PR; b++)
       scale: 1.03;
     }
   }
+  /* the tiles fly in from further out and settle, the nearest first; the
+     covers that came from home are already flying on their own */
+  .wk__cell {
+    animation: wk-fly 1.25s cubic-bezier(0.16, 1, 0.3, 1) var(--dl, 0.2s) both;
+  }
+  .wk__cell.is-named {
+    animation: none;
+  }
+  @keyframes wk-fly {
+    from {
+      opacity: 0;
+      translate: var(--fx, 0) var(--fy, 0);
+      scale: 0.82;
+    }
+  }
   /* the lens: the rim of the view goes soft and pale */
   .wk__lens {
     position: absolute;
@@ -155,6 +495,12 @@ for (let b = 0; b < PR; b++)
     background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 45%, rgba(255, 255, 255, 0.6) 100%);
     mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, transparent 40%, #000 95%);
     -webkit-mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, transparent 40%, #000 95%);
+    animation: wk-lens 0.9s ease 0.7s both;
+  }
+  @keyframes wk-lens {
+    from {
+      opacity: 0;
+    }
   }
   /* close-up: the field steps back behind a pale veil */
   .wk__dim {
@@ -193,6 +539,13 @@ for (let b = 0; b < PR; b++)
     align-items: center;
     justify-content: space-between;
     pointer-events: none;
+    animation: wk-foot 0.6s var(--ease-out) 0.9s both;
+  }
+  @keyframes wk-foot {
+    from {
+      opacity: 0;
+      translate: 0 8px;
+    }
   }
   .wk__hint {
     color: rgba(17, 17, 17, 0.5);
@@ -225,16 +578,6 @@ for (let b = 0; b < PR; b++)
   .wk__x:active {
     scale: 0.94;
   }
-  /* once the page has opened, the shots settle in from the centre outwards */
-  .wk__cell {
-    animation: wk-in 1s var(--ease-out) calc(0.45s + var(--d) * 60ms) both;
-  }
-  @keyframes wk-in {
-    from {
-      opacity: 0;
-      scale: 0.9;
-    }
-  }
   @media (max-width: 809px) {
     .wk__field {
       --w: 64vw;
@@ -258,250 +601,3 @@ for (let b = 0; b < PR; b++)
     }
   }
 </style>
-
-<script>
-  const main = document.querySelector<HTMLElement>('.wk');
-  const field = document.querySelector<HTMLElement>('[data-wk-field]');
-  const dim = document.querySelector<HTMLElement>('[data-wk-dim]');
-  const data = JSON.parse(document.getElementById('wk-data')?.textContent || '[]') as { src: string; big: string; a: number }[];
-  if (main && field && dim && data.length) {
-    const n = data.length;
-    const K = Number(field.dataset.k);
-    const PC = Number(field.dataset.pc);
-    const PR = Number(field.dataset.pr);
-    const mod = (a: number, m: number) => ((a % m) + m) % m;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const cells = [...field.querySelectorAll<HTMLElement>('.wk__cell')].map((el, i) => ({
-      el,
-      img: el.querySelector('img') as HTMLImageElement,
-      a: i % PC,
-      b: Math.floor(i / PC),
-      p: Number(el.querySelector('img')?.dataset.p),
-    }));
-    // warm every picture once, so recycled tiles never show an empty frame
-    data.forEach((d) => {
-      const i = new Image();
-      i.decoding = 'async';
-      i.src = d.src;
-    });
-
-    let cw = 0, ch = 0, vw = 0, vh = 0;
-    const measure = () => {
-      const probe = document.createElement('div');
-      probe.style.cssText = 'position:absolute;visibility:hidden;width:var(--cw);height:var(--ch)';
-      field.appendChild(probe);
-      cw = probe.offsetWidth;
-      ch = probe.offsetHeight;
-      probe.remove();
-      vw = field.clientWidth;
-      vh = field.clientHeight;
-    };
-    measure();
-
-    // camera: where the centre of the screen sits in the field
-    let x = 0, y = 0, tx = 0, ty = 0, speed = 0;
-
-    const render = () => {
-      const c0 = Math.floor(x / cw - PC / 2);
-      const r0 = Math.floor(y / ch - PR / 2);
-      const z = 1 - Math.min(speed / 4000, 1) * 0.05; // the field eases back a touch while it flies
-      for (const k of cells) {
-        const c = c0 + mod(k.a - c0, PC);
-        const r = r0 + mod(k.b - r0, PR);
-        const p = mod(c + r * K, n);
-        if (p !== k.p) {
-          k.p = p;
-          k.img.src = data[p].src;
-          k.img.dataset.p = String(p);
-          k.el.style.setProperty('--a', String(data[p].a));
-        }
-        const sx = (c * cw - x) * z;
-        const sy = (r * ch - y) * z;
-        const nx = sx / (vw * 0.5);
-        const ny = sy / (vh * 0.5);
-        const d2 = Math.min(nx * nx + ny * ny, 3);
-        // the lens: pulled in, shrunk and turned toward the middle
-        const pull = 1 - 0.07 * d2;
-        const s = z * (1 - 0.09 * d2);
-        const ry = reduce ? 0 : nx * -9;
-        const rx = reduce ? 0 : ny * 7;
-        k.el.style.transform = `translate3d(${(sx * pull).toFixed(1)}px,${(sy * pull).toFixed(1)}px,0) perspective(1400px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${s.toFixed(4)})`;
-      }
-    };
-
-    let last = performance.now();
-    let raf = 0;
-    let dragging = false;
-    const tick = (now: number) => {
-      const dt = Math.min(now - last, 64);
-      last = now;
-      const f = 1 - Math.exp(-dt / (dragging ? 40 : 130));
-      const px = x, py = y;
-      x += (tx - x) * f;
-      y += (ty - y) * f;
-      const v = (Math.hypot(x - px, y - py) / Math.max(dt, 1)) * 1000;
-      speed += (v - speed) * (1 - Math.exp(-dt / 120));
-      render();
-      if (dragging || Math.abs(tx - x) > 0.3 || Math.abs(ty - y) > 0.3 || speed > 2) raf = requestAnimationFrame(tick);
-      else {
-        speed = 0;
-        render();
-        raf = 0;
-      }
-    };
-    const wake = () => {
-      if (!raf) {
-        last = performance.now();
-        raf = requestAnimationFrame(tick);
-      }
-    };
-
-    // ---------- close-up ----------
-    let zoom: { img: HTMLImageElement; src: HTMLImageElement } | null = null;
-    const EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
-    const open = (src: HTMLImageElement) => {
-      if (zoom) return;
-      const d = data[Number(src.dataset.p)];
-      const from = src.getBoundingClientRect();
-      const rad = parseFloat(getComputedStyle(src).borderTopLeftRadius) || 0;
-      const maxW = vw * (vw < 810 ? 0.92 : 0.78);
-      const maxH = vh * 0.78;
-      const w = Math.min(maxW, maxH * d.a);
-      const h = w / d.a;
-      const L = (vw - w) / 2, T = (vh - h) / 2;
-      const R = Math.max(rad * 1.6, 18);
-      const img = document.createElement('img');
-      img.className = 'wk__zoom';
-      img.alt = '';
-      img.src = src.currentSrc || src.src;
-      img.style.width = `${w}px`;
-      img.style.height = `${h}px`;
-      main.appendChild(img);
-      // swap in the sharp one once it has loaded
-      const hi = new Image();
-      hi.onload = () => {
-        if (zoom?.img === img) img.src = d.big;
-      };
-      hi.src = d.big;
-      src.style.visibility = 'hidden';
-      main.classList.add('is-zoom');
-      const sx = from.width / w, sy = from.height / h;
-      img.animate(
-        [
-          { transform: `translate(${from.left}px,${from.top}px) scale(${sx},${sy})`, borderRadius: `${rad / sx}px / ${rad / sy}px` },
-          { transform: `translate(${L}px,${T}px) scale(1,1)`, borderRadius: `${R}px` },
-        ],
-        { duration: reduce ? 1 : 750, easing: EASE, fill: 'both' },
-      );
-      zoom = { img, src };
-    };
-    const close = () => {
-      if (!zoom) return;
-      const { img, src } = zoom;
-      zoom = null;
-      main.classList.remove('is-zoom');
-      const now = img.getBoundingClientRect();
-      const back = src.getBoundingClientRect();
-      const w = img.offsetWidth, h = img.offsetHeight;
-      const rad = parseFloat(getComputedStyle(src).borderTopLeftRadius) || 0;
-      const cur = getComputedStyle(img).borderRadius;
-      img.getAnimations().forEach((a) => a.cancel());
-      const s0x = now.width / w, s0y = now.height / h;
-      const sx = back.width / w, sy = back.height / h;
-      const a = img.animate(
-        [
-          { transform: `translate(${now.left}px,${now.top}px) scale(${s0x},${s0y})`, borderRadius: cur },
-          { transform: `translate(${back.left}px,${back.top}px) scale(${sx},${sy})`, borderRadius: `${rad / sx}px / ${rad / sy}px` },
-        ],
-        { duration: reduce ? 1 : 650, easing: EASE, fill: 'both' },
-      );
-      a.finished.then(() => {
-        src.style.visibility = '';
-        img.remove();
-      });
-    };
-    dim.addEventListener('click', close);
-    main.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).classList.contains('wk__zoom')) close();
-    });
-
-    // ---------- drag, with a flick that keeps going ----------
-    let moved = 0, lx = 0, ly = 0, lt = 0, vx = 0, vy = 0, pid = -1;
-    field.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || pid !== -1 || zoom) return;
-      pid = e.pointerId;
-      dragging = true;
-      moved = 0;
-      lx = e.clientX;
-      ly = e.clientY;
-      lt = performance.now();
-      vx = vy = 0;
-      wake();
-    });
-    window.addEventListener('pointermove', (e) => {
-      if (e.pointerId !== pid) return;
-      const dx = e.clientX - lx, dy = e.clientY - ly;
-      const now = performance.now();
-      const dt = Math.max(now - lt, 1);
-      lx = e.clientX;
-      ly = e.clientY;
-      lt = now;
-      moved += Math.abs(dx) + Math.abs(dy);
-      if (moved > 6 && !field.classList.contains('is-drag')) {
-        field.classList.add('is-drag');
-        try { field.setPointerCapture(pid); } catch {}
-      }
-      tx -= dx;
-      ty -= dy;
-      vx = vx * 0.6 + (dx / dt) * 0.4;
-      vy = vy * 0.6 + (dy / dt) * 0.4;
-    });
-    const up = (e: PointerEvent) => {
-      if (e.pointerId !== pid) return;
-      pid = -1;
-      dragging = false;
-      if (performance.now() - lt < 80) {
-        tx -= vx * 320;
-        ty -= vy * 320;
-      }
-      field.classList.remove('is-drag');
-      wake();
-    };
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', up);
-    field.addEventListener('click', (e) => {
-      if (moved > 6) return;
-      const t = e.target as HTMLElement;
-      if (t.classList.contains('wk__img')) open(t as HTMLImageElement);
-    });
-
-    field.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      if (zoom) return;
-      const k = e.deltaMode === 1 ? 32 : 1;
-      tx += e.deltaX * k;
-      ty += e.deltaY * k;
-      wake();
-    }, { passive: false });
-    dim.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      close();
-    }, { passive: false });
-
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') return close();
-      const step = ({ ArrowLeft: [-cw, 0], ArrowRight: [cw, 0], ArrowUp: [0, -ch], ArrowDown: [0, ch] } as Record<string, number[]>)[e.key];
-      if (!step || zoom) return;
-      e.preventDefault();
-      tx = Math.round((tx + step[0]) / cw) * cw;
-      ty = Math.round((ty + step[1]) / ch) * ch;
-      wake();
-    });
-
-    window.addEventListener('resize', () => {
-      measure();
-      render();
-    });
-    render();
-  }
-</script>
