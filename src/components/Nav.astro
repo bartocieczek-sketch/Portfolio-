@@ -43,7 +43,6 @@ const to = (p: string) => href(Astro.locals, p);
     <a href={to("/about-me")} class="t-display" style="--n:2"><span>About me</span></a>
   </div>
   <div class="mobile-menu__bottom">
-    {role && <p class="t-body2 muted">{role}</p>}
     {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display mobile-menu__cta"><span>Let's cooperate</span></a>}
   </div>
 </div>
