@@ -717,6 +717,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .a9__who.is-flat {
     margin-top: 0;
   }
+  @media (max-width: 809px) {
+    .a9__who {
+      margin-top: 0;
+    }
+  }
   /* 2: about me as one paragraph. Words sharpen in one after another;
      the objects in the line pop in on their turn, and each one does a
      little thing of its own (steam, a ticking hand, a running trace). */
@@ -3269,6 +3274,14 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       later.forEach((el) => io.observe(el));
     };
     addEventListener('a9:reveal', reveal);
+    // phones: no uncovering through the B (pinning the section by hand
+    // against the scroll jitters there); it just follows the hero, from
+    // the start, so nothing shifts later
+    const FLAT_Q = '(max-width: 809px), (hover: none) and (pointer: coarse)';
+    if (matchMedia(FLAT_Q).matches) {
+      root.querySelector('[data-who]')?.classList.add('is-flat');
+      reveal();
+    }
     // no 3D (or calm): nothing to uncover it, so it just follows the hero
     setTimeout(() => {
       if (!(window as any).__a9Mask) {
@@ -4674,7 +4687,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       // ---- the next section opens out of the B's edge: at the moment the
       // turning letter is side-on (a thin sliver), a slit the size of that
       // sliver opens behind it to the full screen, the B flying on in front
-      const who = calm ? null : document.querySelector<HTMLElement>('[data-who]');
+      const who = calm || matchMedia('(max-width: 809px), (hover: none) and (pointer: coarse)').matches ? null : document.querySelector<HTMLElement>('[data-who]');
       if (who) (window as any).__a9Mask = true;
       B.geometry.computeBoundingBox();
       const bb = B.geometry.boundingBox!;
