@@ -134,7 +134,7 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
         field.appendChild(probe);
         cw = probe.offsetWidth;
         ch = probe.offsetHeight;
-        probe.style.cssText = 'position:absolute;visibility:hidden;width:var(--w);height:var(--h);border-radius:var(--rad)';
+        probe.style.cssText = 'position:absolute;visibility:hidden;width:var(--w);height:var(--h);border-radius:calc(var(--w) * var(--rad-k))';
         TW = probe.offsetWidth;
         TH = probe.offsetHeight;
         TR = parseFloat(getComputedStyle(probe).borderTopLeftRadius) || 0;
@@ -486,7 +486,10 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
     --h: calc(var(--w) * 0.78);
     --cw: calc(var(--w) * 1.18);
     --ch: calc(var(--h) * 1.22);
-    --rad: calc(var(--w) * 0.075);
+    /* corners in the same proportion to the picture as the home covers
+       (--photo-radius over the pill's width), so a cover flying in from
+       home keeps its rounding */
+    --rad-k: 0.236;
     position: absolute;
     inset: 0;
     touch-action: none;
@@ -515,7 +518,7 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
     width: min(var(--w), var(--h) * var(--a));
     height: min(var(--h), var(--w) / var(--a));
     object-fit: cover;
-    border-radius: var(--rad);
+    border-radius: calc(min(var(--w), var(--h) * var(--a)) * var(--rad-k));
     background: #f1f1f1;
     pointer-events: auto;
     cursor: inherit;
@@ -622,6 +625,7 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
       --w: 64vw;
       --h: calc(var(--w) * 0.9);
       --cw: calc(var(--w) * 1.12);
+      --rad-k: 0.186;
       --ch: calc(var(--h) * 1.14);
     }
   }

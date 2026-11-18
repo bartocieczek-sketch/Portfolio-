@@ -961,8 +961,8 @@ html:active-view-transition-type(cover-back)::view-transition-group(project-cove
 
 /* ---------- Home -> Explorations: the covers fly into the field ----------
    Everything around the column (nav, details, intro) goes soft and away
-   while each on-screen cover glides to its tile, its corners easing from
-   the column's radius to the tile's; the shots around fly in on the page
+   while each on-screen cover glides to its tile (corners in the same
+   proportion at both ends, so they just scale); the shots around fly in on the page
    itself (see work.astro). */
 html:active-view-transition-type(work)::view-transition-old(root) {
   animation: vt-work-out 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
@@ -978,10 +978,6 @@ html:active-view-transition-type(work)::view-transition-group(.xcov) {
   animation-timing-function: cubic-bezier(0.77, 0, 0.175, 1);
   animation-fill-mode: both;
 }
-html:active-view-transition-type(work)::view-transition-image-pair(.xcov) {
-  overflow: hidden;
-  animation: vt-work-rad 1.1s cubic-bezier(0.77, 0, 0.175, 1) both;
-}
 html:active-view-transition-type(work)::view-transition-old(.xcov),
 html:active-view-transition-type(work)::view-transition-new(.xcov) {
   height: 100%;
@@ -991,16 +987,6 @@ html:active-view-transition-type(work)::view-transition-new(.xcov) {
   animation-delay: 0.3s;
   animation-fill-mode: both;
 }
-@keyframes vt-work-rad {
-  from { border-radius: var(--photo-radius); }
-  to { border-radius: calc(clamp(240px, 25vw, 440px) * 0.075); }
-}
-@media (max-width: 809px) {
-  @keyframes vt-work-rad {
-    from { border-radius: var(--photo-radius); }
-    to { border-radius: calc(64vw * 0.075); }
-  }
-}
 @keyframes vt-work-out {
   to {
     opacity: 0;
@@ -1008,8 +994,7 @@ html:active-view-transition-type(work)::view-transition-new(.xcov) {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  html:active-view-transition-type(work)::view-transition-group(.xcov),
-  html:active-view-transition-type(work)::view-transition-image-pair(.xcov) {
+  html:active-view-transition-type(work)::view-transition-group(.xcov) {
     animation-duration: 0.01s;
   }
 }
