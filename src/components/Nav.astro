@@ -28,7 +28,7 @@ const to = (p: string) => href(Astro.locals, p);
   </div>
   <div class="nav__links">
     <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
-    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's<br />cooperate</a>}
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's cooperate</a>}
   </div>
   <button class="nav__toggle t-label" type="button" aria-expanded="false" aria-controls="mobile-menu">
     <span class="nav__toggle-open">Menu</span>
@@ -43,7 +43,7 @@ const to = (p: string) => href(Astro.locals, p);
     <a href={to("/about-me")} class="t-display" style="--n:2"><span>About me</span></a>
   </div>
   <div class="mobile-menu__bottom">
-    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="mobile-menu__cta">Let's cooperate</a>}
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="mobile-menu__cta">Let's<br />cooperate</a>}
   </div>
 </div>
 
