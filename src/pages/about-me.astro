@@ -459,7 +459,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
                   data-ah-pic
                   data-c={ci}
                   data-d={sl.d}
-                  style={`left:${sl.x}vw;width:${sl.w}vw;aspect-ratio:${p.ratio.toFixed(3)};z-index:${sl.d > 0.9 ? 3 : 1}`}
+                  style={`left:${sl.x}vw;width:${sl.w}vw;--r:${(sl.w * 0.2186).toFixed(2)}vw;aspect-ratio:${p.ratio.toFixed(3)};z-index:${sl.d > 0.9 ? 3 : 1}`}
                 >
                   <img src={p.src} alt="" loading="lazy" decoding="async" />
                 </figure>
@@ -1222,20 +1222,20 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     width: 184px;
     height: 184px;
     margin: -92px 0 0 -92px;
-    border-radius: 16px;
+    border-radius: 40px;
     overflow: hidden;
     background: #1a1a1a;
     pointer-events: none;
-    clip-path: inset(0 0 100% 0 round 16px);
+    clip-path: inset(0 0 100% 0 round 40px);
     transition: clip-path 0.5s var(--e-out);
     will-change: transform, clip-path;
   }
   .a9__trail.is-on {
-    clip-path: inset(0 0 0 0 round 16px);
+    clip-path: inset(0 0 0 0 round 40px);
   }
   /* leaving: it carries on downwards, the top edge closing to the bottom */
   .a9__trail.is-out {
-    clip-path: inset(100% 0 0 0 round 16px);
+    clip-path: inset(100% 0 0 0 round 40px);
     transition-duration: 0.35s;
   }
   .a9__trail.is-reset {
@@ -1982,7 +1982,9 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     top: 0;
     margin: 0;
     overflow: hidden;
-    border-radius: 6px;
+    /* corners as on home (yuriroga.com): 80px on a 366px-wide picture, so
+       about 22% of each photo's width */
+    border-radius: var(--r, 16px);
     background: rgb(225, 225, 222);
     transform: translate3d(0, 120svh, 0);
     will-change: transform;
@@ -1993,11 +1995,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     height: 118%;
     object-fit: cover;
     will-change: transform;
-  }
-  @media (max-width: 809px) {
-    .ah__pic {
-      border-radius: 4px;
-    }
   }
 
   /* the odometer: a column per digit, its strip scrubbed by the scroll;
