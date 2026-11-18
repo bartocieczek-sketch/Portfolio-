@@ -274,6 +274,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     <!-- 2: about me — one long paragraph, full width, with small objects
          set into the line like words (DRAFT copy) -->
     <section class="a9__who a9__prose-sec" data-who>
+      <div class="a9__who-in" data-who-in>
       <p class="a9__prose" data-prose>
         {storyParts.map((p) =>
           p.k === 'text' ? (
@@ -291,6 +292,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
           ) : null,
         )}
       </p>
+      </div>
     </section>
 
     <!-- 2b: services — what I do, then how it connects -->
@@ -717,11 +719,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   .a9__who.is-flat {
     margin-top: 0;
   }
-  @media (max-width: 809px) {
-    .a9__who {
-      margin-top: 0;
-    }
-  }
   /* 2: about me as one paragraph. Words sharpen in one after another;
      the objects in the line pop in on their turn, and each one does a
      little thing of its own (steam, a ticking hand, a running trace). */
@@ -730,12 +727,26 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
   }
   /* the about paragraph holds still for a while (sticky) before the
      services scroll up to it */
-  .a9__who.a9__prose-sec::after {
+  .a9__who-in::after {
     content: '';
     display: block;
     height: 70svh;
   }
-  .a9__who > .a9__prose {
+  /* touch screens: while the section opens behind the B it is held by the
+     browser (fixed), not by hand against the scroll (that jitters there) */
+  .a9__who.is-pinned {
+    background: transparent;
+  }
+  .a9__who.is-pinned > .a9__who-in {
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    padding: inherit;
+    background: var(--bg);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+  .a9__who-in > .a9__prose {
     position: sticky;
     top: clamp(110px, 20vh, 220px);
   }
@@ -3274,14 +3285,6 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       later.forEach((el) => io.observe(el));
     };
     addEventListener('a9:reveal', reveal);
-    // phones: no uncovering through the B (pinning the section by hand
-    // against the scroll jitters there); it just follows the hero, from
-    // the start, so nothing shifts later
-    const FLAT_Q = '(max-width: 809px), (hover: none) and (pointer: coarse)';
-    if (matchMedia(FLAT_Q).matches) {
-      root.querySelector('[data-who]')?.classList.add('is-flat');
-      reveal();
-    }
     // no 3D (or calm): nothing to uncover it, so it just follows the hero
     setTimeout(() => {
       if (!(window as any).__a9Mask) {
@@ -4687,8 +4690,10 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       // ---- the next section opens out of the B's edge: at the moment the
       // turning letter is side-on (a thin sliver), a slit the size of that
       // sliver opens behind it to the full screen, the B flying on in front
-      const who = calm || matchMedia('(max-width: 809px), (hover: none) and (pointer: coarse)').matches ? null : document.querySelector<HTMLElement>('[data-who]');
+      const who = calm ? null : document.querySelector<HTMLElement>('[data-who]');
       if (who) (window as any).__a9Mask = true;
+      const whoIn = who?.querySelector<HTMLElement>('[data-who-in]') ?? null;
+      const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
       B.geometry.computeBoundingBox();
       const bb = B.geometry.boundingBox!;
       const corners = Array.from({ length: 8 }, () => new THREE.Vector3());
@@ -4726,10 +4731,20 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         if (!who) return;
         // hold the section in place while it opens
         const top = who.offsetTop - scrollY;
-        who.style.transform = top > 0 ? `translate3d(0,${(-top).toFixed(1)}px,0)` : '';
+        if (TOUCH) {
+          // held by the browser: the inside goes fixed, the section keeps its height
+          if (top > 0 && !who.classList.contains('is-pinned')) {
+            who.style.height = `${who.offsetHeight}px`;
+            who.classList.add('is-pinned');
+          } else if (top <= 0 && who.classList.contains('is-pinned')) {
+            who.classList.remove('is-pinned');
+            who.style.height = '';
+          }
+        } else who.style.transform = top > 0 ? `translate3d(0,${(-top).toFixed(1)}px,0)` : '';
+        const tgt = TOUCH && whoIn ? whoIn : who;
         if (top <= 0) {
-          who.style.clipPath = '';
-          who.style.webkitMaskImage = who.style.maskImage = '';
+          tgt.style.clipPath = '';
+          tgt.style.webkitMaskImage = tgt.style.maskImage = '';
           // (arrived without passing the reveal, e.g. a reload further down)
           if (!sent) {
             sent = true;
@@ -4739,11 +4754,11 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         }
         const raw = Math.min(1, Math.max(0, (sy - sEdge) / 0.2));
         if (raw <= 0) {
-          who.style.clipPath = 'inset(50% 50% 50% 50%)';
-          who.style.webkitMaskImage = who.style.maskImage = '';
+          tgt.style.clipPath = 'inset(50% 50% 50% 50%)';
+          tgt.style.webkitMaskImage = tgt.style.maskImage = '';
           return;
         }
-        who.style.clipPath = '';
+        tgt.style.clipPath = '';
         // the window follows the letter itself: it is the B's own on-screen
         // box (live, so it moves and grows with it), opening out to the
         // whole screen as the letter closes in. Its edges are feathered, so
@@ -4758,7 +4773,7 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
         const g = (dir: string, a: number, z: number) =>
           `linear-gradient(${dir}, transparent ${a.toFixed(1)}px, #000 ${(a + F).toFixed(1)}px, #000 ${(z - F).toFixed(1)}px, transparent ${z.toFixed(1)}px)`;
         const m = `${g('to right', l, r)}, ${g('to bottom', t, b)}`;
-        who.style.webkitMaskImage = who.style.maskImage = m;
+        tgt.style.webkitMaskImage = tgt.style.maskImage = m;
         // the paragraph starts writing itself as soon as the window starts
         // opening behind the B, while the letter is still on screen
         if (!sent && raw > 0.02) {
