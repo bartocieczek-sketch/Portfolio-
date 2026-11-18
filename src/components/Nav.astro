@@ -24,7 +24,7 @@ const to = (p: string) => href(Astro.locals, p);
       ))}
     </span>
   </a>
-  <a href={to("/work")} class="u-link t-label nav__work" aria-current={path.startsWith('/work') ? 'page' : undefined}>All work</a>
+  <a href={to("/work")} class="u-link t-label nav__work" aria-current={path.startsWith('/work') ? 'page' : undefined}>Explorations</a>
   </div>
   <div class="nav__links">
     <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
@@ -39,7 +39,7 @@ const to = (p: string) => href(Astro.locals, p);
 <div class="mobile-menu" id="mobile-menu" hidden>
   <div class="mobile-menu__links">
     <a href={to("/")} class="t-display" style="--n:0"><span>Home</span></a>
-    <a href={to("/work")} class="t-display" style="--n:1"><span>All work</span></a>
+    <a href={to("/work")} class="t-display" style="--n:1"><span>Explorations</span></a>
     <a href={to("/about-me")} class="t-display" style="--n:2"><span>About me</span></a>
     {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display" style="--n:3"><span>Let's cooperate</span></a>}
   </div>
@@ -67,7 +67,11 @@ const to = (p: string) => href(Astro.locals, p);
   .nav__left {
     display: flex;
     align-items: center;
-    gap: clamp(20px, 2.4vw, 36px);
+  }
+  /* lines up with the second column of the project details on home (9%) */
+  .nav__work {
+    position: absolute;
+    left: 9%;
   }
   .nav__links {
     width: 30%;
