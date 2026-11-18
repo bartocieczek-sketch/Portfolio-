@@ -27,6 +27,8 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
 <html lang="en" data-preview={preview ? '' : undefined}>
   <head>
     <meta charset="utf-8" />
+    <link rel="preload" href="/fonts/PPNeueMontreal-Medium.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/PPNeueMontreal-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <slot name="head" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>

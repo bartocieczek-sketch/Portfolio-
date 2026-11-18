@@ -1,29 +1,23 @@
 /*
- * Neue Montreal (Pangram Pangram) for the whole site.
- *
- * Until the licensed files are added, the browser uses Neue Montreal if it is
- * installed on the visitor's machine, otherwise Inter.
- * To self-host: put the .woff2 files in /public/fonts/ with the names below
- * and uncomment the url() lines. Check that the licence covers web use.
+ * Neue Montreal (Pangram Pangram) for the whole site, self-hosted from
+ * /public/fonts (Regular 400, Medium 500, Bold 700), so every device shows
+ * the same face, not whatever is installed locally.
  */
 @font-face {
   font-family: 'PP Neue Montreal';
-  src: local('PP Neue Montreal Regular'), local('PPNeueMontreal-Regular'), local('Neue Montreal Regular');
-  /* src: url('/fonts/PPNeueMontreal-Regular.woff2') format('woff2'); */
+  src: url('/fonts/PPNeueMontreal-Regular.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: 'PP Neue Montreal';
-  src: local('PP Neue Montreal Medium'), local('PPNeueMontreal-Medium'), local('Neue Montreal Medium');
-  /* src: url('/fonts/PPNeueMontreal-Medium.woff2') format('woff2'); */
+  src: url('/fonts/PPNeueMontreal-Medium.woff2') format('woff2');
   font-weight: 500;
   font-display: swap;
 }
 @font-face {
   font-family: 'PP Neue Montreal';
-  src: local('PP Neue Montreal Bold'), local('PPNeueMontreal-Bold'), local('Neue Montreal Bold');
-  /* src: url('/fonts/PPNeueMontreal-Bold.woff2') format('woff2'); */
+  src: url('/fonts/PPNeueMontreal-Bold.woff2') format('woff2');
   font-weight: 700;
   font-display: swap;
 }
