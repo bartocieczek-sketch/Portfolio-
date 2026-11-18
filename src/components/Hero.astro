@@ -1,5 +1,5 @@
 ---
-// Home: an endless centred column of pill-shaped covers.
+// Home: an endless centred column of covers with soft rounded corners.
 // - The column loops forever: wheel, trackpad, touch or arrow keys move it,
 //   and when you let go it eases onto the nearest project.
 // - The project in the middle drives the rolling texts on either side.
@@ -1401,7 +1401,8 @@ const LAPS = 3;
       }
       void main() {
         vec2 size = uRect.zw;
-        float r = size.x * 0.5;
+        // soft rounded corners, a tenth of the width (as .vh__pill)
+        float r = size.x * 0.1;
         vec2 q = abs(vUv * size - size * 0.5) - (size * 0.5 - r);
         float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
         float mask = 1.0 - smoothstep(-1.0, 1.0, d);
