@@ -41,15 +41,10 @@ const to = (p: string) => href(Astro.locals, p);
     <a href={to("/")} class="t-display" style="--n:0"><span>Home</span></a>
     <a href={to("/work")} class="t-display" style="--n:1"><span>Explorations</span></a>
     <a href={to("/about-me")} class="t-display" style="--n:2"><span>About me</span></a>
-    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display" style="--n:3"><span>Let's cooperate</span></a>}
   </div>
   <div class="mobile-menu__bottom">
     {role && <p class="t-body2 muted">{role}</p>}
-    <div>
-      {socials.map((s) => (
-        <a class="line-button" href={s.url} target="_blank" rel="noopener"><span>{s.label}</span></a>
-      ))}
-    </div>
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display mobile-menu__cta"><span>Let's cooperate</span></a>}
   </div>
 </div>
 
@@ -167,7 +162,8 @@ const to = (p: string) => href(Astro.locals, p);
     flex-direction: column;
     gap: 8px;
   }
-  .mobile-menu__links a {
+  .mobile-menu__links a,
+  .mobile-menu__cta {
     display: block;
     overflow: hidden;
     padding-bottom: 0.06em;
