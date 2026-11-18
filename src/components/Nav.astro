@@ -83,7 +83,8 @@ const to = (p: string) => href(Astro.locals, p);
     left: 9%;
   }
   .nav__links {
-    width: 30%;
+    /* "About me" lines up with the project names on home (Hero.astro) */
+    width: calc(16% + 40px);
     display: flex;
     justify-content: space-between;
     gap: 30px;
