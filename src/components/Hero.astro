@@ -428,8 +428,8 @@ const LAPS = 3;
     display: block;
     width: var(--pill-w);
     aspect-ratio: 0.75;
-    /* soft rounded corners, about a tenth of the width (was a full pill) */
-    border-radius: calc(var(--pill-w) * 0.1);
+    /* soft rounded corners, 15% of the width (was a full pill) */
+    border-radius: calc(var(--pill-w) * 0.15);
     overflow: hidden;
     background: #f2f2f2;
     -webkit-user-drag: none;
@@ -1401,8 +1401,8 @@ const LAPS = 3;
       }
       void main() {
         vec2 size = uRect.zw;
-        // soft rounded corners, a tenth of the width (as .vh__pill)
-        float r = size.x * 0.1;
+        // soft rounded corners, 15% of the width (as .vh__pill)
+        float r = size.x * 0.15;
         vec2 q = abs(vUv * size - size * 0.5) - (size * 0.5 - r);
         float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
         float mask = 1.0 - smoothstep(-1.0, 1.0, d);
