@@ -3184,8 +3184,8 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     /* phones: no trail to follow, so each job shows its picture on the
        left; title and company sit close; the years a size down */
     .a9__jobs[data-jobs] li {
-      grid-template-columns: 44px 1fr auto;
-      column-gap: 14px;
+      grid-template-columns: 26px 1fr auto;
+      column-gap: 12px;
       row-gap: 2px;
       align-items: center;
     }
@@ -3205,11 +3205,13 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
     .a9__job-pic {
       display: block;
       grid-column: 1;
-      grid-row: 1 / span 2;
-      width: 44px;
-      height: 44px;
+      grid-row: 1;
+      align-self: center;
+      /* the same tile as the client logos below */
+      width: 26px;
+      height: 26px;
       object-fit: cover;
-      border-radius: 12px;
+      border-radius: 6px;
       background: #1c1c1c;
     }
   }
