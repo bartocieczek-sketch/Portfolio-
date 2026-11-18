@@ -24,6 +24,13 @@ export const HOME_QUERY = `*[_id == "homePage"][0]{
   testimonial{..., "videoUrl": video.asset->url, thumbnail{${imageFields}}}
 }`;
 
+export const EXPLORE_QUERY = `{
+  "shots": *[_id == "homePage"][0].explorations[]{${imageFields}},
+  "gallery": *[_type == "project" && !(_id in path("drafts.**"))]{
+    gallery[]{kind, image{${imageFields}}, poster{${imageFields}}}
+  }
+}`;
+
 export const ABOUT_QUERY = `*[_id == "aboutPage"][0]{
   ...,
   portrait{${imageFields}},

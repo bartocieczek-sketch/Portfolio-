@@ -31,6 +31,7 @@ export const homePage = defineType({
     { name: 'hero', title: 'Hero', default: true },
     { name: 'work', title: 'Work' },
     { name: 'testimonial', title: 'Testimonial' },
+    { name: 'explore', title: 'All work' },
   ],
   fields: [
     defineField({ name: 'heroText', type: 'text', rows: 3, group: 'hero' }),
@@ -54,6 +55,15 @@ export const homePage = defineType({
     defineField({ name: 'testimonialsHeading', type: 'string', group: 'testimonial' }),
     defineField({ name: 'testimonial', type: 'testimonial', group: 'testimonial' }),
     defineField({ name: 'ctaText', title: 'Footer text', type: 'string', group: 'testimonial' }),
+    defineField({
+      name: 'explorations',
+      title: 'Explorations',
+      description: 'Shots for the All work page (explorations, side work, details). Empty: pictures from the case study galleries are used.',
+      type: 'array',
+      of: [defineArrayMember({ type: 'image', options: { hotspot: true } })],
+      options: { layout: 'grid' },
+      group: 'explore',
+    }),
 
   ],
   preview: { prepare: () => ({ title: 'Home page' }) },

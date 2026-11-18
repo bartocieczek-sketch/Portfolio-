@@ -24,7 +24,7 @@ const to = (p: string) => href(Astro.locals, p);
       ))}
     </span>
   </a>
-  <a href={to("/work")} class="u-link t-label nav__work" data-work-link aria-current={path.startsWith('/work') ? 'page' : undefined}>All work</a>
+  <a href={to("/work")} class="u-link t-label nav__work" aria-current={path.startsWith('/work') ? 'page' : undefined}>All work</a>
   </div>
   <div class="nav__links">
     <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>

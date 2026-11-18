@@ -1,35 +1,48 @@
 ---
-// All work: an endless field of light cards, each holding a project floating
-// inside it. Drag or scroll in any direction; the field bends like it sits
-// under a lens (cards toward the edges shrink, turn and blur). Coming from
-// home through "All work", the covers on screen fly into their cards (a
-// cross-document view transition, see Hero.astro and Base.astro).
+// All work: an endless field of shots to wander through (explorations, side
+// work, details), not the case studies from home. Drag or scroll in any
+// direction; the field bends like it sits under a lens (shots toward the
+// edges shrink, turn and blur). Click a shot to bring it up close.
+// The page opens out of a line across the middle, like About (Base.astro).
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
-import { HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+import { EXPLORE_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
 import { load } from '../lib/load';
 import { href } from '../lib/preview';
 
-const [home, settings] = await Promise.all([load(Astro.locals, HOME_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
-if (!home || !settings) return new Response('Content not found', { status: 500 });
+const [explore, settings] = await Promise.all([load(Astro.locals, EXPLORE_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
+if (!settings) return new Response('Content not found', { status: 500 });
 
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
-const projects = ((home.projects ?? []) as any[])
-  .filter((p) => p?.cover?.asset && p.slug)
-  .map((p) => ({
-    slug: p.slug as string,
-    title: ((p.cardTitle || p.title || '') as string).trim(),
-    year: p.year ?? '',
-    href: href(Astro.locals, `/${p.slug}`),
-    src: urlFor(p.cover).width(1000).fit('max').quality(80).url(),
-  }));
-const n = projects.length;
+type Img = any;
+const shots: Img[] = (explore?.shots ?? []).filter((i: Img) => i?.asset);
+// nothing chosen yet: pictures from every case study gallery
+const pool0: Img[] = shots.length
+  ? shots
+  : ((explore?.gallery ?? []) as { gallery?: { kind?: string; image?: Img; poster?: Img }[] }[])
+      .flatMap((p) => p.gallery ?? [])
+      .map((g) => (g.kind === 'video' ? g.poster : g.image))
+      .filter((i) => i?.asset && !String(i.asset.mimeType ?? '').includes('gif'));
+// a steady shuffle, so neighbours rarely come from the same project
+const seeded = pool0
+  .map((img, i) => ({ img, k: Math.sin(i * 12.9898 + 78.233) * 43758.5453 }))
+  .map((x) => ({ ...x, k: x.k - Math.floor(x.k) }))
+  .sort((a, b) => a.k - b.k)
+  .map((x) => x.img);
+const items = seeded.map((img) => {
+  const d = img.asset?.metadata?.dimensions;
+  return {
+    src: urlFor(img).width(1000).fit('max').quality(80).url(),
+    big: urlFor(img).width(2000).fit('max').quality(85).url(),
+    a: d?.aspectRatio ?? (d?.width && d?.height ? d.width / d.height : 4 / 3),
+  };
+});
+const n = items.length;
 
-// the pool of cards that gets recycled as the field moves (enough to cover
-// any screen with a ring to spare); cell (c, r) shows project (c + r*K) mod n
-const PC = 6;
+// the pool of tiles recycled as the field moves; cell (c, r) shows item (c + r*K) mod n
+const PC = 7;
 const PR = 7;
-const K = n % 3 === 0 ? 2 : 3;
+const K = n > 6 ? (n % 3 === 0 ? 4 : 3) : 1;
 const mod = (a: number, m: number) => ((a % m) + m) % m;
 const c0 = Math.floor(-PC / 2);
 const r0 = Math.floor(-PR / 2);
@@ -40,56 +53,32 @@ for (let b = 0; b < PR; b++)
     const r = r0 + mod(b - r0, PR);
     pool.push({ c, r, p: n ? mod(c + r * K, n) : 0 });
   }
-// each project's view-transition name goes on the copy nearest the centre
-const named = new Map<number, number>();
-pool
-  .map((s, i) => ({ i, d: s.c * s.c + s.r * s.r * 1.4, p: s.p }))
-  .sort((x, y) => x.d - y.d)
-  .forEach(({ i, p }) => {
-    if (!named.has(p)) named.set(p, i);
-  });
-const nameOf = new Map([...named].map(([p, i]) => [i, p]));
-const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){animation-delay:${i * 40}ms}`).join('');
 ---
 
 <Base title={`All work · ${settings.seoTitle ?? 'Bart Ocieczek'}`} description={settings.seoDescription}>
-  <Fragment set:html={`<style>html:active-view-transition-type(work)${stagger.split('}').filter(Boolean).join('}html:active-view-transition-type(work)')}}</style>`} />
   <main class="wk" data-work>
     <header class="wk__nav">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
     </header>
 
-    <div class="wk__field" data-wk-field data-lenis-prevent aria-hidden="true" data-n={n} data-k={K} data-pc={PC} data-pr={PR}>
-      {pool.map((s, i) => {
-        const p = projects[s.p];
-        if (!p) return null;
-        const vt = nameOf.has(i) ? `view-transition-name:w-${p.slug};view-transition-class:wcov` : '';
-        return (
-          <a class="wk__card" href={p.href} tabindex="-1" style={`--c:${s.c};--r:${s.r};--d:${Math.hypot(s.c, s.r * 1.4).toFixed(2)}`} data-c={s.c} data-r={s.r} data-p={s.p}>
-            <span class="wk__in">
-              <img src={p.src} alt="" decoding="async" loading="eager" draggable="false" style={vt} />
-              <span class="wk__cap t-label"><span>{p.title}</span><span>{p.year}</span></span>
-            </span>
-          </a>
-        );
-      })}
+    <div class="wk__field" data-wk-field data-lenis-prevent data-k={K} data-pc={PC} data-pr={PR}>
+      {n > 0 && pool.map((s) => (
+        <div class="wk__cell" style={`--c:${s.c};--r:${s.r};--a:${items[s.p].a.toFixed(4)};--d:${Math.hypot(s.c, s.r * 1.3).toFixed(2)}`}>
+          <img class="wk__img" src={items[s.p].src} alt="" decoding="async" loading="eager" draggable="false" data-p={s.p} />
+        </div>
+      ))}
     </div>
     <div class="wk__lens" aria-hidden="true"></div>
-
-    <ul class="wk__sr">
-      {projects.map((p) => (
-        <li><a href={p.href}>{p.title}{p.year && `, ${p.year}`}</a></li>
-      ))}
-    </ul>
+    <div class="wk__dim" data-wk-dim aria-hidden="true"></div>
 
     <footer class="wk__foot">
-      <span class="t-label wk__count">{String(n).padStart(2, '0')} projects</span>
+      <span class="t-label wk__hint">Drag to explore</span>
       <a class="wk__x" href={href(Astro.locals, '/')} aria-label="Close, back home">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
       </a>
     </footer>
   </main>
-  <script type="application/json" id="wk-data" set:html={JSON.stringify(projects.map((p) => ({ src: p.src, href: p.href, title: p.title, year: p.year })))} />
+  <script type="application/json" id="wk-data" set:html={JSON.stringify(items)} />
 </Base>
 
 <style>
@@ -111,10 +100,11 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
   }
   /* the field: cells laid out from the centre; JS takes the positions over */
   .wk__field {
-    --w: clamp(280px, 31vw, 560px);
-    --h: calc(var(--w) * 0.68);
-    --cw: calc(var(--w) * 1.22);
-    --ch: calc(var(--h) * 1.24);
+    --w: clamp(240px, 25vw, 440px);
+    --h: calc(var(--w) * 0.78);
+    --cw: calc(var(--w) * 1.18);
+    --ch: calc(var(--h) * 1.22);
+    --rad: calc(var(--w) * 0.075);
     position: absolute;
     inset: 0;
     touch-action: none;
@@ -125,65 +115,34 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
   .wk__field.is-drag {
     cursor: grabbing;
   }
-  .wk__card {
+  .wk__cell {
     position: absolute;
     left: calc(50% - var(--w) / 2);
     top: calc(50% - var(--h) / 2);
     width: var(--w);
     height: var(--h);
-    transform: translate(calc(var(--c) * var(--cw)), calc(var(--r) * var(--ch)));
-    will-change: transform;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .wk__in {
-    position: absolute;
-    inset: 0;
     display: grid;
     place-items: center;
-    border-radius: calc(var(--w) * 0.085);
-    background: #f3f4f5;
-    transition:
-      background-color 0.3s ease,
-      scale 0.5s var(--ease-out);
-  }
-  .wk__in img {
-    position: absolute;
-    inset: 14% 13%;
-    display: block;
-    width: 74%;
-    height: 72%;
-    object-fit: contain;
-    transition: scale 0.6s var(--ease-out);
-    will-change: translate;
+    transform: translate(calc(var(--c) * var(--cw)), calc(var(--r) * var(--ch)));
+    will-change: transform;
     pointer-events: none;
   }
-  .wk__cap {
-    position: absolute;
-    left: 22px;
-    right: 22px;
-    bottom: 16px;
-    display: flex;
-    justify-content: space-between;
-    opacity: 0;
-    translate: 0 4px;
-    transition:
-      opacity 0.25s ease,
-      translate 0.35s var(--ease-out);
+  /* a shot keeps its own shape, fitted to the cell, always rounded */
+  .wk__img {
+    display: block;
+    width: min(var(--w), var(--h) * var(--a));
+    height: min(var(--h), var(--w) / var(--a));
+    object-fit: cover;
+    border-radius: var(--rad);
+    background: #f1f1f1;
+    pointer-events: auto;
+    cursor: inherit;
+    transition: scale 0.5s var(--ease-out);
   }
   @media (hover: hover) and (pointer: fine) {
-    .wk__field:not(.is-drag) .wk__card:hover .wk__in {
-      background: #ecedee;
+    .wk__field:not(.is-drag) .wk__img:hover {
+      scale: 1.03;
     }
-    .wk__field:not(.is-drag) .wk__card:hover img {
-      scale: 1.035;
-    }
-    .wk__field:not(.is-drag) .wk__card:hover .wk__cap {
-      opacity: 1;
-      translate: 0 0;
-    }
-  }
-  .wk__card:active .wk__in {
-    scale: 0.985;
   }
   /* the lens: the rim of the view goes soft and pale */
   .wk__lens {
@@ -197,9 +156,36 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
     mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, transparent 40%, #000 95%);
     -webkit-mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, transparent 40%, #000 95%);
   }
+  /* close-up: the field steps back behind a pale veil */
+  .wk__dim {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s ease;
+  }
+  .wk.is-zoom .wk__dim {
+    opacity: 1;
+    pointer-events: auto;
+    cursor: zoom-out;
+  }
+  :global(.wk__zoom) {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 7;
+    object-fit: cover;
+    transform-origin: 0 0;
+    cursor: zoom-out;
+    will-change: transform;
+  }
   .wk__foot {
     position: absolute;
-    z-index: 5;
+    z-index: 8;
     left: var(--gutter);
     right: var(--gutter);
     bottom: var(--gutter);
@@ -208,7 +194,7 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
     justify-content: space-between;
     pointer-events: none;
   }
-  .wk__count {
+  .wk__hint {
     color: rgba(17, 17, 17, 0.5);
   }
   .wk__x {
@@ -239,32 +225,22 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
   .wk__x:active {
     scale: 0.94;
   }
-  .wk__sr {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-  .wk__sr a:focus {
-    position: fixed;
-  }
-  /* arriving any other way: the cards settle in from the centre outwards */
-  html:not(.wk-flown) .wk__in {
-    animation: wk-in 0.9s var(--ease-out) calc(0.1s + var(--d) * 70ms) both;
+  /* once the page has opened, the shots settle in from the centre outwards */
+  .wk__cell {
+    animation: wk-in 1s var(--ease-out) calc(0.45s + var(--d) * 60ms) both;
   }
   @keyframes wk-in {
     from {
       opacity: 0;
-      scale: 0.92;
+      scale: 0.9;
     }
   }
   @media (max-width: 809px) {
     .wk__field {
-      --w: 74vw;
-      --h: calc(var(--w) * 0.8);
-      --cw: calc(var(--w) * 1.14);
-      --ch: calc(var(--h) * 1.16);
+      --w: 64vw;
+      --h: calc(var(--w) * 0.9);
+      --cw: calc(var(--w) * 1.12);
+      --ch: calc(var(--h) * 1.14);
     }
     .wk__lens {
       backdrop-filter: blur(6px);
@@ -272,7 +248,7 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    html:not(.wk-flown) .wk__in {
+    .wk__cell {
       animation: wk-fade 0.3s ease both;
     }
     @keyframes wk-fade {
@@ -284,35 +260,33 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
 </style>
 
 <script>
-  try {
-    if (sessionStorage.getItem('vt-work-flown')) {
-      document.documentElement.classList.add('wk-flown');
-      sessionStorage.removeItem('vt-work-flown');
-    }
-  } catch {}
-
+  const main = document.querySelector<HTMLElement>('.wk');
   const field = document.querySelector<HTMLElement>('[data-wk-field]');
-  const data = JSON.parse(document.getElementById('wk-data')?.textContent || '[]') as { src: string; href: string }[];
-  if (field && data.length) {
+  const dim = document.querySelector<HTMLElement>('[data-wk-dim]');
+  const data = JSON.parse(document.getElementById('wk-data')?.textContent || '[]') as { src: string; big: string; a: number }[];
+  if (main && field && dim && data.length) {
     const n = data.length;
     const K = Number(field.dataset.k);
     const PC = Number(field.dataset.pc);
     const PR = Number(field.dataset.pr);
     const mod = (a: number, m: number) => ((a % m) + m) % m;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const cards = [...field.querySelectorAll<HTMLAnchorElement>('.wk__card')].map((el, i) => ({
+    const cells = [...field.querySelectorAll<HTMLElement>('.wk__cell')].map((el, i) => ({
       el,
       img: el.querySelector('img') as HTMLImageElement,
       a: i % PC,
       b: Math.floor(i / PC),
-      p: Number(el.dataset.p),
+      p: Number(el.querySelector('img')?.dataset.p),
     }));
+    // warm every picture once, so recycled tiles never show an empty frame
+    data.forEach((d) => {
+      const i = new Image();
+      i.decoding = 'async';
+      i.src = d.src;
+    });
 
-    let W = 0, H = 0, cw = 0, ch = 0, vw = 0, vh = 0;
+    let cw = 0, ch = 0, vw = 0, vh = 0;
     const measure = () => {
-      const first = cards[0].el;
-      W = first.offsetWidth;
-      H = first.offsetHeight;
       const probe = document.createElement('div');
       probe.style.cssText = 'position:absolute;visibility:hidden;width:var(--cw);height:var(--ch)';
       field.appendChild(probe);
@@ -326,28 +300,21 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
 
     // camera: where the centre of the screen sits in the field
     let x = 0, y = 0, tx = 0, ty = 0, speed = 0;
-    let named = true;
-    const clearNames = () => {
-      if (!named) return;
-      named = false;
-      cards.forEach((c) => c.img.style.removeProperty('view-transition-name'));
-    };
 
     const render = () => {
       const c0 = Math.floor(x / cw - PC / 2);
       const r0 = Math.floor(y / ch - PR / 2);
       const z = 1 - Math.min(speed / 4000, 1) * 0.05; // the field eases back a touch while it flies
-      for (const k of cards) {
+      for (const k of cells) {
         const c = c0 + mod(k.a - c0, PC);
         const r = r0 + mod(k.b - r0, PR);
         const p = mod(c + r * K, n);
         if (p !== k.p) {
           k.p = p;
           k.img.src = data[p].src;
-          k.el.href = data[p].href;
-          clearNames();
+          k.img.dataset.p = String(p);
+          k.el.style.setProperty('--a', String(data[p].a));
         }
-        // where the card's centre lands, measured from the screen centre
         const sx = (c * cw - x) * z;
         const sy = (r * ch - y) * z;
         const nx = sx / (vw * 0.5);
@@ -359,13 +326,12 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
         const ry = reduce ? 0 : nx * -9;
         const rx = reduce ? 0 : ny * 7;
         k.el.style.transform = `translate3d(${(sx * pull).toFixed(1)}px,${(sy * pull).toFixed(1)}px,0) perspective(1400px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${s.toFixed(4)})`;
-        // the project drifts inside its card, a little against the move
-        k.img.style.translate = reduce ? '' : `${(nx * -16).toFixed(1)}px ${(ny * -12).toFixed(1)}px`;
       }
     };
 
     let last = performance.now();
     let raf = 0;
+    let dragging = false;
     const tick = (now: number) => {
       const dt = Math.min(now - last, 64);
       last = now;
@@ -373,7 +339,7 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
       const px = x, py = y;
       x += (tx - x) * f;
       y += (ty - y) * f;
-      const v = Math.hypot(x - px, y - py) / Math.max(dt, 1) * 1000;
+      const v = (Math.hypot(x - px, y - py) / Math.max(dt, 1)) * 1000;
       speed += (v - speed) * (1 - Math.exp(-dt / 120));
       render();
       if (dragging || Math.abs(tx - x) > 0.3 || Math.abs(ty - y) > 0.3 || speed > 2) raf = requestAnimationFrame(tick);
@@ -390,10 +356,79 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
       }
     };
 
-    // drag, with a flick that keeps going
-    let dragging = false, moved = 0, lx = 0, ly = 0, lt = 0, vx = 0, vy = 0, pid = -1;
+    // ---------- close-up ----------
+    let zoom: { img: HTMLImageElement; src: HTMLImageElement } | null = null;
+    const EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
+    const open = (src: HTMLImageElement) => {
+      if (zoom) return;
+      const d = data[Number(src.dataset.p)];
+      const from = src.getBoundingClientRect();
+      const rad = parseFloat(getComputedStyle(src).borderTopLeftRadius) || 0;
+      const maxW = vw * (vw < 810 ? 0.92 : 0.78);
+      const maxH = vh * 0.78;
+      const w = Math.min(maxW, maxH * d.a);
+      const h = w / d.a;
+      const L = (vw - w) / 2, T = (vh - h) / 2;
+      const R = Math.max(rad * 1.6, 18);
+      const img = document.createElement('img');
+      img.className = 'wk__zoom';
+      img.alt = '';
+      img.src = src.currentSrc || src.src;
+      img.style.width = `${w}px`;
+      img.style.height = `${h}px`;
+      main.appendChild(img);
+      // swap in the sharp one once it has loaded
+      const hi = new Image();
+      hi.onload = () => {
+        if (zoom?.img === img) img.src = d.big;
+      };
+      hi.src = d.big;
+      src.style.visibility = 'hidden';
+      main.classList.add('is-zoom');
+      const sx = from.width / w, sy = from.height / h;
+      img.animate(
+        [
+          { transform: `translate(${from.left}px,${from.top}px) scale(${sx},${sy})`, borderRadius: `${rad / sx}px / ${rad / sy}px` },
+          { transform: `translate(${L}px,${T}px) scale(1,1)`, borderRadius: `${R}px` },
+        ],
+        { duration: reduce ? 1 : 750, easing: EASE, fill: 'both' },
+      );
+      zoom = { img, src };
+    };
+    const close = () => {
+      if (!zoom) return;
+      const { img, src } = zoom;
+      zoom = null;
+      main.classList.remove('is-zoom');
+      const now = img.getBoundingClientRect();
+      const back = src.getBoundingClientRect();
+      const w = img.offsetWidth, h = img.offsetHeight;
+      const rad = parseFloat(getComputedStyle(src).borderTopLeftRadius) || 0;
+      const cur = getComputedStyle(img).borderRadius;
+      img.getAnimations().forEach((a) => a.cancel());
+      const s0x = now.width / w, s0y = now.height / h;
+      const sx = back.width / w, sy = back.height / h;
+      const a = img.animate(
+        [
+          { transform: `translate(${now.left}px,${now.top}px) scale(${s0x},${s0y})`, borderRadius: cur },
+          { transform: `translate(${back.left}px,${back.top}px) scale(${sx},${sy})`, borderRadius: `${rad / sx}px / ${rad / sy}px` },
+        ],
+        { duration: reduce ? 1 : 650, easing: EASE, fill: 'both' },
+      );
+      a.finished.then(() => {
+        src.style.visibility = '';
+        img.remove();
+      });
+    };
+    dim.addEventListener('click', close);
+    main.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).classList.contains('wk__zoom')) close();
+    });
+
+    // ---------- drag, with a flick that keeps going ----------
+    let moved = 0, lx = 0, ly = 0, lt = 0, vx = 0, vy = 0, pid = -1;
     field.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || pid !== -1) return;
+      if (e.button !== 0 || pid !== -1 || zoom) return;
       pid = e.pointerId;
       dragging = true;
       moved = 0;
@@ -434,25 +469,29 @@ const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){ani
     };
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
-    // a drag is not a click
     field.addEventListener('click', (e) => {
-      if (moved > 6) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }, true);
+      if (moved > 6) return;
+      const t = e.target as HTMLElement;
+      if (t.classList.contains('wk__img')) open(t as HTMLImageElement);
+    });
 
     field.addEventListener('wheel', (e) => {
       e.preventDefault();
+      if (zoom) return;
       const k = e.deltaMode === 1 ? 32 : 1;
       tx += e.deltaX * k;
       ty += e.deltaY * k;
       wake();
     }, { passive: false });
+    dim.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      close();
+    }, { passive: false });
 
     window.addEventListener('keydown', (e) => {
-      const step = { ArrowLeft: [-cw, 0], ArrowRight: [cw, 0], ArrowUp: [0, -ch], ArrowDown: [0, ch] }[e.key];
-      if (!step) return;
+      if (e.key === 'Escape') return close();
+      const step = ({ ArrowLeft: [-cw, 0], ArrowRight: [cw, 0], ArrowUp: [0, -ch], ArrowDown: [0, ch] } as Record<string, number[]>)[e.key];
+      if (!step || zoom) return;
       e.preventDefault();
       tx = Math.round((tx + step[0]) / cw) * cw;
       ty = Math.round((ty + step[1]) / ch) * ch;

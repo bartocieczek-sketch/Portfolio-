@@ -263,32 +263,25 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
             });
             return;
           }
-          // All work, opened from the home column: the covers fly into the
-          // bubbles (names set by the home hero just before leaving)
-          if (document.querySelector('[data-work]')) {
-            var w = null;
-            try {
-              w = sessionStorage.getItem('vt-work');
-              sessionStorage.removeItem('vt-work');
-            } catch (err3) {}
-            if (w) {
-              e.viewTransition.types.add('work');
-              return;
-            }
-          }
           // leaving About: the dark page folds shut into a line across the
           // middle, over the page coming back
           var act = window.navigation && navigation.activation;
           var fromUrl = (act && act.from && act.from.url) || document.referrer || '';
-          var fromAbout = false;
-          try { fromAbout = new URL(fromUrl).pathname.indexOf('/about-me') === 0; } catch (err2) {}
-          if (fromAbout && !document.querySelector('main.about')) {
-            e.viewTransition.types.add('about-out');
+          // (All work opens and closes the same way)
+          var fromPath = '';
+          try { fromPath = new URL(fromUrl).pathname; } catch (err2) {}
+          var panelOf = function (p) {
+            return p.indexOf('/about-me') === 0 ? 'about' : p.indexOf('/work') === 0 ? 'work' : '';
+          };
+          var fromPanel = panelOf(fromPath);
+          var here = document.querySelector('main.about') ? 'about' : document.querySelector('[data-work]') ? 'work' : '';
+          // opening About or All work: it opens out of a line across the middle
+          if (here && here !== fromPanel) {
+            e.viewTransition.types.add('about-in');
             return;
           }
-          // opening About: it opens out of a line across the middle
-          if (document.querySelector('main.about') && !fromAbout) {
-            e.viewTransition.types.add('about-in');
+          if (fromPanel && !here) {
+            e.viewTransition.types.add('about-out');
             return;
           }
           // any other way back to the home column: a calm dissolve, never a slide
