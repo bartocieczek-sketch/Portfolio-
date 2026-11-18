@@ -318,14 +318,10 @@ const to = (p: string) => href(Astro.locals, p);
     if (!cta || asked || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (!('DeviceOrientationEvent' in window) || !matchMedia('(hover: none) and (pointer: coarse)').matches) return;
     asked = true;
-    // iOS asks once, and only from a tap (this one, opening the menu)
+    // never asks for it: where the browser wants a permission (iOS), the
+    // circle just stays still
     const D = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
-    const listen = () => addEventListener('deviceorientation', onTilt);
-    if (typeof D.requestPermission === 'function')
-      D.requestPermission()
-        .then((r) => r === 'granted' && listen())
-        .catch(() => {});
-    else listen();
+    if (typeof D.requestPermission !== 'function') addEventListener('deviceorientation', onTilt);
   };
   addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') set(false);
