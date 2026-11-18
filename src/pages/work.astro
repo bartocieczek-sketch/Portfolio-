@@ -404,10 +404,10 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
       });
 
       // ---------- back home ----------
-      // A cover on screen flies back into its spot in the column (home's
-      // own "back from a case study" flight, see Hero.astro); with none on
-      // screen the column still opens on the cover nearest in the field,
-      // and the field zooms away past the viewer (type 'work-back', Base).
+      // A cover flies back into its spot in the column while the field
+      // dissolves with a light blur (home's own "back from a case study"
+      // flight, see Hero.astro): the one on screen nearest the middle, or
+      // with none on screen the nearest in the field, from just past the edge.
       addEventListener('pageswap', function (e) {
         var to = e.activation && e.activation.entry && e.activation.entry.url;
         try {
@@ -426,12 +426,16 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
               (Math.min(r.right, vw) - Math.max(r.left, 0)) * (Math.min(r.bottom, vh) - Math.max(r.top, 0)) > r.width * r.height * 0.4;
             if (vis && d < bd) { bd = d; best = k; }
           });
-          if (best && !zoom && !reduce) {
-            var f = best.img.getBoundingClientRect();
-            var s = f.width / best.img.offsetWidth;
-            var fr = (parseFloat(getComputedStyle(best.img).borderTopLeftRadius) || 20) * s;
-            best.img.style.viewTransitionName = 'project-cover';
-            sessionStorage.setItem('vt-back', JSON.stringify({ slug: data[best.p].slug, frame: { w: f.width, h: f.height, x: f.left, y: f.top, r: fr }, focus: { x: 0.5, y: 0.5 } }));
+          // none on screen: the nearest one comes in from just past the edge
+          var k = best || near;
+          if (k && !zoom && !reduce) {
+            var f = k.img.getBoundingClientRect();
+            var s = f.width / k.img.offsetWidth;
+            var fr = (parseFloat(getComputedStyle(k.img).borderTopLeftRadius) || 20) * s;
+            var fx = Math.min(Math.max(f.left, -f.width * 0.85), vw - f.width * 0.15);
+            var fy = Math.min(Math.max(f.top, -f.height * 0.85), vh - f.height * 0.15);
+            k.img.style.viewTransitionName = 'project-cover';
+            sessionStorage.setItem('vt-back', JSON.stringify({ slug: data[k.p].slug, frame: { w: f.width, h: f.height, x: fx, y: fy, r: fr }, focus: { x: 0.5, y: 0.5 } }));
           } else if (near) {
             sessionStorage.setItem('vt-back', JSON.stringify({ slug: data[near.p].slug, still: true }));
           }
