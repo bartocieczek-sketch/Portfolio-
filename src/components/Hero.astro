@@ -368,8 +368,9 @@ const LAPS = 3;
   }
 
   .vh {
-    --pill-w: clamp(240px, 21vw, 370px);
-    --pill-h: calc(var(--pill-w) / 0.75);
+    /* 4:5 like the case-study covers: a touch wider, same height as before */
+    --pill-w: clamp(256px, 22.4vw, 395px);
+    --pill-h: calc(var(--pill-w) / 0.8);
     --gap: 44px;
     position: relative;
     height: 100vh;
@@ -427,7 +428,7 @@ const LAPS = 3;
     position: relative;
     display: block;
     width: var(--pill-w);
-    aspect-ratio: 0.75;
+    aspect-ratio: 0.8;
     /* corners as yuriroga.com: 80px at a 1512px-wide window, scaling with
        it (and 80px at 840px on phones) */
     border-radius: calc(100vw / (1512 / 80));
@@ -637,7 +638,7 @@ const LAPS = 3;
   }
   @media (max-width: 809px) {
     .vh {
-      --pill-w: 48vw;
+      --pill-w: 51.2vw;
       --gap: 20px;
     }
     .vh__details {
