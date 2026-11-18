@@ -26,8 +26,9 @@
   --gutter: 24px;
   --radius: 20px;
   /* the project photos' corners */
-  /* project photos: the same soft, generous rounding as the home covers */
-  --photo-radius: clamp(20px, 3.4vw, 64px);
+  /* project photos: corners as yuriroga.com, 80px at a 1512px-wide
+     window and scaling with it (80px at 840px on phones, below) */
+  --photo-radius: calc(100vw / (1512 / 80));
   /* Motion tokens */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entrances, hovers */
   --ease-cover: cubic-bezier(0.32, 0.72, 0, 1);
@@ -38,6 +39,11 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* things travelling across the screen */
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);      /* long, cinematic reveals */
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);   /* iOS-like drawer (menu panel) */
+}
+@media (max-width: 840px) {
+  :root {
+    --photo-radius: calc(100vw / (840 / 80));
+  }
 }
 
 *,

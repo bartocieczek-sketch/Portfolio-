@@ -428,8 +428,9 @@ const LAPS = 3;
     display: block;
     width: var(--pill-w);
     aspect-ratio: 0.75;
-    /* soft rounded corners, 15% of the width (was a full pill) */
-    border-radius: calc(var(--pill-w) * 0.15);
+    /* corners as yuriroga.com: 80px at a 1512px-wide window, scaling with
+       it (and 80px at 840px on phones) */
+    border-radius: calc(100vw / (1512 / 80));
     overflow: hidden;
     background: #f2f2f2;
     -webkit-user-drag: none;
@@ -629,6 +630,11 @@ const LAPS = 3;
      larger than the ones coming in (see __vhFocus), the hairline through
      it, and the statement at the bottom; the detail rows stay out of the
      way on a narrow screen */
+  @media (max-width: 840px) {
+    .vh__pill {
+      border-radius: calc(100vw / (840 / 80));
+    }
+  }
   @media (max-width: 809px) {
     .vh {
       --pill-w: 48vw;
@@ -1390,6 +1396,7 @@ const LAPS = 3;
       uniform float uAlpha;
       uniform float uSpeed;
       uniform float uSat;
+      uniform float uRadK;
       varying vec2 vUv;
       varying float vEdge;
       vec2 cover(vec2 uv) {
@@ -1401,8 +1408,8 @@ const LAPS = 3;
       }
       void main() {
         vec2 size = uRect.zw;
-        // soft rounded corners, 15% of the width (as .vh__pill)
-        float r = size.x * 0.15;
+        // the corners: the DOM cover's radius as a share of its width
+        float r = min(size.x * uRadK, size.x * 0.5);
         vec2 q = abs(vUv * size - size * 0.5) - (size * 0.5 - r);
         float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
         float mask = 1.0 - smoothstep(-1.0, 1.0, d);
@@ -1465,6 +1472,11 @@ const LAPS = 3;
     const uElong = u('uElong');
     const uImg = u('uImg');
     const uSat = u('uSat');
+    const uRadK = u('uRadK');
+    let radK = -1;
+    addEventListener('resize', () => {
+      radK = -1;
+    });
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -1553,6 +1565,12 @@ const LAPS = 3;
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform2f(uView, cr.width, cr.height);
+        // corners follow the CSS (.vh__pill border-radius), as a share of width
+        if (radK < 0) {
+          const p0 = els[0];
+          radK = p0 ? (parseFloat(getComputedStyle(p0).borderTopLeftRadius) || 0) / (p0.offsetWidth || 1) : 0.15;
+        }
+        gl.uniform1f(uRadK, radK);
         for (const { i, t, x, y, w, h, alpha, speed, lens, sat } of jobs) {
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
           gl.uniform4f(uRect, x, y, w, h);
