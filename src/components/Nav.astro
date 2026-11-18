@@ -43,7 +43,7 @@ const to = (p: string) => href(Astro.locals, p);
     <a href={to("/about-me")} class="t-display" style="--n:2"><span>About me</span></a>
   </div>
   <div class="mobile-menu__bottom">
-    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="mobile-menu__cta">Let's<br />cooperate</a>}
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="mobile-menu__cta" data-cta><span>Let's<br />cooperate</span></a>}
   </div>
 </div>
 
@@ -186,8 +186,8 @@ const to = (p: string) => href(Astro.locals, p);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 136px;
-    height: 136px;
+    width: 164px;
+    height: 164px;
     padding: 16px;
     border-radius: 50%;
     text-align: center;
@@ -199,6 +199,12 @@ const to = (p: string) => href(Astro.locals, p);
   }
   .mobile-menu__cta:active {
     scale: 0.97;
+  }
+  /* it drifts a little as the phone tilts (gyroscope; set from the script),
+     the words a touch further than the circle, for depth */
+  .mobile-menu__cta,
+  .mobile-menu__cta span {
+    will-change: translate;
   }
   .mobile-menu__bottom {
     display: flex;
@@ -269,7 +275,58 @@ const to = (p: string) => href(Astro.locals, p);
       hideTimer = window.setTimeout(() => (menu.hidden = true), 560);
     }
   };
-  toggle?.addEventListener('click', () => set(toggle.getAttribute('aria-expanded') !== 'true'));
+  toggle?.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') !== 'true';
+    if (open) tilt();
+    set(open);
+  });
+
+  // ---- the circle follows the phone's tilt, gently (eased, time-based)
+  const cta = document.querySelector<HTMLElement>('[data-cta]');
+  const ctaT = cta?.querySelector<HTMLElement>('span');
+  let asked = false;
+  let base: number | null = null;
+  let tx = 0;
+  let ty = 0;
+  let x = 0;
+  let y = 0;
+  let raf = 0;
+  let last = 0;
+  const clamp = (v: number) => Math.max(-1, Math.min(1, v));
+  const onTilt = (e: DeviceOrientationEvent) => {
+    if (e.gamma == null || e.beta == null) return;
+    if (base == null) base = e.beta; // how the phone is held right now is "level"
+    tx = clamp(e.gamma / 25) * 16;
+    ty = clamp((e.beta - base) / 25) * 16;
+    if (!raf) {
+      last = performance.now();
+      raf = requestAnimationFrame(glide);
+    }
+  };
+  const glide = (now: number) => {
+    const dt = Math.min(64, now - last);
+    last = now;
+    const k = 1 - Math.exp(-dt / 180);
+    x += (tx - x) * k;
+    y += (ty - y) * k;
+    if (cta) cta.style.translate = `${x.toFixed(2)}px ${y.toFixed(2)}px`;
+    if (ctaT) ctaT.style.translate = `${(x * 0.35).toFixed(2)}px ${(y * 0.35).toFixed(2)}px`;
+    raf = Math.abs(tx - x) > 0.05 || Math.abs(ty - y) > 0.05 ? requestAnimationFrame(glide) : 0;
+  };
+  const tilt = () => {
+    base = null;
+    if (!cta || asked || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!('DeviceOrientationEvent' in window) || !matchMedia('(hover: none) and (pointer: coarse)').matches) return;
+    asked = true;
+    // iOS asks once, and only from a tap (this one, opening the menu)
+    const D = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
+    const listen = () => addEventListener('deviceorientation', onTilt);
+    if (typeof D.requestPermission === 'function')
+      D.requestPermission()
+        .then((r) => r === 'granted' && listen())
+        .catch(() => {});
+    else listen();
+  };
   addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') set(false);
   });
