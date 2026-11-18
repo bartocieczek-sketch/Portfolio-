@@ -428,7 +428,8 @@ const LAPS = 3;
     display: block;
     width: var(--pill-w);
     aspect-ratio: 0.75;
-    border-radius: 999px;
+    /* soft rounded corners, about a tenth of the width (was a full pill) */
+    border-radius: calc(var(--pill-w) * 0.1);
     overflow: hidden;
     background: #f2f2f2;
     -webkit-user-drag: none;
