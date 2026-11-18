@@ -58,7 +58,8 @@ const to = (p: string) => href(Astro.locals, p);
   .nav > a.t-label,
   .nav .nav__left > a.t-label,
   .nav .nav__right > a.t-label,
-  .nav__links > a.t-label {
+  .nav__links > a.t-label,
+  .nav__toggle.t-label {
     text-transform: none;
     font-size: 14px;
     letter-spacing: -0.02em;
@@ -172,6 +173,8 @@ const to = (p: string) => href(Astro.locals, p);
     padding-bottom: 0.06em;
     font-size: 34px;
     line-height: 1;
+    text-transform: none;
+    letter-spacing: -0.02em;
   }
   .mobile-menu__links a span {
     display: block;
