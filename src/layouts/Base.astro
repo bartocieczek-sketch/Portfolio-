@@ -263,6 +263,19 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
             });
             return;
           }
+          // All work, opened from the home column: the covers fly into the
+          // bubbles (names set by the home hero just before leaving)
+          if (document.querySelector('[data-work]')) {
+            var w = null;
+            try {
+              w = sessionStorage.getItem('vt-work');
+              sessionStorage.removeItem('vt-work');
+            } catch (err3) {}
+            if (w) {
+              e.viewTransition.types.add('work');
+              return;
+            }
+          }
           // leaving About: the dark page folds shut into a line across the
           // middle, over the page coming back
           var act = window.navigation && navigation.activation;

@@ -1,0 +1,286 @@
+---
+// All work: every project as a glassy bubble orbiting a dark centre orb.
+// Coming from home through "All work", the covers that were on screen fly
+// out of the column into their bubbles (a cross-document view transition,
+// see Hero.astro and Base.astro); otherwise the bubbles float in.
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import { HOME_QUERY, SETTINGS_QUERY, urlFor } from '../lib/sanity';
+import { load } from '../lib/load';
+import { href } from '../lib/preview';
+
+const [home, settings] = await Promise.all([load(Astro.locals, HOME_QUERY), load(Astro.locals, SETTINGS_QUERY)]);
+if (!home || !settings) return new Response('Content not found', { status: 500 });
+
+// biome-ignore lint/suspicious/noExplicitAny: GROQ projection
+const projects = ((home.projects ?? []) as any[])
+  .filter((p) => p?.cover?.asset && p.slug)
+  .map((p, i) => ({
+    slug: p.slug as string,
+    title: ((p.cardTitle || p.title || '') as string).trim(),
+    year: p.year ?? '',
+    href: href(Astro.locals, `/${p.slug}`),
+    src: urlFor(p.cover).width(640).height(640).fit('crop').quality(80).url(),
+    // three sizes, so the ring breathes like a hand-placed arrangement
+    size: [1, 0.78, 0.9][i % 3],
+  }));
+const n = projects.length;
+// each cover flies out of the column a moment after the one before it
+const stagger = projects.map((p, i) => `::view-transition-group(w-${p.slug}){animation-delay:${i * 45}ms}`).join('');
+---
+
+<Base title={`All work · ${settings.seoTitle ?? 'Bart Ocieczek'}`} description={settings.seoDescription}>
+  <Fragment set:html={`<style>html:active-view-transition-type(work)${stagger.split('}').filter(Boolean).join('}html:active-view-transition-type(work)')}}</style>`} />
+  <main class="wk" data-work style={`--n:${n}`}>
+    <header class="wk__nav">
+      <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
+    </header>
+
+    <div class="wk__stage" data-wk-stage>
+      <div class="wk__orb" aria-hidden="true">
+        <span class="wk__orb-t" data-wk-t>All work</span>
+        <span class="wk__orb-s" data-wk-s>{String(n).padStart(2, '0')} projects</span>
+      </div>
+      <ul class="wk__ring" data-wk-ring>
+        {projects.map((p, i) => (
+          <li style={`--i:${i};--s:${p.size}`}>
+            <a
+              class="wk__b"
+              href={p.href}
+              data-title={p.title}
+              data-year={p.year}
+              style={`view-transition-name:w-${p.slug};view-transition-class:wcov`}
+            >
+              <img src={p.src} alt="" width="640" height="640" loading="eager" decoding="async" />
+              <span class="wk__sr">{p.title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .wk {
+    position: relative;
+    height: 100svh;
+    overflow: hidden;
+    background: var(--surface-dark);
+  }
+  .wk__nav {
+    position: relative;
+    z-index: 5;
+    padding: var(--gutter) var(--gutter) 0;
+  }
+  .wk__stage {
+    --R: min(36vw, 33svh);
+    --B: min(15vw, 15svh);
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    perspective: 1200px;
+  }
+  /* the centre: a dark glass orb that names what you point at */
+  .wk__orb {
+    position: absolute;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 6px;
+    width: calc(var(--B) * 1.5);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.28), transparent 32%),
+      radial-gradient(circle at 50% 120%, rgba(255, 255, 255, 0.14), transparent 55%),
+      radial-gradient(circle at 50% 45%, #2a2a2a, #0a0a0a 70%);
+    box-shadow:
+      inset 0 -10px 30px rgba(0, 0, 0, 0.6),
+      inset 0 2px 1px rgba(255, 255, 255, 0.25),
+      0 30px 60px -20px rgba(0, 0, 0, 0.45);
+    color: #f0f0ee;
+    text-align: center;
+    animation: wk-breathe 6s ease-in-out infinite;
+  }
+  .wk__orb-t {
+    max-width: 80%;
+    font: 500 clamp(15px, 1.3vw, 20px) / 1.1 var(--font-head);
+    letter-spacing: -0.02em;
+  }
+  .wk__orb-s {
+    font: 500 11px / 1 var(--font-mono);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgba(240, 240, 238, 0.5);
+  }
+  .wk__orb-t,
+  .wk__orb-s {
+    transition:
+      opacity 0.2s ease,
+      filter 0.2s ease;
+  }
+  .wk__orb.is-swap .wk__orb-t,
+  .wk__orb.is-swap .wk__orb-s {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  @keyframes wk-breathe {
+    50% {
+      transform: scale(1.03);
+    }
+  }
+  /* the ring turns slowly; each bubble turns back so it stays upright */
+  .wk__ring {
+    position: absolute;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    animation: wk-orbit 90s linear infinite;
+  }
+  .wk__ring li {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: rotate(calc(var(--i) / var(--n) * 360deg - 90deg)) translateX(var(--R)) rotate(calc(-1 * (var(--i) / var(--n) * 360deg - 90deg)));
+  }
+  .wk__ring li > a {
+    animation: wk-counter 90s linear infinite;
+  }
+  .wk__stage:has(.wk__b:hover) .wk__ring,
+  .wk__stage:has(.wk__b:hover) .wk__ring li > a {
+    animation-play-state: paused;
+  }
+  @keyframes wk-orbit {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes wk-counter {
+    to {
+      rotate: -360deg;
+    }
+  }
+  /* a bubble: the cover in a circle, with a glass highlight on top */
+  .wk__b {
+    position: absolute;
+    left: calc(var(--B) * var(--s) / -2);
+    top: calc(var(--B) * var(--s) / -2);
+    display: block;
+    width: calc(var(--B) * var(--s));
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #e9e9e7;
+    box-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.45);
+    transition:
+      scale 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+      opacity 0.3s ease,
+      filter 0.3s ease;
+  }
+  .wk__b::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background:
+      radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.55), transparent 28%),
+      radial-gradient(circle at 70% 90%, rgba(255, 255, 255, 0.18), transparent 40%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+      inset 0 -14px 24px rgba(0, 0, 0, 0.28);
+    pointer-events: none;
+  }
+  .wk__b img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .wk__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .wk__b:hover {
+      scale: 1.12;
+    }
+    .wk__stage:has(.wk__b:hover) .wk__b:not(:hover) {
+      opacity: 0.55;
+      filter: grayscale(1);
+    }
+  }
+  .wk__b:active {
+    scale: 1.06;
+  }
+  .wk__b:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 4px;
+  }
+  /* arriving any other way: the bubbles float in one after another */
+  html:not(.wk-flown) .wk__ring li > a {
+    animation:
+      wk-in 0.9s cubic-bezier(0.23, 1, 0.32, 1) calc(0.15s + var(--i) * 60ms) both,
+      wk-counter 90s linear infinite;
+  }
+  @keyframes wk-in {
+    from {
+      opacity: 0;
+      scale: 0.6;
+      filter: blur(8px);
+    }
+  }
+  @media (max-width: 809px) {
+    .wk__stage {
+      --R: min(34vw, 30svh);
+      --B: min(21vw, 14svh);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wk__ring,
+    .wk__ring li > a,
+    .wk__orb {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script>
+  // came from home with the covers flying in: no float-in on top of that
+  try {
+    if (sessionStorage.getItem('vt-work-flown')) {
+      document.documentElement.classList.add('wk-flown');
+      sessionStorage.removeItem('vt-work-flown');
+    }
+  } catch {}
+  // the orb names the bubble under the pointer
+  const stage = document.querySelector<HTMLElement>('[data-wk-stage]');
+  const orb = stage?.querySelector<HTMLElement>('.wk__orb');
+  const t = stage?.querySelector<HTMLElement>('[data-wk-t]');
+  const s = stage?.querySelector<HTMLElement>('[data-wk-s]');
+  if (stage && orb && t && s) {
+    const base = [t.textContent ?? '', s.textContent ?? ''];
+    let timer = 0;
+    const show = (a: string, b: string) => {
+      clearTimeout(timer);
+      orb.classList.add('is-swap');
+      timer = window.setTimeout(() => {
+        t.textContent = a;
+        s.textContent = b;
+        orb.classList.remove('is-swap');
+      }, 160);
+    };
+    stage.querySelectorAll<HTMLElement>('.wk__b').forEach((b) => {
+      b.addEventListener('pointerenter', () => show(b.dataset.title ?? '', b.dataset.year ?? ''));
+      b.addEventListener('pointerleave', () => show(base[0], base[1]));
+      b.addEventListener('focus', () => show(b.dataset.title ?? '', b.dataset.year ?? ''));
+      b.addEventListener('blur', () => show(base[0], base[1]));
+    });
+  }
+</script>

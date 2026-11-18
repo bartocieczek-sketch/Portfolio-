@@ -15,6 +15,7 @@ const to = (p: string) => href(Astro.locals, p);
 ---
 
 <nav class="nav" aria-label="Main">
+  <div class="nav__left">
   <a href={to("/")} class="nav__home" aria-label="Home" aria-current={path === '/' ? 'page' : undefined}>
     <span class="nav__home-3d">
       {/* a few copies stepped back in depth give the flat B some thickness when it turns */}
@@ -23,6 +24,8 @@ const to = (p: string) => href(Astro.locals, p);
       ))}
     </span>
   </a>
+  <a href={to("/work")} class="u-link t-label nav__work" data-work-link aria-current={path.startsWith('/work') ? 'page' : undefined}>All work</a>
+  </div>
   <div class="nav__links">
     <a href={to("/about-me")} class="u-link t-label" aria-current={path.startsWith('/about-me') ? 'page' : undefined}>About me</a>
     {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="u-link t-label">Let's cooperate</a>}
@@ -36,8 +39,9 @@ const to = (p: string) => href(Astro.locals, p);
 <div class="mobile-menu" id="mobile-menu" hidden>
   <div class="mobile-menu__links">
     <a href={to("/")} class="t-display" style="--n:0"><span>Home</span></a>
-    <a href={to("/about-me")} class="t-display" style="--n:1"><span>About me</span></a>
-    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display" style="--n:2"><span>Let's cooperate</span></a>}
+    <a href={to("/work")} class="t-display" style="--n:1"><span>All work</span></a>
+    <a href={to("/about-me")} class="t-display" style="--n:2"><span>About me</span></a>
+    {callUrl && <a href={callUrl} target="_blank" rel="noopener" class="t-display" style="--n:3"><span>Let's cooperate</span></a>}
   </div>
   <div class="mobile-menu__bottom">
     {role && <p class="t-body2 muted">{role}</p>}
@@ -58,6 +62,12 @@ const to = (p: string) => href(Astro.locals, p);
     gap: 10px;
     position: relative;
     z-index: 20;
+  }
+  /* the B and, beside it, the way to every project */
+  .nav__left {
+    display: flex;
+    align-items: center;
+    gap: clamp(20px, 2.4vw, 36px);
   }
   .nav__links {
     width: 30%;
@@ -192,7 +202,8 @@ const to = (p: string) => href(Astro.locals, p);
     }
   }
   @media (max-width: 809px) {
-    .nav__links {
+    .nav__links,
+    .nav__work {
       display: none;
     }
     .nav__toggle {

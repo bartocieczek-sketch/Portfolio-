@@ -957,3 +957,47 @@ html:active-view-transition-type(cover-back)::view-transition-group(project-cove
   display: inline-block;
   will-change: transform;
 }
+
+/* ---------- Home -> All work: the covers fly into their bubbles ----------
+   The column dissolves and blurs away while each on-screen cover travels
+   to its bubble, its rounded rectangle rounding into a circle; the page
+   behind fades up once they're on their way. */
+html:active-view-transition-type(work)::view-transition-old(root) {
+  animation: vt-work-out 0.55s var(--ease-out) both;
+  z-index: 1;
+}
+html:active-view-transition-type(work)::view-transition-new(root) {
+  animation: vt-work-in 0.7s var(--ease-out) 0.3s both;
+  z-index: 2;
+}
+html:active-view-transition-type(work)::view-transition-group(.wcov) {
+  z-index: 3;
+  animation-duration: 1.05s;
+  animation-timing-function: cubic-bezier(0.77, 0, 0.175, 1);
+  animation-fill-mode: both;
+}
+html:active-view-transition-type(work)::view-transition-old(.wcov),
+html:active-view-transition-type(work)::view-transition-new(.wcov) {
+  height: 100%;
+  object-fit: cover;
+  animation-duration: 1.05s;
+  animation-timing-function: cubic-bezier(0.77, 0, 0.175, 1);
+  animation-fill-mode: both;
+}
+@keyframes vt-work-out {
+  to {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.98);
+  }
+}
+@keyframes vt-work-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:active-view-transition-type(work)::view-transition-group(.wcov) {
+    animation-duration: 0.01s;
+  }
+}

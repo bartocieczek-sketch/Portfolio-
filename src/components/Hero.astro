@@ -447,6 +447,14 @@ const LAPS = 3;
       transform: scale(1.05);
     }
   }
+  /* on the way to All work the real pictures stand in for the WebGL ones,
+     so the covers that fly into the bubbles are the DOM pictures */
+  .vh.is-to-work .vh__pill img {
+    opacity: 1 !important;
+  }
+  .vh.is-to-work .vh__gl {
+    opacity: 0;
+  }
   /* WebGL draws the covers; the DOM images keep the layout and the links */
   .vh.has-gl .vh__pill {
     background: none;
@@ -700,6 +708,35 @@ const LAPS = 3;
 
   if (hero && list) {
     const pills = [...hero.querySelectorAll<HTMLElement>('[data-media]')];
+    // "All work": the covers on screen fly out of the column into their
+    // bubbles on /work. Each gets the view-transition name its bubble has
+    // (one per project: the most visible copy), with its DOM picture shown
+    // and the WebGL drawing hidden, so the snapshot is the real cover.
+    document.querySelectorAll<HTMLAnchorElement>('[data-work-link]').forEach((a) =>
+      a.addEventListener('click', () => {
+        if (!('startViewTransition' in document)) return;
+        const best = new Map<string, { el: HTMLElement; v: number }>();
+        const vh = innerHeight;
+        pills.forEach((p) => {
+          const r = p.getBoundingClientRect();
+          const v = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)) / (r.height || 1);
+          if (v <= 0.05) return;
+          const slug = (p.getAttribute('href') || '').replace(/\/$/, '').split('/').pop() || '';
+          const cur = best.get(slug);
+          if (!cur || v > cur.v) best.set(slug, { el: p, v });
+        });
+        if (!best.size) return;
+        hero.classList.add('is-to-work');
+        best.forEach(({ el }, slug) => {
+          el.style.setProperty('view-transition-name', `w-${slug}`);
+          el.style.setProperty('view-transition-class', 'wcov');
+        });
+        try {
+          sessionStorage.setItem('vt-work', '1');
+          sessionStorage.setItem('vt-work-flown', '1');
+        } catch {}
+      }),
+    );
     const N = pills.length / 3;
 
     // ---------- Geometry ----------
