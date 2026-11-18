@@ -83,13 +83,15 @@ for (let b = 0; b < PR; b++)
     const r = r0 + mod(b - r0, PR);
     pool.push({ c, r, p: n ? mod(c + r * K, n) : 0 });
   }
+// ?lens: a variant where the home column's WebGL lens carries on here
+const lens = Astro.url.searchParams.has('lens');
 const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug, r])) };
 ---
 
 <Base title={`Explorations · ${settings.seoTitle ?? 'Bart Ocieczek'}`} description={settings.seoDescription}>
   {/* the first frame waits for the inline script, so the covers land on the right tiles */}
   <link slot="head" rel="expect" href="#wk-ready" blocking="render" />
-  <main class="wk" data-work>
+  <main class:list={["wk", { "is-lens": lens }]} data-work>
     <h1 class="wk__sr">Explorations</h1>
     <header class="wk__nav">
       <Nav callUrl={settings.callUrl} socials={settings.socials} role={settings.role} />
@@ -101,12 +103,13 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
         </div>
       ))}
     </div>
+    {lens && <canvas class="wk__gl" aria-hidden="true" data-wk-gl></canvas>}
     <div class="wk__lens" aria-hidden="true"></div>
     <div class="wk__dim" data-wk-dim aria-hidden="true"></div>
 
     <footer class="wk__foot">
       <span class="t-label wk__hint">Drag to explore</span>
-      <a class="wk__x" href={href(Astro.locals, '/')} aria-label="Close, back home">
+      <a class="wk__x" href={href(Astro.locals, '/') + (lens ? '?lens' : '')} aria-label="Close, back home">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
       </a>
     </footer>
@@ -123,18 +126,23 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
       var n = data.length, K = cfg.K, PC = cfg.PC, PR = cfg.PR;
       var mod = function (a, b) { return ((a % b) + b) % b; };
       var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var LENS = main.classList.contains('is-lens');
       var cells = Array.prototype.map.call(field.querySelectorAll('.wk__cell'), function (el, i) {
         var img = el.querySelector('img');
         return { el: el, img: img, a: i % PC, b: Math.floor(i / PC), p: Number(img.dataset.p), sx: 0, sy: 0 };
       });
 
-      var cw = 0, ch = 0, vw = 0, vh = 0;
+      var cw = 0, ch = 0, vw = 0, vh = 0, TW = 0, TH = 0, TR = 0;
       var measure = function () {
         var probe = document.createElement('div');
         probe.style.cssText = 'position:absolute;visibility:hidden;width:var(--cw);height:var(--ch)';
         field.appendChild(probe);
         cw = probe.offsetWidth;
         ch = probe.offsetHeight;
+        probe.style.cssText = 'position:absolute;visibility:hidden;width:var(--w);height:var(--h);border-radius:var(--rad)';
+        TW = probe.offsetWidth;
+        TH = probe.offsetHeight;
+        TR = parseFloat(getComputedStyle(probe).borderTopLeftRadius) || 0;
         probe.remove();
         vw = field.clientWidth;
         vh = field.clientHeight;
@@ -178,6 +186,7 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
             if (named.length) clearNames();
             k.p = p;
             k.img.src = data[p].src;
+            k.img.classList.remove('gl-on');
             k.img.dataset.p = String(p);
             k.el.style.setProperty('--a', String(data[p].a));
           }
@@ -187,10 +196,11 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
           var ny = sy / (vh * 0.5);
           var d2 = Math.min(nx * nx + ny * ny, 3);
           // the lens: pulled in, shrunk and turned toward the middle
-          var pull = 1 - 0.07 * d2;
-          var s = z * (1 - 0.09 * d2);
-          var ry = reduce ? 0 : nx * -9;
-          var rx = reduce ? 0 : ny * 7;
+          var pull = LENS ? 1 : 1 - 0.07 * d2;
+          var s = LENS ? z : z * (1 - 0.09 * d2);
+          var ry = reduce || LENS ? 0 : nx * -9;
+          var rx = reduce || LENS ? 0 : ny * 7;
+          k.s = s;
           k.sx = sx * pull;
           k.sy = sy * pull;
           k.el.style.transform = 'translate3d(' + k.sx.toFixed(1) + 'px,' + k.sy.toFixed(1) + 'px,0) perspective(1400px) rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) scale(' + s.toFixed(4) + ')';
@@ -403,6 +413,207 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
         wake();
       });
 
+      // ---------- ?lens: the home column's WebGL lens, carried on ----------
+      // Each tile is drawn in WebGL over its (then hidden) DOM picture: near
+      // the edges of the screen tiles stretch toward the edge, flare, smear
+      // and split their colour, more so the faster the field moves, as the
+      // covers do on home. It eases in once the tiles have flown in, from
+      // flat (so the hand-over from the DOM pictures can't be seen).
+      var lensGL = null;
+      var glCanvas = document.querySelector('[data-wk-gl]');
+      if (LENS && glCanvas && !reduce) lensGL = (function () {
+        var gl = glCanvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: true });
+        if (!gl) return null;
+        var vs = [
+          'precision highp float;',
+          'attribute vec2 aPos;',
+          'uniform vec4 uRect; uniform vec2 uView; uniform float uSpeed; uniform float uLens; uniform float uElong; uniform vec2 uDir;',
+          'varying vec2 vUv; varying float vEdge;',
+          'void main() {',
+          '  vUv = aPos;',
+          '  vec2 p = uRect.xy + aPos * uRect.zw;',
+          '  vec2 c = uRect.xy + uRect.zw * 0.5;',
+          '  vec2 n = (p - uView * 0.5) / (uView * 0.5);',
+          '  float t = 0.72 - 0.12 * uSpeed;',
+          '  float k = 1.2 + 1.6 * uSpeed;',
+          '  vec2 over = max(vec2(0.0), abs(n) - t) * uLens;',
+          '  vec2 e = vec2(smoothstep(t, 1.0, abs(n.x)), smoothstep(t, 1.0, abs(n.y))) * uLens;',
+          '  vec2 q = p;',
+          '  q.y += sign(n.y) * over.y * over.y * k * uView.y * 0.5;',
+          '  q.x += sign(n.x) * over.x * over.x * k * uView.x * 0.5 * 0.6;',
+          '  q.x = c.x + (q.x - c.x) * (1.0 + 0.2 * e.y);',
+          '  q.y = c.y + (q.y - c.y) * (1.0 + 0.12 * e.x);',
+          '  vec2 dl = q - c;',
+          '  q += uDir * dot(dl, uDir) * uElong;',
+          '  vEdge = max(e.y, e.x * 0.6);',
+          '  vec2 clip = q / uView * 2.0 - 1.0;',
+          '  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);',
+          '}'].join('\n');
+        var fs = [
+          '#ifdef GL_FRAGMENT_PRECISION_HIGH', 'precision highp float;', '#else', 'precision mediump float;', '#endif',
+          'uniform sampler2D uTex; uniform vec2 uImg; uniform vec4 uRect; uniform float uHover; uniform float uAlpha; uniform float uSpeed; uniform float uRad; uniform vec2 uDir;',
+          'varying vec2 vUv; varying float vEdge;',
+          'vec2 cover(vec2 uv) {',
+          '  float rs = uRect.z / uRect.w; float ri = uImg.x / uImg.y;',
+          '  vec2 s = rs < ri ? vec2(rs / ri, 1.0) : vec2(1.0, ri / rs);',
+          '  uv = (uv - 0.5) * s + 0.5;',
+          '  return (uv - 0.5) * (1.0 - 0.03 * uHover) + 0.5;',
+          '}',
+          'void main() {',
+          '  vec2 size = uRect.zw;',
+          '  float r = min(uRad, min(size.x, size.y) * 0.5);',
+          '  vec2 q = abs(vUv * size - size * 0.5) - (size * 0.5 - r);',
+          '  float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;',
+          '  float mask = 1.0 - smoothstep(-1.0, 1.0, d);',
+          '  if (mask <= 0.0) discard;',
+          '  vec2 uv = cover(vUv);',
+          '  float e = clamp(vEdge + uSpeed * 0.3, 0.0, 1.0);',
+          '  vec2 sm = uDir * 0.035 * e;',
+          '  vec2 sp = uDir * 0.018 * e;',
+          '  vec3 col = vec3(0.0);',
+          '  for (int i = 0; i < 5; i++) {',
+          '    vec2 o = (float(i) / 4.0 - 0.5) * sm;',
+          '    col.r += texture2D(uTex, uv + o + sp).r;',
+          '    col.g += texture2D(uTex, uv + o).g;',
+          '    col.b += texture2D(uTex, uv + o - sp).b;',
+          '  }',
+          '  gl_FragColor = vec4(col / 5.0, 1.0) * uAlpha * mask;',
+          '}'].join('\n');
+        var sh = function (type, src) {
+          var o = gl.createShader(type);
+          gl.shaderSource(o, src);
+          gl.compileShader(o);
+          return o;
+        };
+        var prog = gl.createProgram();
+        gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs));
+        gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(prog);
+        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+        gl.useProgram(prog);
+        var S = 32, pos = [], idx = [];
+        for (var j = 0; j <= S; j++) for (var i2 = 0; i2 <= S; i2++) pos.push(i2 / S, j / S);
+        for (var j2 = 0; j2 < S; j2++)
+          for (var i3 = 0; i3 < S; i3++) {
+            var a = j2 * (S + 1) + i3;
+            idx.push(a, a + 1, a + S + 1, a + 1, a + S + 2, a + S + 1);
+          }
+        var vb = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos), gl.STATIC_DRAW);
+        var ib = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
+        var aPos = gl.getAttribLocation(prog, 'aPos');
+        gl.enableVertexAttribArray(aPos);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        var U = {};
+        ['uRect', 'uView', 'uSpeed', 'uLens', 'uElong', 'uDir', 'uImg', 'uHover', 'uAlpha', 'uRad'].forEach(function (nm) {
+          U[nm] = gl.getUniformLocation(prog, nm);
+        });
+        var cache = {};
+        var tex = function (src) {
+          var t = cache[src];
+          if (t) return t.ready ? t : null;
+          t = cache[src] = { ready: false };
+          var im = new Image();
+          im.crossOrigin = 'anonymous';
+          im.decoding = 'async';
+          im.onload = function () {
+            t.tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, t.tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            t.w = im.naturalWidth;
+            t.h = im.naturalHeight;
+            t.ready = true;
+          };
+          im.src = src;
+          return null;
+        };
+        // the lens eases in once the tiles have landed
+        var start = performance.now() + (document.documentElement.classList.contains('wk-flown') ? 2100 : 1800);
+        var LENS_IN = 900;
+        var mx = -1, my = -1;
+        addEventListener('pointermove', function (e) { mx = e.clientX; my = e.clientY; });
+        var hov = new Map();
+        var dirX = 0, dirY = 1, lastSig = '';
+        var lx2 = x, ly2 = y;
+        var frame = function (force) {
+          var now = performance.now();
+          if (now < start && !force) return;
+          var li = Math.min(Math.max((now - start) / LENS_IN, 0), 1);
+          var lensK = 1 - Math.pow(1 - li, 3);
+          var dpr = Math.min(devicePixelRatio || 1, 2);
+          var Wc = Math.round(vw * dpr), Hc = Math.round(vh * dpr);
+          if (glCanvas.width !== Wc || glCanvas.height !== Hc) {
+            glCanvas.width = Wc;
+            glCanvas.height = Hc;
+          }
+          // which way the field travels (smear and stretch follow it)
+          var mvx = x - lx2, mvy = y - ly2;
+          lx2 = x;
+          ly2 = y;
+          var ml = Math.hypot(mvx, mvy);
+          if (ml > 0.5) {
+            dirX += (-mvx / ml - dirX) * 0.2;
+            dirY += (-mvy / ml - dirY) * 0.2;
+          }
+          var dn = Math.hypot(dirX, dirY) || 1;
+          var sp = Math.min(speed / 2600, 1);
+          var jobs = [];
+          var sig = Wc + ',' + Hc + ',' + lensK.toFixed(3) + ',' + sp.toFixed(3) + ';';
+          for (var i = 0; i < cells.length; i++) {
+            var k = cells[i];
+            if (k.skip || k.img.style.visibility === 'hidden') continue;
+            var d = data[k.p];
+            var t = tex(d.src);
+            var w = Math.min(TW, TH * d.a) * (k.s || 1), h = Math.min(TH, TW / d.a) * (k.s || 1);
+            var cx = vw / 2 + k.sx, cy = vh / 2 + k.sy;
+            if (cx + w < -w || cx - w > vw + w || cy + h < -h || cy - h > vh + h) continue;
+            var over = !dragging && mx > cx - w / 2 && mx < cx + w / 2 && my > cy - h / 2 && my < cy + h / 2 ? 1 : 0;
+            var hv = hov.get(k) || 0;
+            hv += (over - hv) * 0.15;
+            hov.set(k, hv);
+            if (!t) continue;
+            jobs.push({ k: k, t: t, x: cx - w / 2, y: cy - h / 2, w: w, h: h, hv: hv });
+            sig += i + ':' + k.p + ',' + cx.toFixed(1) + ',' + cy.toFixed(1) + ',' + w.toFixed(1) + ',' + hv.toFixed(3) + ';';
+          }
+          if (sig === lastSig && !force) return;
+          lastSig = sig;
+          gl.viewport(0, 0, Wc, Hc);
+          gl.clearColor(0, 0, 0, 0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.uniform2f(U.uView, vw, vh);
+          gl.uniform1f(U.uLens, lensK);
+          gl.uniform1f(U.uSpeed, sp * lensK);
+          gl.uniform1f(U.uElong, Math.min(0.12 * sp, 0.05) * lensK);
+          gl.uniform2f(U.uDir, dirX / dn, dirY / dn);
+          gl.uniform1f(U.uAlpha, 1);
+          jobs.forEach(function (j) {
+            gl.bindTexture(gl.TEXTURE_2D, j.t.tex);
+            gl.uniform4f(U.uRect, j.x, j.y, j.w, j.h);
+            gl.uniform2f(U.uImg, j.t.w, j.t.h);
+            gl.uniform1f(U.uHover, j.hv);
+            gl.uniform1f(U.uRad, TR * (j.k.s || 1));
+            gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
+          });
+          // tiles drawn by WebGL hide their DOM pictures in this same frame
+          jobs.forEach(function (j) { j.k.img.classList.add('gl-on'); });
+        };
+        var loop = function () {
+          frame(false);
+          requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
+        return { frame: frame };
+      })();
+
       // ---------- back home ----------
       // A cover flies back into its spot in the column while the field
       // dissolves with a light blur (home's own "back from a case study"
@@ -435,6 +646,12 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
             var fx = Math.min(Math.max(f.left, -f.width * 0.85), vw - f.width * 0.15);
             var fy = Math.min(Math.max(f.top, -f.height * 0.85), vh - f.height * 0.15);
             k.img.style.viewTransitionName = 'project-cover';
+            if (lensGL) {
+              // the flying tile leaves WebGL in this very frame
+              k.img.classList.remove('gl-on');
+              k.skip = true;
+              lensGL.frame(true);
+            }
             sessionStorage.setItem('vt-back', JSON.stringify({ slug: data[k.p].slug, frame: { w: f.width, h: f.height, x: fx, y: fy, r: fr }, focus: { x: 0.5, y: 0.5 } }));
           } else if (near) {
             sessionStorage.setItem('vt-back', JSON.stringify({ slug: data[near.p].slug, still: true }));
@@ -555,6 +772,21 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
     from {
       opacity: 0;
     }
+  }
+  /* ?lens: WebGL draws the tiles (with the home lens) over their pictures */
+  .wk__gl {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .wk.is-lens .wk__lens {
+    display: none;
+  }
+  .wk.is-lens .wk__img:global(.gl-on) {
+    opacity: 0;
   }
   /* close-up: the field steps back behind a pale veil */
   .wk__dim {

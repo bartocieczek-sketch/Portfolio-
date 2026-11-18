@@ -11,7 +11,9 @@ const [mPath, mBox] = glyphs.g.B as [string, number[], number];
 const mView = `${mBox[0]} ${-mBox[3]} ${mBox[2] - mBox[0]} ${mBox[3] - mBox[1]}`;
 const { callUrl, socials = [], role } = Astro.props;
 const path = Astro.url.pathname;
-const to = (p: string) => href(Astro.locals, p);
+// ?lens (the WebGL lens variant of Explorations) travels with the links
+const q = Astro.url.searchParams.has('lens') ? '?lens' : '';
+const to = (p: string) => href(Astro.locals, p) + (p === '/' || p === '/work' ? q : '');
 ---
 
 <nav class="nav" aria-label="Main">
