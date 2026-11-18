@@ -225,10 +225,10 @@ const ahSlotsBy = {
 const ahSlots = ahSlotsBy[ahLayout as keyof typeof ahSlotsBy] ?? ahSlotsBy.center;
 // phones: fewer, bigger pictures toward the sides, clear of the number
 const ahSlotsM = [
-  { x: 3, w: 40 },
-  { x: 58, w: 36 },
-  { x: 10, w: 30 },
-  { x: 52, w: 44 },
+  { x: 2, w: 29 },
+  { x: 70, w: 27 },
+  { x: 5, w: 23 },
+  { x: 68, w: 30 },
 ];
 // in 'mask' the chapter's first photo fills the word, the rest fly past
 const ahPicsFrom = ahLayout === 'mask' ? 1 : 0;
@@ -2025,7 +2025,12 @@ const bSvg = `<svg viewBox="${bView}"><path transform="scale(1,-1)" d="${bPath}"
       left: calc(var(--mx) * 1vw);
     }
   }
+  /* placed absolutely so its 118% height always resolves (Safari doesn't
+     resolve a percentage height inside an aspect-ratio box) */
   .ah__pic img {
+    position: absolute;
+    top: 0;
+    left: 0;
     display: block;
     width: 100%;
     height: 118%;
