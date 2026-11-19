@@ -112,7 +112,7 @@ const clients: { name: string; logo: string | null; url?: string; svg?: boolean;
     ];
 // services (DRAFT copy, to be edited): one line on what I do, then the
 // three groups the graph below is built from, in the same order
-const svcLead: string = about.servicesIntro || 'I design and build websites and digital products end to end, from the first idea and the look of it to the shipped, fast, animated page.';
+const svcLead: string = about.servicesIntro || 'I design, build and animate every project myself, from first idea to launch. What you get is a product that looks premium and feels instant.';
 // biome-ignore lint/suspicious/noExplicitAny: GROQ projection
 const cmsServices = ((about.services ?? []) as any[]).filter((x) => x?.title);
 const servicesDefault = [
