@@ -94,7 +94,7 @@ export const aboutPage = defineType({
       group: 'page',
       description: 'Tokens put a small picture in the line: {photo}, {logo:GRAFIT} (any company from Experience), {ai}, {sport}, {coffee}, {pulse}.',
     }),
-    defineField({ name: 'servicesIntro', title: 'Services intro', type: 'text', rows: 3, group: 'services', placeholder: 'I design, build and animate every project myself, from first idea to launch. What you get is a product that looks premium and feels instant.' }),
+    defineField({ name: 'servicesIntro', title: 'Services intro', type: 'text', rows: 3, group: 'services', placeholder: 'Brands deserve more than a pretty template. I design, build and animate digital products end to end, made to stand out and built to last.' }),
     defineField({
       name: 'services',
       title: 'Services',
