@@ -670,11 +670,6 @@ const LAPS = 3;
      larger than the ones coming in (see __vhFocus), the hairline through
      it, and the statement at the bottom; the detail rows stay out of the
      way on a narrow screen */
-  @media (max-width: 840px) {
-    .vh__pill {
-      border-radius: calc(var(--pill-w) * 0.186);
-    }
-  }
   @media (max-width: 809px) {
     .vh {
       --pill-w: 51.2vw;
@@ -1686,9 +1681,9 @@ const LAPS = 3;
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform2f(uView, cr.width, cr.height);
         // corners as a share of each cover's width, as .vh__pill in the CSS
-        // (the same shares as the CSS, set here outright so nothing measured
-        // on the way can throw them off: 0.2362 of the width, 0.186 on phones)
-        if (radK < 0) radK = innerWidth <= 840 ? 0.186 : 0.2362;
+        // (the same share as the CSS, set here outright so nothing measured
+        // on the way can throw it off: 0.2362 of the width, on every screen)
+        if (radK < 0) radK = 0.2362;
         gl.uniform1f(uRadK, radK);
         for (const { i, t, x, y, w, h, alpha, speed, lens, sat } of jobs) {
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
