@@ -173,9 +173,13 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         if (!f) return;
         if (u) f.appendChild(u.cloneNode(true));
         var cut = function () {
-          var cs = getComputedStyle(f);
-          var i = parseFloat(cs.getPropertyValue('--win')) || 0;
-          var r = parseFloat(cs.getPropertyValue('--win-r')) || 0;
+          // (resolved through a probe: both are calc()/clamp() lengths)
+          var p = document.createElement('div');
+          p.style.cssText = 'position:absolute;visibility:hidden;width:var(--win);border-radius:var(--win-r)';
+          f.appendChild(p);
+          var i = p.offsetWidth;
+          var r = parseFloat(getComputedStyle(p).borderTopLeftRadius) || 0;
+          p.remove();
           if (!i) {
             f.style.clipPath = '';
             return;
@@ -336,7 +340,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     --panel-w: min(440px, 32vw);
     /* the window: how far in from the screen's edges, and its corners */
     --win: clamp(32px, 3.8vw, 64px);
-    --win-r: 22px;
+    /* the same rounding as the pictures inside */
+    --win-r: var(--photo-radius);
     --pad: calc(var(--win) + 32px);
   }
   /* ---------- The window frame ---------- */
