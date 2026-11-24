@@ -439,7 +439,10 @@ const LAPS = 3;
     aspect-ratio: 0.8;
     /* corners as yuriroga.com: 80px at a 1512px-wide window, scaling with
        it (and 80px at 840px on phones) */
-    border-radius: calc(100vw / (1512 / 80));
+    /* a fixed share of the cover's own width (80px on a 339px cover, the
+       1512px-wide proportion), so on a big screen, where the cover stops
+       growing, the corners don't keep growing into a pill */
+    border-radius: calc(var(--pill-w) * 0.2362);
     overflow: hidden;
     background: #f2f2f2;
     -webkit-user-drag: none;
@@ -669,7 +672,7 @@ const LAPS = 3;
      way on a narrow screen */
   @media (max-width: 840px) {
     .vh__pill {
-      border-radius: calc(100vw / (840 / 80));
+      border-radius: calc(var(--pill-w) * 0.186);
     }
   }
   @media (max-width: 809px) {
