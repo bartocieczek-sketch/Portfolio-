@@ -181,11 +181,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
           <img class="case__cover-hi" src={heroSrc} srcset={heroSet} sizes="(max-width: 809px) 100vw, 50vw" alt="" fetchpriority="high" decoding="async" data-cover-hi />
         </div>
       )}
-      {beside && (
-        <div class="case__stack" style="--r:0.8">
-          <div class="case__shot"><Media item={beside.g} ratio={beside.r} eager /></div>
-        </div>
-      )}
       </div>
       <aside class="case__panel is-out" data-panel aria-label="About the project">
         <div class="case__panel-in">
@@ -214,12 +209,10 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
 
         </div>
       </aside>
-      <!-- every picture presented as a 4:5 shot: the work, whole, on a soft
-           grey board (as the shots in the Figma showcase), two to a row -->
-      <div class="case__gallery case__shots">
-        {rows.flatMap((row) => row.items).map((x, i) => (
-          <div class="case__shot"><Media item={x.g} ratio={x.r} eager={i < 2} /></div>
-        ))}
+      <!-- one under another, each a 4:5 shot (1080 × 1350), the full width
+           of the column: the cover first, then the gallery in its order -->
+      <div class="case__gallery">
+        {gallery.map((g, i) => <Media item={g} ratio={0.8} eager={i < 1} />)}
       </div>
     </section>
 
@@ -341,10 +334,10 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     overflow: hidden;
     border-radius: var(--photo-radius);
   }
-  /* no picture to pair with: the cover takes a pair's half */
+  /* the cover alone: the column's full width, like every shot under it */
   .case__cover:only-child {
     flex: none;
-    width: calc((100% - 8px) / 2);
+    width: 100%;
   }
   .case__stack {
     flex: var(--r, 0.8) 1 0;
@@ -373,36 +366,14 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     flex-direction: column;
     gap: 8px;
   }
+  .case__gallery > :global(.media.media--fit) {
+    flex: none;
+    width: 100%;
+  }
   .case__grow {
     display: flex;
     gap: 8px;
     align-items: flex-start;
-  }
-  /* ---------- Shots: 4:5 boards with the work whole in the middle ---------- */
-  .case__shots {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  .case__shot {
-    position: relative;
-    display: grid;
-    place-items: center;
-    aspect-ratio: 4 / 5;
-    overflow: hidden;
-    border-radius: var(--photo-radius);
-    background: #ededed;
-    container-type: inline-size;
-  }
-  .case__stack > .case__shot {
-    width: 100%;
-  }
-  /* the work: ~81% of the board's width (or 75% of its height for a tall
-     one), small corners, never cropped */
-  .case__shot > :global(.media.media--fit) {
-    flex: none;
-    width: min(81.3cqw, calc(93.75cqw * var(--r)));
-    border-radius: 2.3cqw;
-    background: #fff;
   }
   /* a tall picture with no partner left: half a pair's width */
   .case__grow.is-single {
@@ -838,9 +809,6 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     }
     .case__grow.is-single {
       width: 100%;
-    }
-    .case__shots {
-      grid-template-columns: 1fr;
     }
     .case__grow > :global(.media.media--fit),
     .case__stack > :global(.media.media--fit) {
