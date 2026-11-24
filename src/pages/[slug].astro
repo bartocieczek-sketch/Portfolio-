@@ -335,9 +335,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case {
     --panel-w: min(440px, 32vw);
     /* the window: how far in from the screen's edges, and its corners */
-    --win: 28px;
+    --win: clamp(32px, 3.8vw, 64px);
     --win-r: 22px;
-    --pad: calc(var(--win) + 24px);
+    --pad: calc(var(--win) + 32px);
   }
   /* ---------- The window frame ---------- */
   .case__frame {
