@@ -175,9 +175,10 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         var cut = function () {
           // (resolved through a probe: both are calc()/clamp() lengths)
           var p = document.createElement('div');
-          p.style.cssText = 'position:absolute;visibility:hidden;width:var(--win);border-radius:var(--win-r)';
+          p.style.cssText = 'position:absolute;visibility:hidden;width:var(--winx);height:var(--win);border-radius:var(--win-r)';
           f.appendChild(p);
-          var i = p.offsetWidth;
+          var x = p.offsetWidth;
+          var i = p.offsetHeight;
           var r = parseFloat(getComputedStyle(p).borderTopLeftRadius) || 0;
           p.remove();
           if (!i) {
@@ -188,10 +189,10 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
           var H = innerHeight;
           f.style.clipPath =
             "path(evenodd, 'M0 0H" + W + 'V' + H + 'H0Z' +
-            'M' + (i + r) + ' ' + i + 'H' + (W - i - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (W - i) + ' ' + (i + r) +
-            'V' + (H - i - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (W - i - r) + ' ' + (H - i) +
-            'H' + (i + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + i + ' ' + (H - i - r) +
-            'V' + (i + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (i + r) + ' ' + i + "Z')";
+            'M' + (x + r) + ' ' + i + 'H' + (W - x - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (W - x) + ' ' + (i + r) +
+            'V' + (H - i - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (W - x - r) + ' ' + (H - i) +
+            'H' + (x + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + x + ' ' + (H - i - r) +
+            'V' + (i + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (x + r) + ' ' + i + "Z')";
         };
         cut();
         addEventListener('resize', cut);
@@ -332,12 +333,17 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case {
     --panel-w: min(440px, 32vw);
     /* the window: how far in from the screen's edges, and its corners */
-    --win: clamp(32px, 3.8vw, 64px);
+    --win: 20px;
+    --in: 20px;
     /* the window's corners: soft, not as round as the pictures */
-    --win-r: 28px;
-    /* a shot as tall as the window's inside, never wider than the column */
-    --shot-w: min(100%, calc((100svh - 2 * var(--pad)) * 0.8));
-    --pad: calc(var(--win) + 32px);
+    --win-r: 24px;
+    --pad: calc(var(--win) + var(--in));
+    /* a shot as tall as the window's inside */
+    --shot-w: calc((100svh - 2 * var(--pad)) * 0.8);
+    /* the window is only as wide as its story and one shot, centred: no
+       empty band beside the pictures */
+    --winx: max(var(--win), calc((100vw - var(--panel-w) - 16px - var(--shot-w) - 2 * var(--in)) / 2));
+    --padx: calc(var(--winx) + var(--in));
   }
   /* ---------- The window frame ---------- */
   .case__frame {
@@ -366,7 +372,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   @media (max-width: 809px) {
     .case {
       --win: 0px;
+      --winx: 0px;
       --pad: 24px;
+      --padx: 24px;
     }
     .case__frame {
       display: none;
@@ -382,7 +390,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     column-gap: 16px;
     row-gap: 8px;
     align-items: start;
-    padding: var(--pad);
+    padding: var(--pad) var(--padx);
     /* the panel waits off to the right before it slides in */
     overflow-x: clip;
   }
@@ -412,7 +420,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   /* the cover alone: the column's full width, like every shot under it */
   .case__cover:only-child {
     flex: none;
-    width: var(--shot-w);
+    width: min(100%, var(--shot-w));
     margin-inline: auto;
   }
   .case__stack {
@@ -449,7 +457,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   .case__gallery > :global(.media.media--fit) {
     flex: none;
-    width: var(--shot-w);
+    width: min(100%, var(--shot-w));
     aspect-ratio: 4 / 5 !important;
   }
   .case__gallery > :global(.media) :global(img),
@@ -476,7 +484,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     z-index: 20;
     /* close: top right, inside the window's corner */
     top: calc(var(--pad) + 16px);
-    right: calc(var(--pad) + 16px);
+    right: calc(var(--padx) + 16px);
     display: grid;
     place-items: center;
     width: 52px;
