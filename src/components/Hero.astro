@@ -1685,11 +1685,10 @@ const LAPS = 3;
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform2f(uView, cr.width, cr.height);
-        // corners follow the CSS (.vh__pill border-radius), as a share of width
-        if (radK < 0) {
-          const p0 = els[0];
-          radK = p0 ? (parseFloat(getComputedStyle(p0).borderTopLeftRadius) || 0) / (p0.offsetWidth || 1) : 0.15;
-        }
+        // corners as a share of each cover's width, as .vh__pill in the CSS
+        // (the same shares as the CSS, set here outright so nothing measured
+        // on the way can throw them off: 0.2362 of the width, 0.186 on phones)
+        if (radK < 0) radK = innerWidth <= 840 ? 0.186 : 0.2362;
         gl.uniform1f(uRadK, radK);
         for (const { i, t, x, y, w, h, alpha, speed, lens, sat } of jobs) {
           gl.bindTexture(gl.TEXTURE_2D, t.tex);
