@@ -1,4 +1,6 @@
 /*
+ * The site's two small sounds, synthesised with Web Audio (no files).
+ *
  * A soft "toss" whoosh for the home column: a short burst of noise through a
  * band-pass filter whose centre slides down (about 1.1 kHz to 520 Hz in
  * 170 ms), with a gentle 40 ms swell. Synthesised with Web Audio, so there
@@ -59,4 +61,52 @@ export function toss(amt = 0.5) {
   g.gain.linearRampToValueAtTime(0, t + dur);
   src.connect(bp).connect(g).connect(ctx.destination);
   src.start(t, Math.random() * 0.3, dur + 0.02);
+}
+
+/*
+ * A soft "bump" for clicks: a low sine that drops from about 208 Hz to
+ * 165 Hz over 120 ms, rounded off by a low-pass at 520 Hz, with a 10 ms
+ * swell so it never clicks itself.
+ */
+let lastBump = 0;
+export function bump() {
+  if (!ctx || ctx.state === 'closed') return;
+  const now = performance.now();
+  if (now - lastBump < 40) return;
+  lastBump = now;
+  const t = ctx.currentTime + 0.005;
+  const dur = 0.12;
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(208, t);
+  osc.frequency.linearRampToValueAtTime(165, t + dur);
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 520;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.14, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(lp).connect(g).connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.02);
+}
+
+// every click on something you can click plays the bump (on the click
+// itself, so starting a drag doesn't; the press before it has woken the
+// audio, so even the very first click is heard)
+if (typeof window !== 'undefined') {
+  const CLICKABLE = 'a[href], button, [role="button"], summary, label[for], input[type="checkbox"], input[type="radio"], [data-media], .wk__img, .wk__zoom, .wk__dim';
+  addEventListener(
+    'click',
+    (e) => {
+      if (e.button !== 0 || e.detail === 0) return; // (keyboard clicks are handled below)
+      if ((e.target as Element | null)?.closest?.(CLICKABLE)) bump();
+    },
+    { capture: true, passive: true },
+  );
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if ((e.target as Element | null)?.closest?.(CLICKABLE)) bump();
+  });
 }

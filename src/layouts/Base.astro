@@ -398,6 +398,8 @@ const ogImage = image ? urlFor(image).width(1200).height(630).fit('crop').url() 
     </script>
     <script>
       import Lenis from 'lenis';
+      // the click bump on every page (and the home column's whoosh)
+      import '../lib/toss';
       // build must run before motion: it claims blocks in [data-build] sections first
       import '../scripts/motion';
 
