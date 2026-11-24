@@ -489,7 +489,7 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
     /* corners in the same proportion to the picture as the home covers
        (--photo-radius over the pill's width), so a cover flying in from
        home keeps its rounding */
-    --rad-k: 0.3;
+    --rad-k: 0.236;
     position: absolute;
     inset: 0;
     touch-action: none;
@@ -626,6 +626,7 @@ const cfg = { K, PC, PR, rowOf: Object.fromEntries(covers.map((c, r) => [c.slug,
       --w: 64vw;
       --h: calc(var(--w) * 0.9);
       --cw: calc(var(--w) * 1.12);
+      --rad-k: 0.186;
       --ch: calc(var(--h) * 1.14);
     }
   }
