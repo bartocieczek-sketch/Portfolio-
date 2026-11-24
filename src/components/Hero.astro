@@ -722,6 +722,7 @@ const LAPS = 3;
 </style>
 
 <script>
+  import { toss } from '../lib/toss';
   import { hasGPU } from '../lib/gpu';
   const root = document.documentElement;
   const hero = document.querySelector<HTMLElement>('[data-vh]');
@@ -822,6 +823,7 @@ const LAPS = 3;
     // the column on that project
     let pos = (window as unknown as { __vhStart?: number }).__vhStart ?? 0;
     let target = pos;
+    let lastSlot: number | null = null;
     // while a project is opening, the column ignores input
     let opening = false;
     // any input pauses the idle drift (see Frame) for a while
@@ -1392,6 +1394,13 @@ const LAPS = 3;
       (window as unknown as { __vhFocus(p: HTMLElement[], s: number, l: number, w: number): void }).__vhFocus(pills, step, lap, wrapped);
       vel += (pos - lastPos - vel) * 0.25;
       lastPos = pos;
+      // a soft whoosh each time a new project passes the middle (not while
+      // the column drifts on its own)
+      const slot = Math.round(pos / step);
+      if (slot !== lastSlot) {
+        if (!drifting && lastSlot !== null) toss(Math.min(1, Math.abs(vel) / 40));
+        lastSlot = slot;
+      }
 
       const vh = window.innerHeight;
       let best = 0;
