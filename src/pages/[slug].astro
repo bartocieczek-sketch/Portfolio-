@@ -342,8 +342,13 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     --shot-w: calc((100svh - 2 * var(--pad)) * 0.8);
     /* the window is only as wide as its story and one shot, centred: no
        empty band beside the pictures */
-    --winx: max(var(--win), calc((100vw - var(--panel-w) - 16px - var(--shot-w) - 2 * var(--in)) / 2));
+    /* (plus a little more each side, given to the story's column) */
+    --winx: max(var(--win), calc((100vw - var(--panel-w) - 16px - var(--shot-w) - 2 * var(--in)) / 2 - 8vw));
     --padx: calc(var(--winx) + var(--in));
+  }
+  /* the story keeps its measure in a wider column */
+  .case__panel-in {
+    max-width: var(--panel-w);
   }
   /* ---------- The window frame ---------- */
   .case__frame {
@@ -383,7 +388,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__row {
     display: grid;
     /* the story on the left, the pictures on the right */
-    grid-template-columns: var(--panel-w) minmax(0, 1fr);
+    grid-template-columns: minmax(var(--panel-w), 1fr) minmax(0, var(--shot-w));
     grid-template-areas:
       'panel top'
       'panel gallery';
