@@ -333,8 +333,10 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     --panel-w: min(440px, 32vw);
     /* the window: how far in from the screen's edges, and its corners */
     --win: clamp(32px, 3.8vw, 64px);
-    /* the same rounding as the pictures inside */
-    --win-r: var(--photo-radius);
+    /* the window's corners: soft, not as round as the pictures */
+    --win-r: 28px;
+    /* a shot as tall as the window's inside, never wider than the column */
+    --shot-w: min(100%, calc((100svh - 2 * var(--pad)) * 0.8));
     --pad: calc(var(--win) + 32px);
   }
   /* ---------- The window frame ---------- */
@@ -410,7 +412,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   /* the cover alone: the column's full width, like every shot under it */
   .case__cover:only-child {
     flex: none;
-    width: 100%;
+    width: var(--shot-w);
+    margin-inline: auto;
   }
   .case__stack {
     flex: var(--r, 0.8) 1 0;
@@ -441,9 +444,12 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   }
   /* every one a 4:5 shot, videos too (they'd otherwise take their own
      shape once loaded): filled, as the 1080 x 1350 frames are made */
+  .case__gallery {
+    align-items: center;
+  }
   .case__gallery > :global(.media.media--fit) {
     flex: none;
-    width: 100%;
+    width: var(--shot-w);
     aspect-ratio: 4 / 5 !important;
   }
   .case__gallery > :global(.media) :global(img),
