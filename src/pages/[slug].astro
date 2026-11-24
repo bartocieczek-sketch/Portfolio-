@@ -388,7 +388,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
       'panel top'
       'panel gallery';
     column-gap: 16px;
-    row-gap: 8px;
+    /* room between the shots: the window's own inner margin */
+    row-gap: var(--in);
     align-items: start;
     padding: var(--pad) var(--padx);
     /* the panel waits off to the right before it slides in */
@@ -448,7 +449,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__gallery {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--in);
   }
   /* every one a 4:5 shot, videos too (they'd otherwise take their own
      shape once loaded): filled, as the 1080 x 1350 frames are made */
