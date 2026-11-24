@@ -162,6 +162,37 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
         } catch (e) {}
       })();
     </script>
+    <!-- The page sits in a window (as on 6g-studio.com): around it a frame
+         shows the home column, blurred (a copy of the stand-in above), and
+         the page scrolls behind the frame's opening as usual -->
+    <div class="case__frame" aria-hidden="true" data-frame></div>
+    <script is:inline>
+      (function () {
+        var f = document.querySelector('[data-frame]');
+        var u = document.querySelector('.case__under');
+        if (!f) return;
+        if (u) f.appendChild(u.cloneNode(true));
+        var cut = function () {
+          var cs = getComputedStyle(f);
+          var i = parseFloat(cs.getPropertyValue('--win')) || 0;
+          var r = parseFloat(cs.getPropertyValue('--win-r')) || 0;
+          if (!i) {
+            f.style.clipPath = '';
+            return;
+          }
+          var W = innerWidth;
+          var H = innerHeight;
+          f.style.clipPath =
+            "path(evenodd, 'M0 0H" + W + 'V' + H + 'H0Z' +
+            'M' + (i + r) + ' ' + i + 'H' + (W - i - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (W - i) + ' ' + (i + r) +
+            'V' + (H - i - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (W - i - r) + ' ' + (H - i) +
+            'H' + (i + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + i + ' ' + (H - i - r) +
+            'V' + (i + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (i + r) + ' ' + i + "Z')";
+        };
+        cut();
+        addEventListener('resize', cut);
+      })();
+    </script>
     <!-- Two columns: the pictures on the left, the story on the right in a
          panel that stays put (sticky) while the pictures scroll. The cover
          grows up to where the panel starts; the panel slides in once. -->
@@ -303,6 +334,43 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   /* ---------- Pictures left, story right ---------- */
   .case {
     --panel-w: min(440px, 32vw);
+    /* the window: how far in from the screen's edges, and its corners */
+    --win: 28px;
+    --win-r: 22px;
+    --pad: calc(var(--win) + 24px);
+  }
+  /* ---------- The window frame ---------- */
+  .case__frame {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    pointer-events: none;
+    overflow: hidden;
+    background: #a3a3a1;
+    animation: case-frame-in 0.7s var(--ease-out) both;
+    transition: opacity 0.35s var(--ease-out);
+  }
+  .case__frame :global(.case__under) {
+    position: absolute;
+    z-index: 0;
+    opacity: 0.7;
+  }
+  .case.is-leaving .case__frame {
+    opacity: 0;
+  }
+  @keyframes case-frame-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @media (max-width: 809px) {
+    .case {
+      --win: 0px;
+      --pad: 24px;
+    }
+    .case__frame {
+      display: none;
+    }
   }
   .case__row {
     display: grid;
@@ -314,7 +382,7 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     column-gap: 16px;
     row-gap: 8px;
     align-items: start;
-    padding: 24px;
+    padding: var(--pad);
     /* the panel waits off to the right before it slides in */
     overflow-x: clip;
   }
@@ -390,9 +458,9 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
   .case__back-btn {
     position: fixed;
     z-index: 20;
-    /* close: top right, 24px in from the pictures' corner */
-    top: 36px;
-    right: 36px;
+    /* close: top right, inside the window's corner */
+    top: calc(var(--win) + 16px);
+    right: calc(var(--win) + 16px);
     display: grid;
     place-items: center;
     width: 52px;
@@ -432,8 +500,8 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     grid-area: panel;
     position: sticky;
     z-index: 5;
-    top: 24px;
-    height: calc(100svh - 48px);
+    top: var(--pad);
+    height: calc(100svh - 2 * var(--pad));
     transition: transform 0.8s var(--ease-cover);
   }
   /* the panel itself stays put; its text rises in line by line (below) */
