@@ -366,9 +366,17 @@ const description = stegaClean(lead?.children?.map((c: { text: string }) => c.te
     flex-direction: column;
     gap: 8px;
   }
+  /* every one a 4:5 shot, videos too (they'd otherwise take their own
+     shape once loaded): filled, as the 1080 x 1350 frames are made */
   .case__gallery > :global(.media.media--fit) {
     flex: none;
     width: 100%;
+    aspect-ratio: 4 / 5 !important;
+  }
+  .case__gallery > :global(.media) :global(img),
+  .case__gallery > :global(.media) :global(video) {
+    height: 100% !important;
+    object-fit: cover;
   }
   .case__grow {
     display: flex;
