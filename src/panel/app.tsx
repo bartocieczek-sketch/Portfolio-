@@ -223,7 +223,7 @@ a.pa-card:active{transform:translateY(0) scale(.995)}
 .pa-pv.tall{aspect-ratio:4/5}
 .pa-pv img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s var(--ease)}
 @media (hover:hover){a.pa-card:hover .pa-pv img{transform:scale(1.03)}}
-.pa-pv .doc{position:absolute;left:50%;top:18px;width:1280px;height:1600px;transform-origin:top center;border:0;pointer-events:none;background:#fff;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px -8px rgba(0,0,0,.12)}
+.pa-pv .doc{position:absolute;left:50%;top:18px;width:1280px!important;max-width:none!important;height:1600px!important;max-height:none!important;transform-origin:top center;border:0;pointer-events:none;background:#fff;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px -8px rgba(0,0,0,.12)}
 .pa-pv .tag{position:absolute;left:12px;top:12px}
 .pa-pv .empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}
 .pa-body{padding:16px 18px 0;display:flex;flex-direction:column;gap:6px;flex:1}
