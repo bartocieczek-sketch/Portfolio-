@@ -5,41 +5,57 @@ import { presentationTool } from 'sanity/presentation';
 import { resolve } from './src/sanity/presentation';
 import { schemaTypes } from './src/sanity/schemaTypes';
 import { structure, singletonTypes } from './src/sanity/structure';
+import { BrandLayout } from './src/panel/components';
+import { brandIcon, brandTheme, panelWorkspace } from './src/panel/config';
 
 const projectId = import.meta.env.PUBLIC_SANITY_PROJECT_ID || 'jf65lv25';
 const dataset = import.meta.env.PUBLIC_SANITY_DATASET || 'production';
 
-export default defineConfig({
-  name: 'default',
-  title: 'Bart Ocieczek – Portfolio',
-  projectId,
-  dataset,
-  plugins: [
-    structureTool({ structure }),
-    // Visual editing: click anything on the page preview to edit it
-    presentationTool({
-      title: 'Visual editing',
-      resolve,
-      previewUrl: {
-        initial: '/',
-        previewMode: {
-          enable: '/api/draft-mode/enable',
-          disable: '/api/draft-mode/disable',
+// Two areas in one Studio (paths come from @sanity/astro: /studio/<name>):
+// - "panel"  → /studio/panel  private dataset: quotes, clients, projects, case study materials
+// - "strona" → /studio/strona the website content (public dataset)
+export default defineConfig([
+  {
+    ...panelWorkspace,
+    projectId,
+    dataset: 'panel',
+  },
+  {
+    name: 'strona',
+    title: 'Strona',
+    subtitle: 'bartocieczek.com',
+    icon: brandIcon,
+    theme: brandTheme,
+    studio: { components: { layout: BrandLayout } },
+    projectId,
+    dataset,
+    plugins: [
+      structureTool({ structure }),
+      // Visual editing: click anything on the page preview to edit it
+      presentationTool({
+        title: 'Visual editing',
+        resolve,
+        previewUrl: {
+          initial: '/',
+          previewMode: {
+            enable: '/api/draft-mode/enable',
+            disable: '/api/draft-mode/disable',
+          },
         },
-      },
-    }),
-    visionTool(),
-  ],
-  schema: {
-    types: schemaTypes,
-    // Singletons can't be created from the "new document" menu.
-    templates: (templates) => templates.filter(({ schemaType }) => !singletonTypes.has(schemaType)),
+      }),
+      visionTool(),
+    ],
+    schema: {
+      types: schemaTypes,
+      // Singletons can't be created from the "new document" menu.
+      templates: (templates) => templates.filter(({ schemaType }) => !singletonTypes.has(schemaType)),
+    },
+    document: {
+      // Singletons can't be duplicated or deleted.
+      actions: (input, context) =>
+        singletonTypes.has(context.schemaType)
+          ? input.filter(({ action }) => action && ['publish', 'discardChanges', 'restore'].includes(action))
+          : input,
+    },
   },
-  document: {
-    // Singletons can't be duplicated or deleted.
-    actions: (input, context) =>
-      singletonTypes.has(context.schemaType)
-        ? input.filter(({ action }) => action && ['publish', 'discardChanges', 'restore'].includes(action))
-        : input,
-  },
-});
+]);

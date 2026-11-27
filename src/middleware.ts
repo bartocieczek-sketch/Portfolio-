@@ -5,6 +5,11 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   const { pathname, search } = ctx.url;
   ctx.locals.preview = false;
 
+  // panel.bartocieczek.com opens the private panel; quote links stay public.
+  if (ctx.url.hostname.startsWith('panel.') && (pathname === '/' || pathname === '/studio' || pathname === '/studio/')) {
+    return ctx.redirect('/studio/panel/pulpit', 302);
+  }
+
   if (pathname === PREVIEW_PREFIX || pathname.startsWith(`${PREVIEW_PREFIX}/`)) {
     const target = pathname.slice(PREVIEW_PREFIX.length) || '/';
     // No valid preview session → send the visitor to the normal page

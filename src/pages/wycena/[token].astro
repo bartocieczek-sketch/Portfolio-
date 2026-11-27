@@ -1,0 +1,24 @@
+---
+// Public link to one quote from the private "panel" dataset.
+// Only published quotes, looked up by their unguessable share token.
+import { sanityClient } from 'sanity:client';
+import { readToken } from '../../lib/preview';
+import { renderQuoteHtml } from '../../lib/quote-render';
+
+export const prerender = false;
+
+const { token: shareToken } = Astro.params;
+const apiToken = readToken();
+let html: string | null = null;
+
+if (apiToken && shareToken && /^[a-z0-9]{12,64}$/.test(shareToken)) {
+  const client = sanityClient.withConfig({ dataset: 'panel', token: apiToken, useCdn: false, perspective: 'published' });
+  const quote = await client.fetch(`*[_type == "quote" && shareToken == $t][0]{..., "clientName": client->name}`, { t: shareToken });
+  if (quote) html = renderQuoteHtml(quote, Astro.url.origin);
+}
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+if (!html) Astro.response.status = 404;
+---
+{html ? <Fragment set:html={html} /> : <Fragment set:html={`<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Nie znaleziono</title><style>body{font:16px/1.6 "Helvetica Neue",Arial,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;color:#111}p{color:#8c8c8c}</style></head><body><div><h1>Ta wycena nie jest dostępna</h1><p>Link mógł wygasnąć. Napisz do mnie: bartocieczek.com</p></div></body></html>`} />}
