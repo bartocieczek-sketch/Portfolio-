@@ -2,8 +2,8 @@ import { createElement } from 'react';
 import { buildLegacyTheme, type StudioTheme } from 'sanity';
 import { structureTool, type StructureResolver, type DefaultDocumentNodeResolver } from 'sanity/structure';
 import { DashboardIcon } from '@sanity/icons/Dashboard';
-import { EarthGlobeIcon } from '@sanity/icons/EarthGlobe';
-import { BrandLayout, Dashboard, Mark, QuotePreview, SiteTool } from './components';
+import { BrandLayout, Mark, QuotePreview } from './components';
+import { PanelApp } from './app';
 import { panelSchema } from './schema';
 
 /** bartocieczek.com: white, #111 ink, grey #8c8c8c, PP Neue Montreal */
@@ -58,9 +58,8 @@ export const panelWorkspace = {
   studio: { components: { layout: BrandLayout } },
   plugins: [structureTool({ title: 'Baza', structure: panelStructure, defaultDocumentNode })],
   tools: (prev: { name: string }[]) => [
-    { name: 'pulpit', title: 'Pulpit', icon: DashboardIcon, component: Dashboard },
+    { name: 'pulpit', title: 'Panel', icon: DashboardIcon, component: PanelApp },
     ...prev,
-    { name: 'strona', title: 'Strona', icon: EarthGlobeIcon, component: SiteTool },
   ],
   schema: { types: panelSchema },
 };
