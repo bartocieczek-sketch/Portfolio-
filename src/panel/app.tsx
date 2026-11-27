@@ -319,7 +319,7 @@ function QuoteThumb({ q }: { q: Quote }) {
   const html = useMemo(() => renderQuoteHtml({ ...q, clientName: q.clientName }, typeof window !== 'undefined' ? window.location.origin : ''), [q]);
   return (
     <div className="pa-pv" ref={box}>
-      <iframe className="doc" title="" aria-hidden="true" tabIndex={-1} loading="lazy" srcDoc={html} style={{ transform: `translateX(-50%) scale(${scale})` }} />
+      <iframe className="doc" title="" aria-hidden="true" tabIndex={-1} loading="lazy" scrolling="no" srcDoc={html.replace('<body>', '<body style="overflow:hidden">')} style={{ transform: `translateX(-50%) scale(${scale})` }} />
     </div>
   );
 }
