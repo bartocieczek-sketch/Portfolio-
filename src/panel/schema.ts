@@ -162,6 +162,7 @@ export const caseMaterial = defineType({
       of: [defineArrayMember({ type: 'image', options: { hotspot: true }, fields: [defineField({ name: 'caption', title: 'Podpis', type: 'string' })] })],
     }),
     defineField({ name: 'videos', title: 'Wideo', type: 'array', of: [defineArrayMember({ type: 'file', options: { accept: 'video/*' } })] }),
+    defineField({ name: 'videoLinks', title: 'Linki do wideo', description: 'Większe pliki: link do Vimeo, YouTube albo dysku.', type: 'array', of: [defineArrayMember({ type: 'url' })] }),
     defineField({ name: 'forClaude', title: 'Uwagi dla Claude', description: 'Np. kolejność zdjęć, co wyróżnić, czego nie pokazywać.', type: 'text', rows: 4 }),
     defineField({ name: 'siteSlug', title: 'Adres case study', description: 'Uzupełniam, gdy case study powstanie na stronie.', type: 'string', readOnly: true }),
   ],

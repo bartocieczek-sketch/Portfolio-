@@ -1,0 +1,90 @@
+---
+import { PANEL_COOKIE, checkPassword, isSignedIn, panelPassword, sessionValue } from '../../lib/panel-server';
+
+export const prerender = false;
+
+const next = (() => {
+  const n = Astro.url.searchParams.get('next') || '/panel';
+  return n.startsWith('/panel') ? n : '/panel';
+})();
+let error = '';
+const configured = !!panelPassword();
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (checkPassword(String(form.get('password') ?? ''))) {
+    Astro.cookies.set(PANEL_COOKIE, (await sessionValue())!, { path: '/', httpOnly: true, secure: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 30 });
+    return Astro.redirect(next, 303);
+  }
+  await new Promise((r) => setTimeout(r, 600));
+  error = 'Nieprawidłowe hasło.';
+} else if (await isSignedIn(Astro.cookies)) {
+  return Astro.redirect(next, 302);
+}
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+const MARK =
+  'M387 286Q378 281 368.5 276.5Q359 272 352 269Q346 266 342 266Q320 266 320 289Q320 301 331 308Q489 395 651.5 519.0Q814 643 813 857Q812 991 723.0 1133.0Q634 1275 453 1275Q330 1275 225.0 1188.5Q120 1102 120 995Q120 884 184.0 801.0Q248 718 389 697Q502 694 571 744Q580 751 592.5 765.5Q605 780 617 780Q632 780 636.0 767.0Q640 754 631 745Q608 720 566 694Q500 652 415 652Q188 649 101.0 763.5Q14 878 31.0 1058.0Q48 1238 195.5 1364.0Q343 1490 536 1482Q701 1475 800.0 1411.0Q899 1347 951 1250Q956 1239 967 1241Q979 1241 981 1253Q1009 1354 1086.5 1416.0Q1164 1478 1284 1478Q1399 1478 1485.0 1404.5Q1571 1331 1610 1166Q1639 1057 1691 1059Q1712 1059 1715.5 1042.5Q1719 1026 1699 1016L1473 911Q1462 905 1464 894Q1465 883 1477 880Q1596 853 1686.5 750.5Q1777 648 1777 501Q1773 270 1473 93Q1308 -3 1155.0 -20.0Q1002 -37 867 10Q713 64 603.5 191.5Q494 319 387 286ZM1049 758 1439 942Q1448 949 1448 956Q1448 966 1440 971Q1372 1011 1338 1144Q1311 1242 1270.0 1303.0Q1229 1364 1150 1356Q1044 1332 1025.5 1242.0Q1007 1152 1020 1037Q1042 852 916.0 702.5Q790 553 649 449Q739 450 836 357Q904 290 977.5 233.0Q1051 176 1133 138Q1236 89 1339.0 100.5Q1442 112 1516 208Q1570 278 1571.5 371.5Q1573 465 1501.5 560.0Q1430 655 1323.5 690.0Q1217 725 1058 715Q1036 714 1032.5 731.5Q1029 749 1049 758Z';
+---
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Panel · Bart Ocieczek</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<style is:inline>
+@font-face{font-family:"PP Neue Montreal";src:url(/fonts/PPNeueMontreal-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"PP Neue Montreal";src:url(/fonts/PPNeueMontreal-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:#fff;color:#111;font:16px/1.5 "PP Neue Montreal","Inter","Helvetica Neue",Arial,sans-serif;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+.l{display:flex;flex-direction:column;justify-content:space-between;padding:32px clamp(24px,5vw,72px)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:500}
+.brand svg{width:34px;height:auto}
+form{width:100%;max-width:380px;margin:0 auto}
+h1{font-size:clamp(36px,4vw,48px);line-height:1;letter-spacing:-.045em;font-weight:500;margin:0 0 12px}
+p{margin:0 0 32px;color:#525252}
+label{display:block;font-size:13px;font-weight:500;margin-bottom:8px;letter-spacing:0}
+input{width:100%;height:48px;border:1px solid #e6e6e6;border-radius:12px;padding:0 14px;font:inherit;font-size:16px;color:#111;background:#fff;transition:border-color .15s ease,box-shadow .15s ease}
+input:focus{outline:0;border-color:#111;box-shadow:0 0 0 3px rgba(17,17,17,.08)}
+input[aria-invalid=true]{border-color:#b3261e}
+.err{color:#b3261e;font-size:14px;margin:10px 0 0}
+button{margin-top:20px;width:100%;height:48px;border:0;border-radius:999px;background:#111;color:#fff;font:inherit;font-weight:500;cursor:pointer;transition:transform .16s ease-out,background-color .15s ease}
+button:hover{background:#2a2a2a}button:active{transform:scale(.98)}
+button:focus-visible,input:focus-visible{outline:2px solid #111;outline-offset:2px}
+.foot{font-size:13px;color:#8c8c8c;letter-spacing:0}
+.r{background:#111;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(32px,5vw,72px);position:relative;overflow:hidden}
+.r svg{position:absolute;right:-6%;top:8%;width:78%;height:auto;color:#1d1d1d}
+.r b{position:relative;font-size:clamp(28px,3vw,40px);line-height:1.05;letter-spacing:-.04em;font-weight:500;max-width:14ch}
+.r span{position:relative;color:#8c8c8c;margin-top:16px;max-width:36ch}
+@media (max-width:860px){body{grid-template-columns:minmax(0,1fr)}.r{display:none}}
+</style>
+</head>
+<body>
+<div class="l">
+  <div class="brand"><svg viewBox="28 -1483 1749 1507" aria-hidden="true"><path transform="scale(1,-1)" d={MARK} fill="currentColor" /></svg>Bart Ocieczek</div>
+  <form method="post">
+    <h1>Panel</h1>
+    <p>Wyceny, projekty i materiały na stronę.</p>
+    {configured ? (
+      <>
+        <label for="pw">Hasło</label>
+        <input id="pw" name="password" type="password" autocomplete="current-password" required autofocus aria-invalid={error ? 'true' : 'false'} aria-describedby={error ? 'err' : undefined} />
+        {error && <p class="err" id="err" role="alert">{error}</p>}
+        <button type="submit">Zaloguj się</button>
+      </>
+    ) : (
+      <p class="err" role="alert">Panel nie ma jeszcze hasła. Dodaj zmienną PANEL_PASSWORD w ustawieniach projektu na Vercelu.</p>
+    )}
+  </form>
+  <div class="foot">panel.bartocieczek.com</div>
+</div>
+<div class="r" aria-hidden="true">
+  <svg viewBox="28 -1483 1749 1507"><path transform="scale(1,-1)" d={MARK} fill="currentColor" /></svg>
+  <b>Wszystko o Twojej pracy w jednym miejscu.</b>
+  <span>Wycena wysłana klientowi wygląda dokładnie tak, jak w podglądzie.</span>
+</div>
+</body>
+</html>

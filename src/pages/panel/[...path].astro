@@ -1,0 +1,34 @@
+---
+import { isSignedIn } from '../../lib/panel-server';
+import { PortalApp } from '../../portal/App';
+
+export const prerender = false;
+
+if (!(await isSignedIn(Astro.cookies))) {
+  return Astro.redirect(`/panel/login?next=${encodeURIComponent(Astro.url.pathname)}`, 302);
+}
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+---
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#ffffff" />
+<title>Panel · Bart Ocieczek</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preload" href="/fonts/PPNeueMontreal-Regular.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/PPNeueMontreal-Medium.woff2" as="font" type="font/woff2" crossorigin />
+<style is:inline>
+@font-face{font-family:"PP Neue Montreal";src:url(/fonts/PPNeueMontreal-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"PP Neue Montreal";src:url(/fonts/PPNeueMontreal-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
+html,body,#app{height:100%;margin:0}
+body{background:#fafafa}
+</style>
+</head>
+<body>
+<div id="app"><PortalApp client:only="react" /></div>
+</body>
+</html>
